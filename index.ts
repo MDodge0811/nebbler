@@ -1,3 +1,7 @@
+// Polyfills must be imported first, before any other imports
+import '@azure/core-asynciterator-polyfill';
+import 'react-native-polyfill-globals/auto';
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';
