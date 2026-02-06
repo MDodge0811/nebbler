@@ -1,6 +1,3 @@
-import '@azure/core-asynciterator-polyfill';
-import 'react-native-polyfill-globals/auto';
-
 import { PowerSyncDatabase } from '@powersync/react-native';
 import { OPSqliteOpenFactory } from '@powersync/op-sqlite';
 import { AppSchema } from './schema';

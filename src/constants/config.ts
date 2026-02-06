@@ -1,22 +1,28 @@
 /**
  * PowerSync configuration
- * Replace placeholder values with actual PowerSync instance details
+ *
+ * For local development with Docker:
+ * - PowerSync service runs on port 8080
+ * - Phoenix API runs on port 4000
+ *
+ * For production, replace with your actual URLs.
  */
 export const powersyncConfig = {
   /**
    * PowerSync instance URL
-   * Format: https://<instance-id>.powersync.journeyapps.com
-   * Obtain from PowerSync dashboard after creating instance
+   * Local: http://localhost:8080
+   * Production: https://<instance-id>.powersync.journeyapps.com
    */
-  powersyncUrl: 'https://YOUR_INSTANCE_ID.powersync.journeyapps.com',
+  powersyncUrl: __DEV__
+    ? 'http://localhost:8080'
+    : 'https://YOUR_INSTANCE_ID.powersync.journeyapps.com',
 
   /**
    * Backend API URL for authentication and write operations
-   * This is your backend server that handles:
-   * - JWT token generation for PowerSync authentication
-   * - Processing uploaded changes from the device
+   * Local: http://localhost:4000
+   * Production: Your deployed API URL
    */
-  backendUrl: 'https://your-backend-api.com',
+  backendUrl: __DEV__ ? 'http://localhost:4000' : 'https://your-backend-api.com',
 } as const;
 
 /**
