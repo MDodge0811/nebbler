@@ -38,29 +38,37 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
    * - Signed with your PowerSync instance's private key
    */
   async fetchCredentials(): Promise<PowerSyncCredentials> {
-    // TODO: Replace with actual authentication logic
-    // This should call your backend auth endpoint
+    const authUrl = `${powersyncConfig.backendUrl}/api/powersync/auth`;
+    console.log('[PowerSync] Fetching credentials from:', authUrl);
 
-    const response = await fetch(`${powersyncConfig.backendUrl}/api/powersync/auth`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Include your app's authentication header
-        // 'Authorization': `Bearer ${userToken}`,
-      },
-    });
+    try {
+      const response = await fetch(authUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error(`Authentication failed: ${response.status}`);
+      console.log('[PowerSync] Auth response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[PowerSync] Auth failed:', errorText);
+        throw new Error(`Authentication failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('[PowerSync] Got token, connecting to:', powersyncConfig.powersyncUrl);
+
+      return {
+        endpoint: powersyncConfig.powersyncUrl,
+        token: data.token,
+        expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
+      };
+    } catch (error) {
+      console.error('[PowerSync] fetchCredentials error:', error);
+      throw error;
     }
-
-    const data = await response.json();
-
-    return {
-      endpoint: powersyncConfig.powersyncUrl,
-      token: data.token,
-      expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
-    };
   }
 
   /**

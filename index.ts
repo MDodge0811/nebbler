@@ -2,11 +2,11 @@
 import '@azure/core-asynciterator-polyfill';
 import { polyfill as polyfillEncoding } from 'react-native-polyfill-globals/src/encoding';
 import { polyfill as polyfillReadableStream } from 'react-native-polyfill-globals/src/readable-stream';
-import { polyfill as polyfillFetch } from 'react-native-polyfill-globals/src/fetch';
 
+// Note: We don't polyfill fetch - React Native's native fetch works fine
+// and the polyfill causes "blobId" errors with some responses
 polyfillEncoding();
 polyfillReadableStream();
-polyfillFetch();
 
 import { registerRootComponent } from 'expo';
 
