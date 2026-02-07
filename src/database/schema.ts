@@ -14,12 +14,23 @@ const testItems = new Table({
   updated_at: column.text,
 });
 
+const users = new Table({
+  first_name: column.text,
+  last_name: column.text,
+  email: column.text,
+  username: column.text,
+  display_name: column.text,
+  inserted_at: column.text,
+  updated_at: column.text,
+});
+
 /**
  * AppSchema defines all synced tables
  * Table names must match the sync rules defined in PowerSync dashboard
  */
 export const AppSchema = new Schema({
   test_items: testItems,
+  users: users,
 });
 
 /**
@@ -28,3 +39,4 @@ export const AppSchema = new Schema({
  */
 export type Database = (typeof AppSchema)['types'];
 export type TestItem = Database['test_items'];
+export type User = Database['users'];
