@@ -5,7 +5,7 @@ import type { TestItem } from '@database/schema';
  * Hook to fetch all test items with real-time updates
  */
 export function useTestItems() {
-  return useQuery<TestItem>('SELECT * FROM test_items ORDER BY created_at DESC');
+  return useQuery<TestItem>('SELECT * FROM test_items ORDER BY inserted_at DESC');
 }
 
 /**
@@ -22,11 +22,11 @@ export function useTestItemMutations() {
   const powerSync = usePowerSync();
 
   const createItem = async (name: string, description: string) => {
-    const id = generateUUID(); // Generate UUID on client
+    const id = generateUUID();
     const now = new Date().toISOString();
 
     await powerSync.execute(
-      `INSERT INTO test_items (id, name, description, completed, created_at, updated_at)
+      `INSERT INTO test_items (id, name, description, completed, inserted_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [id, name, description, 0, now, now]
     );
@@ -51,8 +51,6 @@ export function useTestItemMutations() {
       values.push(updates.completed);
     }
 
-    setClauses.push('updated_at = ?');
-    values.push(new Date().toISOString());
     values.push(id);
 
     await powerSync.execute(`UPDATE test_items SET ${setClauses.join(', ')} WHERE id = ?`, values);
