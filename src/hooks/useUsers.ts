@@ -53,8 +53,6 @@ export function useUserMutations() {
       }
     }
 
-    setClauses.push('updated_at = ?');
-    values.push(new Date().toISOString());
     values.push(id);
 
     await powerSync.execute(`UPDATE users SET ${setClauses.join(', ')} WHERE id = ?`, values);

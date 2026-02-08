@@ -1,16 +1,25 @@
 import { column, Schema, Table } from '@powersync/react-native';
 
 /**
- * Test items table schema
- * This should match the backend Postgres table structure
- * and the PowerSync sync rules configuration
+ * PowerSync Schema
+ *
+ * These table definitions must match the backend Postgres structure and the
+ * sync rules in docker/powersync/sync_rules.yaml.
+ *
+ * Timestamp columns (inserted_at, updated_at):
+ * - Defined here so synced server values are stored locally for sorting/display.
+ * - Frontend mutations set local timestamps on create for immediate UI use.
+ * - These are NOT sent to the backend for persistence — Ecto manages timestamps
+ *   server-side. The local values get overwritten when the server round-trip
+ *   completes and PowerSync syncs the authoritative timestamps back.
  */
+
 const testItems = new Table({
   // PowerSync auto-includes 'id' column as primary key (TEXT type, UUID)
   name: column.text,
   description: column.text,
   completed: column.integer, // SQLite has no boolean, use 0/1
-  created_at: column.text, // ISO 8601 timestamp string
+  inserted_at: column.text, // Set locally, overwritten by server on sync
   updated_at: column.text,
 });
 
@@ -20,7 +29,8 @@ const users = new Table({
   email: column.text,
   username: column.text,
   display_name: column.text,
-  inserted_at: column.text,
+  // password_hash and deleted_at are excluded — never synced to clients
+  inserted_at: column.text, // Set locally, overwritten by server on sync
   updated_at: column.text,
 });
 
