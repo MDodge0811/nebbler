@@ -22,6 +22,8 @@ module.exports = [
         require: 'readonly',
         __dirname: 'readonly',
         process: 'readonly',
+        global: 'readonly',
+        jest: 'readonly',
       },
     },
   },
@@ -44,6 +46,7 @@ module.exports = [
         setInterval: 'readonly',
         clearInterval: 'readonly',
         fetch: 'readonly',
+        URL: 'readonly',
         require: 'readonly',
         module: 'readonly',
         __dirname: 'readonly',
@@ -95,6 +98,21 @@ module.exports = [
     },
   },
   {
-    ignores: ['node_modules/', '.expo/', 'android/', 'ios/', 'dist/', 'web-build/'],
+    files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        beforeEach: 'readonly',
+        afterAll: 'readonly',
+        afterEach: 'readonly',
+        jest: 'readonly',
+      },
+    },
+  },
+  {
+    ignores: ['node_modules/', '.expo/', 'android/', 'ios/', 'dist/', 'web-build/', 'coverage/'],
   },
 ];
