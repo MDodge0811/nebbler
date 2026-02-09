@@ -4,7 +4,7 @@ A React Native mobile application built with Expo and TypeScript.
 
 ## Prerequisites
 
-- Node.js >= 18.0.0
+- Node.js >= 22 (see `.nvmrc`)
 - npm >= 9.0.0
 - iOS Simulator (macOS only) - Xcode required
 - Android Emulator - Android Studio with SDK required
@@ -62,33 +62,43 @@ src/
 ├── screens/        # Screen components
 ├── navigation/     # Navigation configuration
 ├── hooks/          # Custom React hooks
+├── database/       # PowerSync database layer + Zod schemas
 ├── utils/          # Utility functions
-├── constants/      # App constants
-└── types/          # TypeScript type definitions
+├── constants/      # App constants (config, colors)
+└── types/          # TypeScript type declarations
 ```
 
 ## Available Scripts
 
-| Command                | Description                   |
-| ---------------------- | ----------------------------- |
-| `npm start`            | Start Expo development server |
-| `npm run ios`          | Start on iOS simulator        |
-| `npm run android`      | Start on Android emulator     |
-| `npm run web`          | Start in web browser          |
-| `npm run lint`         | Run ESLint                    |
-| `npm run lint:fix`     | Run ESLint with auto-fix      |
-| `npm run format`       | Format code with Prettier     |
-| `npm run format:check` | Check code formatting         |
-| `npm run typecheck`    | Run TypeScript type checking  |
+| Command                 | Description                                           |
+| ----------------------- | ----------------------------------------------------- |
+| `npm start`             | Start Expo development server                         |
+| `npm run ios`           | Start on iOS simulator                                |
+| `npm run android`       | Start on Android emulator                             |
+| `npm run web`           | Start in web browser                                  |
+| `npm run check`         | Run all quality checks (lint + format + types + test) |
+| `npm run lint`          | Run ESLint                                            |
+| `npm run lint:fix`      | Run ESLint with auto-fix                              |
+| `npm run format`        | Format code with Prettier                             |
+| `npm run format:check`  | Check code formatting                                 |
+| `npm run typecheck`     | Run TypeScript type checking                          |
+| `npm run test`          | Run Jest tests                                        |
+| `npm run test:watch`    | Run Jest in watch mode                                |
+| `npm run test:coverage` | Run Jest with coverage report                         |
+| `npm run knip`          | Detect unused code, exports, and dependencies         |
 
 ## Code Quality
 
 This project enforces code quality through:
 
-- **TypeScript** - Static type checking
+- **TypeScript** - Static type checking (strict mode)
 - **ESLint** - Code linting with React Native rules
 - **Prettier** - Code formatting
-- **Husky** - Pre-commit hooks for linting
+- **Jest** - Unit testing with React Native Testing Library
+- **Zod** - Runtime validation for API responses and config
+- **Knip** - Unused code and dependency detection
+- **Husky** - Pre-commit hooks (lint-staged) and commit message linting (commitlint)
+- **GitHub Actions** - CI pipeline on PRs and pushes to main
 
 ### Pre-commit Hooks
 
@@ -96,6 +106,18 @@ On every commit, the following checks run automatically:
 
 - ESLint on staged `.ts` and `.tsx` files
 - Prettier formatting on all staged files
+
+### Commit Messages
+
+Commits must follow [Conventional Commits](https://www.conventionalcommits.org/) format (enforced by commitlint):
+
+```
+feat: add user profile screen
+fix: resolve sync conflict on reconnect
+test: add unit tests for useTestItems
+```
+
+Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
 
 ## Navigation
 
@@ -145,6 +167,9 @@ The project uses path aliases for cleaner imports:
 | `@utils/*`      | `src/utils/*`      |
 | `@constants/*`  | `src/constants/*`  |
 | `@types/*`      | `src/types/*`      |
+| `@database/*`   | `src/database/*`   |
+
+Path aliases are configured in three places that must stay in sync: `tsconfig.json`, `babel.config.js`, and `jest.config.js`.
 
 ## Troubleshooting
 
@@ -156,7 +181,7 @@ npx expo start --clear
 
 ### TypeScript errors with path aliases
 
-Ensure both `tsconfig.json` and `babel.config.js` have matching alias configurations.
+Ensure `tsconfig.json`, `babel.config.js`, and `jest.config.js` have matching alias configurations.
 
 ### iOS build issues
 
