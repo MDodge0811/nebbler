@@ -1,3 +1,5 @@
+import { PowerSyncConfigSchema } from '@database/schemas';
+
 /**
  * PowerSync configuration
  *
@@ -6,8 +8,10 @@
  * - Phoenix API runs on port 4000
  *
  * For production, replace with your actual URLs.
+ *
+ * Validated at startup with Zod — throws if URLs are invalid.
  */
-export const powersyncConfig = {
+export const powersyncConfig = PowerSyncConfigSchema.parse({
   /**
    * PowerSync instance URL
    * Local: http://localhost:8080
@@ -23,7 +27,7 @@ export const powersyncConfig = {
    * Production: Your deployed API URL
    */
   backendUrl: __DEV__ ? 'http://localhost:4000' : 'https://your-backend-api.com',
-} as const;
+});
 
 /**
  * Sync status polling interval in milliseconds

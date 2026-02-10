@@ -5,6 +5,7 @@ import {
   UpdateType,
 } from '@powersync/react-native';
 import { powersyncConfig } from '@constants/config';
+import { FetchCredentialsResponseSchema } from '@database/schemas';
 
 /**
  * Credentials returned from the backend authentication endpoint
@@ -58,12 +59,13 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
       }
 
       const data = await response.json();
+      const parsed = FetchCredentialsResponseSchema.parse(data);
       console.log('[PowerSync] Got token, connecting to:', powersyncConfig.powersyncUrl);
 
       return {
         endpoint: powersyncConfig.powersyncUrl,
-        token: data.token,
-        expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
+        token: parsed.token,
+        expiresAt: parsed.expiresAt ? new Date(parsed.expiresAt) : undefined,
       };
     } catch (error) {
       console.error('[PowerSync] fetchCredentials error:', error);
