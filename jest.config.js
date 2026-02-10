@@ -12,9 +12,10 @@ module.exports = {
     '^@constants/(.*)$': '<rootDir>/src/constants/$1',
     '^@types/(.*)$': '<rootDir>/src/types/$1',
     '^@database/(.*)$': '<rootDir>/src/database/$1',
+    '\\.css$': '<rootDir>/__mocks__/styleMock.js',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@powersync/.*|@op-engineering/.*)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@powersync/.*|@op-engineering/.*|nativewind|react-native-css-interop|@gluestack-ui/.*|@legendapp/.*|react-native-reanimated|react-native-worklets)',
   ],
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts', '!src/**/index.ts'],
   coverageDirectory: 'coverage',

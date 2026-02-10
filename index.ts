@@ -8,6 +8,8 @@ import { polyfill as polyfillReadableStream } from 'react-native-polyfill-global
 polyfillEncoding();
 polyfillReadableStream();
 
+import './global.css';
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';

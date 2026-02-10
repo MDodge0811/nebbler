@@ -1,3 +1,6 @@
+// Auth hooks
+export { AuthProvider, useAuth } from './useAuth';
+
 // Sync status hooks
 export { useSyncStatus, useHasPendingChanges } from './useSyncStatus';
 export type { SyncState, SyncStatusInfo } from './useSyncStatus';

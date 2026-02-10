@@ -1,33 +1,15 @@
-import { View, Text, StyleSheet } from 'react-native';
 import type { RootStackScreenProps } from '@navigation/types';
-import { colors } from '@constants/colors';
+import { Center } from '@components/ui/center';
+import { Heading } from '@components/ui/heading';
+import { Text } from '@components/ui/text';
 
 export function DetailsScreen({ route }: RootStackScreenProps<'Details'>) {
   const { itemId, title } = route.params;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>Item ID: {itemId}</Text>
-    </View>
+    <Center className="flex-1 bg-background">
+      <Heading size="xl">{title}</Heading>
+      <Text className="text-text-secondary mt-2">Item ID: {itemId}</Text>
+    </Center>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginTop: 10,
-    color: colors.text.secondary,
-  },
-});

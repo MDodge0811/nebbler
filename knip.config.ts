@@ -10,6 +10,9 @@ const config: KnipConfig = {
     'jest.setup.js',
     'commitlint.config.js',
     'knip.config.ts',
+    'metro.config.js',
+    'tailwind.config.js',
+    '__mocks__/styleMock.js',
   ],
   ignoreDependencies: [
     'babel-preset-expo',
@@ -18,6 +21,12 @@ const config: KnipConfig = {
     'react-test-renderer',
     // Used in test files but not yet imported in source
     '@testing-library/react-native',
+    // NativeWind / Gluestack styling dependencies (used via babel preset and metro plugin)
+    'nativewind',
+    'tailwindcss',
+    'react-native-css-interop',
+    'react-native-reanimated',
+    '@expo/html-elements',
   ],
   ignoreExportsUsedInFile: true,
 };

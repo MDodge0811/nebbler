@@ -6,3 +6,10 @@ jest.mock('@op-engineering/op-sqlite', () => ({}));
 jest.mock('@powersync/op-sqlite', () => ({
   OPSqliteOpenFactory: jest.fn(),
 }));
+
+// Mock react-native-reanimated
+jest.mock('react-native-reanimated', () => {
+  const Reanimated = require('react-native-reanimated/mock');
+  Reanimated.default.call = () => {};
+  return Reanimated;
+});
