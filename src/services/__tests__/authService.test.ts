@@ -7,6 +7,8 @@ describe('authService (mock)', () => {
         email: 'new@example.com',
         password: 'Password1',
         username: 'newuser',
+        firstName: 'New',
+        lastName: 'User',
       });
 
       expect(result.user.email).toBe('new@example.com');
@@ -21,6 +23,8 @@ describe('authService (mock)', () => {
         email: 'duplicate@example.com',
         password: 'Password1',
         username: 'user1',
+        firstName: 'Dup',
+        lastName: 'User',
       });
 
       await expect(
@@ -28,6 +32,8 @@ describe('authService (mock)', () => {
           email: 'duplicate@example.com',
           password: 'Password1',
           username: 'user2',
+          firstName: 'Dup',
+          lastName: 'Two',
         })
       ).rejects.toThrow('Email already registered');
     });
@@ -39,6 +45,8 @@ describe('authService (mock)', () => {
         email: 'login-test@example.com',
         password: 'Password1',
         username: 'loginuser',
+        firstName: 'Login',
+        lastName: 'Test',
       });
 
       const result = await authService.login({
@@ -55,6 +63,8 @@ describe('authService (mock)', () => {
         email: 'wrongpw@example.com',
         password: 'Password1',
         username: 'wrongpw',
+        firstName: 'Wrong',
+        lastName: 'Pw',
       });
 
       await expect(

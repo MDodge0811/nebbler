@@ -32,6 +32,8 @@ describe('LoginSchema', () => {
 
 describe('RegisterSchema', () => {
   const validData = {
+    firstName: 'Test',
+    lastName: 'User',
     email: 'user@example.com',
     password: 'Password1',
     username: 'testuser',
