@@ -113,6 +113,15 @@ module.exports = [
     },
   },
   {
-    ignores: ['node_modules/', '.expo/', 'android/', 'ios/', 'dist/', 'web-build/', 'coverage/'],
+    ignores: [
+      'node_modules/',
+      '.expo/',
+      'android/',
+      'ios/',
+      'dist/',
+      'web-build/',
+      'coverage/',
+      'components/ui/**',
+    ],
   },
 ];

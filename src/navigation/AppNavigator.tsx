@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '@screens/HomeScreen';
 import { SettingsScreen } from '@screens/SettingsScreen';
 import { DetailsScreen } from '@screens/DetailsScreen';
+import { navigationTheme } from '@constants/theme';
 import type { RootStackParamList, MainTabParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -21,7 +22,7 @@ function MainTabs() {
 
 export function AppNavigator() {
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator>
         <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
         <Stack.Screen name="Details" component={DetailsScreen} />

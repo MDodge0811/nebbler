@@ -1,2 +1,2 @@
-export { colors } from './colors';
+export { navigationTheme, syncDotColors } from './theme';
 export { powersyncConfig, SYNC_STATUS_POLL_INTERVAL } from './config';
