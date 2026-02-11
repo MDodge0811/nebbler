@@ -1,20 +1,34 @@
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { Animated, Easing } from 'react-native';
 import { useRef, useEffect } from 'react';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { Box } from '@/components/ui/box';
+import { Text } from '@/components/ui/text';
+import { HStack } from '@/components/ui/hstack';
+import { VStack } from '@/components/ui/vstack';
 import { useSyncStatus, SyncState } from '@hooks/useSyncStatus';
-import { colors } from '@constants/colors';
+import { syncDotColors } from '@constants/theme';
 
 /**
  * Configuration for each sync state
- * Uses colors from the theme constants
+ * Dot colors use hex values (required by Animated.View style)
  */
 const stateConfig: Record<SyncState, { color: string; label: string }> = {
-  connecting: { color: colors.warning, label: 'Connecting...' },
-  connected: { color: colors.success, label: 'Connected' },
-  syncing: { color: colors.info, label: 'Syncing...' },
-  synced: { color: colors.success, label: 'Synced' },
-  offline: { color: colors.disabled, label: 'Offline' },
-  error: { color: colors.error, label: 'Sync Error' },
+  connecting: { color: syncDotColors.connecting, label: 'Connecting...' },
+  connected: { color: syncDotColors.connected, label: 'Connected' },
+  syncing: { color: syncDotColors.syncing, label: 'Syncing...' },
+  synced: { color: syncDotColors.synced, label: 'Synced' },
+  offline: { color: syncDotColors.offline, label: 'Offline' },
+  error: { color: syncDotColors.error, label: 'Sync Error' },
 };
+
+const containerStyle = tva({
+  base: 'rounded-lg border border-outline-200 bg-background-0 p-3',
+});
+const dotStyle = tva({ base: 'h-3 w-3 rounded-full' });
+const labelStyle = tva({ base: 'ml-2 text-sm font-medium text-typography-900' });
+const detailsContainerStyle = tva({ base: 'mt-2 border-t border-outline-200 pt-2' });
+const detailTextStyle = tva({ base: 'mt-1 text-xs text-typography-600' });
+const statusRowStyle = tva({ base: 'items-center' });
 
 interface SyncStatusIndicatorProps {
   /**
@@ -71,66 +85,38 @@ export function SyncStatusIndicator({
 
   if (compact) {
     return (
-      <Animated.View style={[styles.dot, { backgroundColor: config.color, opacity: pulseAnim }]} />
+      <Animated.View
+        className={dotStyle({})}
+        style={{ backgroundColor: config.color, opacity: pulseAnim }}
+      />
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.statusRow}>
+    <Box className={containerStyle({})}>
+      <HStack className={statusRowStyle({})}>
         <Animated.View
-          style={[styles.dot, { backgroundColor: config.color, opacity: pulseAnim }]}
+          className={dotStyle({})}
+          style={{ backgroundColor: config.color, opacity: pulseAnim }}
         />
-        <Text style={styles.label}>{config.label}</Text>
-      </View>
+        <Text className={labelStyle({})}>{config.label}</Text>
+      </HStack>
 
       {detailed && (
-        <View style={styles.detailsContainer}>
-          <Text style={styles.detailText}>Connected: {syncStatus.isConnected ? 'Yes' : 'No'}</Text>
-          <Text style={styles.detailText}>Has Synced: {syncStatus.hasSynced ? 'Yes' : 'No'}</Text>
+        <VStack className={detailsContainerStyle({})}>
+          <Text className={detailTextStyle({})}>
+            Connected: {syncStatus.isConnected ? 'Yes' : 'No'}
+          </Text>
+          <Text className={detailTextStyle({})}>
+            Has Synced: {syncStatus.hasSynced ? 'Yes' : 'No'}
+          </Text>
           {syncStatus.lastSyncedAt && (
-            <Text style={styles.detailText}>
+            <Text className={detailTextStyle({})}>
               Last Sync: {syncStatus.lastSyncedAt.toLocaleTimeString()}
             </Text>
           )}
-        </View>
+        </VStack>
       )}
-    </View>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 12,
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  label: {
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  detailsContainer: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  detailText: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    marginTop: 4,
-  },
-});

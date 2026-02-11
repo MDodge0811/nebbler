@@ -26,8 +26,9 @@ const config: KnipConfig = {
     // Gluestack UI / NativeWind peer dependencies and implicit usage
     '@expo/html-elements',
     '@gluestack-ui/core',
-    '@gluestack-ui/utils',
     '@legendapp/motion',
+    // Peer dependency required by @react-aria/utils
+    'react-dom',
     'prettier-plugin-tailwindcss',
     'react-aria',
     'react-native-reanimated',

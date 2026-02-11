@@ -4,4 +4,5 @@ android/
 ios/
 dist/
 web-build/
+components/ui/
 *.lock

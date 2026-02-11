@@ -1,33 +1,19 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { Box } from '@/components/ui/box';
+import { Text } from '@/components/ui/text';
 import type { RootStackScreenProps } from '@navigation/types';
-import { colors } from '@constants/colors';
+
+const containerStyle = tva({ base: 'flex-1 items-center justify-center bg-background-0' });
+const titleStyle = tva({ base: 'text-2xl font-bold text-typography-900' });
+const subtitleStyle = tva({ base: 'mt-2.5 text-base text-typography-600' });
 
 export function DetailsScreen({ route }: RootStackScreenProps<'Details'>) {
   const { itemId, title } = route.params;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>Item ID: {itemId}</Text>
-    </View>
+    <Box className={containerStyle({})}>
+      <Text className={titleStyle({})}>{title}</Text>
+      <Text className={subtitleStyle({})}>Item ID: {itemId}</Text>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginTop: 10,
-    color: colors.text.secondary,
-  },
-});

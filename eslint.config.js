@@ -113,20 +113,15 @@ module.exports = [
     },
   },
   {
-    files: [
-      'components/ui/gluestack-ui-provider/index.web.tsx',
-      'components/ui/gluestack-ui-provider/index.next15.tsx',
-      'components/ui/gluestack-ui-provider/script.ts',
+    ignores: [
+      'node_modules/',
+      '.expo/',
+      'android/',
+      'ios/',
+      'dist/',
+      'web-build/',
+      'coverage/',
+      'components/ui/**',
     ],
-    languageOptions: {
-      globals: {
-        document: 'readonly',
-        window: 'readonly',
-        MediaQueryListEvent: 'readonly',
-      },
-    },
-  },
-  {
-    ignores: ['node_modules/', '.expo/', 'android/', 'ios/', 'dist/', 'web-build/', 'coverage/'],
   },
 ];
