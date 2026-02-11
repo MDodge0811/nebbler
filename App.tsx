@@ -7,7 +7,7 @@ import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { Spinner } from '@/components/ui/spinner';
 import { AppNavigator } from '@navigation/AppNavigator';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider } from '@context/AuthContext';
 import { initializeDatabase } from '@database/database';
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
