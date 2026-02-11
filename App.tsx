@@ -7,6 +7,7 @@ import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { Spinner } from '@/components/ui/spinner';
 import { AppNavigator } from '@navigation/AppNavigator';
+import { AuthProvider } from '@/context/AuthContext';
 import { initializeDatabase } from '@database/database';
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
@@ -52,10 +53,12 @@ export default function App() {
 
   return (
     <GluestackUIProvider mode="light">
-      <PowerSyncContext.Provider value={database}>
-        <StatusBar style="auto" />
-        <AppNavigator />
-      </PowerSyncContext.Provider>
+      <AuthProvider>
+        <PowerSyncContext.Provider value={database}>
+          <StatusBar style="auto" />
+          <AppNavigator />
+        </PowerSyncContext.Provider>
+      </AuthProvider>
     </GluestackUIProvider>
   );
 }

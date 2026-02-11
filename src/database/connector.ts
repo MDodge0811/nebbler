@@ -6,6 +6,7 @@ import {
 } from '@powersync/react-native';
 import { powersyncConfig } from '@constants/config';
 import { FetchCredentialsResponseSchema } from '@database/schemas';
+import { secureStorage } from '@utils/secureStorage';
 
 /**
  * Credentials returned from the backend authentication endpoint
@@ -43,10 +44,12 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
     console.log('[PowerSync] Fetching credentials from:', authUrl);
 
     try {
+      const authToken = await secureStorage.getToken();
       const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
       });
 
@@ -120,12 +123,12 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
       [UpdateType.DELETE]: 'DELETE',
     };
 
+    const authToken = await secureStorage.getToken();
     const response = await fetch(`${powersyncConfig.backendUrl}/api/data/${table}/${id}`, {
       method: methodMap[op],
       headers: {
         'Content-Type': 'application/json',
-        // Include your app's authentication header
-        // 'Authorization': `Bearer ${userToken}`,
+        ...(authToken && { Authorization: `Bearer ${authToken}` }),
       },
       body: op !== UpdateType.DELETE ? JSON.stringify(opData) : undefined,
     });
