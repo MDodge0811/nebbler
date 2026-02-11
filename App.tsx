@@ -7,6 +7,9 @@ import { AppNavigator } from '@navigation/AppNavigator';
 import { initializeDatabase } from '@database/database';
 import { colors } from '@constants/colors';
 
+import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import '@/global.css';
+
 export default function App() {
   const [database, setDatabase] = useState<PowerSyncDatabase | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,16 +27,18 @@ export default function App() {
   // Show loading state while database initializes
   if (!database) {
     return (
-      <View style={styles.loadingContainer}>
-        {error ? (
-          <Text style={styles.errorText}>Database Error: {error}</Text>
-        ) : (
-          <>
-            <ActivityIndicator size="large" color={colors.text.primary} />
-            <Text style={styles.loadingText}>Initializing database...</Text>
-          </>
-        )}
-      </View>
+      <GluestackUIProvider mode="dark">
+        <View style={styles.loadingContainer}>
+          {error ? (
+            <Text style={styles.errorText}>Database Error: {error}</Text>
+          ) : (
+            <>
+              <ActivityIndicator size="large" color={colors.text.primary} />
+              <Text style={styles.loadingText}>Initializing database...</Text>
+            </>
+          )}
+        </View>
+      </GluestackUIProvider>
     );
   }
 
