@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { Box } from '@/components/ui/box';
-import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
@@ -105,50 +104,45 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
           )}
 
           <VStack className={formStyle({})}>
-            <HStack className="gap-4">
-              <Box className="flex-1">
-                <FormControl isInvalid={!!formErrors.firstName} isRequired>
-                  <FormControlLabel>
-                    <FormControlLabelText>First Name</FormControlLabelText>
-                  </FormControlLabel>
-                  <Input isInvalid={!!formErrors.firstName}>
-                    <InputField
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      placeholder="First name"
-                      autoCapitalize="words"
-                      autoComplete="given-name"
-                    />
-                  </Input>
-                  {formErrors.firstName && (
-                    <FormControlError>
-                      <FormControlErrorText>{formErrors.firstName}</FormControlErrorText>
-                    </FormControlError>
-                  )}
-                </FormControl>
-              </Box>
-              <Box className="flex-1">
-                <FormControl isInvalid={!!formErrors.lastName} isRequired>
-                  <FormControlLabel>
-                    <FormControlLabelText>Last Name</FormControlLabelText>
-                  </FormControlLabel>
-                  <Input isInvalid={!!formErrors.lastName}>
-                    <InputField
-                      value={lastName}
-                      onChangeText={setLastName}
-                      placeholder="Last name"
-                      autoCapitalize="words"
-                      autoComplete="family-name"
-                    />
-                  </Input>
-                  {formErrors.lastName && (
-                    <FormControlError>
-                      <FormControlErrorText>{formErrors.lastName}</FormControlErrorText>
-                    </FormControlError>
-                  )}
-                </FormControl>
-              </Box>
-            </HStack>
+            <FormControl isInvalid={!!formErrors.firstName} isRequired>
+              <FormControlLabel>
+                <FormControlLabelText>First Name</FormControlLabelText>
+              </FormControlLabel>
+              <Input isInvalid={!!formErrors.firstName}>
+                <InputField
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="First name"
+                  autoCapitalize="words"
+                  autoComplete="given-name"
+                />
+              </Input>
+              {formErrors.firstName && (
+                <FormControlError>
+                  <FormControlErrorText>{formErrors.firstName}</FormControlErrorText>
+                </FormControlError>
+              )}
+            </FormControl>
+
+            <FormControl isInvalid={!!formErrors.lastName} isRequired>
+              <FormControlLabel>
+                <FormControlLabelText>Last Name</FormControlLabelText>
+              </FormControlLabel>
+              <Input isInvalid={!!formErrors.lastName}>
+                <InputField
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Last name"
+                  autoCapitalize="words"
+                  autoComplete="family-name"
+                />
+              </Input>
+              {formErrors.lastName && (
+                <FormControlError>
+                  <FormControlErrorText>{formErrors.lastName}</FormControlErrorText>
+                </FormControlError>
+              )}
+            </FormControl>
 
             <FormControl isInvalid={!!formErrors.username} isRequired>
               <FormControlLabel>
