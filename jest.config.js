@@ -13,6 +13,8 @@ module.exports = {
     '^@constants/(.*)$': '<rootDir>/src/constants/$1',
     '^@types/(.*)$': '<rootDir>/src/types/$1',
     '^@database/(.*)$': '<rootDir>/src/database/$1',
+    '^@context/(.*)$': '<rootDir>/src/context/$1',
+    '^@services/(.*)$': '<rootDir>/src/services/$1',
   },
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@powersync/.*|@op-engineering/.*|nativewind|tailwind-variants|react-aria|react-stately|@react-aria/.*|@react-stately/.*|@legendapp/.*|@gluestack-ui/.*)',

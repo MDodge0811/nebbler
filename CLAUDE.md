@@ -30,9 +30,11 @@ npm run test:coverage  # Jest with coverage report
 ```
 src/
 ├── components/     # Reusable UI components
-├── screens/        # Screen components (HomeScreen, SettingsScreen, DetailsScreen)
-├── navigation/     # React Navigation config (stack + bottom tabs)
-├── hooks/          # Custom React hooks (useTestItems, useUsers, useSyncStatus)
+├── screens/        # Screen components (HomeScreen, SettingsScreen, auth/)
+├── navigation/     # React Navigation config (stack + bottom tabs + auth)
+├── hooks/          # Custom React hooks (useTestItems, useAuth, useAuthMutations)
+├── context/        # React contexts (AuthContext)
+├── services/       # API service layer (authService)
 ├── database/       # PowerSync database layer
 │   ├── schema.ts       # Table definitions (must match backend Postgres + sync rules)
 │   ├── database.ts     # Singleton DB initialization and lifecycle
@@ -58,6 +60,8 @@ Always use path aliases instead of relative imports. These are configured in `ts
 | `@constants/*`  | `src/constants/*`  |
 | `@types/*`      | `src/types/*`      |
 | `@database/*`   | `src/database/*`   |
+| `@context/*`    | `src/context/*`    |
+| `@services/*`   | `src/services/*`   |
 
 **If you add a new path alias**, you must update all three files: `tsconfig.json`, `babel.config.js`, and `jest.config.js` (`moduleNameMapper`).
 
