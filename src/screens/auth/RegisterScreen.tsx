@@ -37,6 +37,8 @@ const styles = StyleSheet.create({
 });
 
 interface FormErrors {
+  firstName?: string;
+  lastName?: string;
   email?: string;
   password?: string;
   username?: string;
@@ -46,6 +48,8 @@ interface FormErrors {
 export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>) {
   const registerMutation = useRegister();
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -54,7 +58,7 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
 
   const validateAndRegister = async () => {
     try {
-      RegisterSchema.parse({ email, password, username, confirmPassword });
+      RegisterSchema.parse({ firstName, lastName, email, password, username, confirmPassword });
       setFormErrors({});
     } catch (err) {
       if (err instanceof ZodError) {
@@ -70,7 +74,7 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
       return;
     }
 
-    registerMutation.mutate({ email, password, username });
+    registerMutation.mutate({ firstName, lastName, email, password, username });
   };
 
   const handleNavigateToLogin = () => {
@@ -100,6 +104,46 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
           )}
 
           <VStack className={formStyle({})}>
+            <FormControl isInvalid={!!formErrors.firstName} isRequired>
+              <FormControlLabel>
+                <FormControlLabelText>First Name</FormControlLabelText>
+              </FormControlLabel>
+              <Input isInvalid={!!formErrors.firstName}>
+                <InputField
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="First name"
+                  autoCapitalize="words"
+                  autoComplete="given-name"
+                />
+              </Input>
+              {formErrors.firstName && (
+                <FormControlError>
+                  <FormControlErrorText>{formErrors.firstName}</FormControlErrorText>
+                </FormControlError>
+              )}
+            </FormControl>
+
+            <FormControl isInvalid={!!formErrors.lastName} isRequired>
+              <FormControlLabel>
+                <FormControlLabelText>Last Name</FormControlLabelText>
+              </FormControlLabel>
+              <Input isInvalid={!!formErrors.lastName}>
+                <InputField
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Last name"
+                  autoCapitalize="words"
+                  autoComplete="family-name"
+                />
+              </Input>
+              {formErrors.lastName && (
+                <FormControlError>
+                  <FormControlErrorText>{formErrors.lastName}</FormControlErrorText>
+                </FormControlError>
+              )}
+            </FormControl>
+
             <FormControl isInvalid={!!formErrors.username} isRequired>
               <FormControlLabel>
                 <FormControlLabelText>Username</FormControlLabelText>

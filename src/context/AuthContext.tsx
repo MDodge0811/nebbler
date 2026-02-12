@@ -2,6 +2,7 @@ import React, { createContext, useEffect, useState, useCallback, useMemo } from 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { AuthState, User } from '@/types/auth';
 import { secureStorage } from '@utils/secureStorage';
+import { connectDatabase } from '@database/database';
 
 export interface AuthContextValue extends AuthState {
   setAuth: (user: User, token: string) => void;
@@ -41,6 +42,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isLoading: false,
             isAuthenticated: true,
           });
+          // Reconnect PowerSync with the restored token
+          connectDatabase().catch((err) =>
+            console.error('[Auth] Failed to connect PowerSync:', err)
+          );
         } else {
           setState((prev) => ({ ...prev, isLoading: false }));
         }

@@ -15,44 +15,43 @@ const DATABASE_NAME = 'nebbler.sqlite';
 let powerSyncInstance: PowerSyncDatabase | null = null;
 
 /**
- * Initialize and return the PowerSync database instance
+ * Initialize the PowerSync database (schema + local tables only).
  *
- * This function:
- * 1. Creates the SQLite database using op-sqlite adapter
- * 2. Initializes PowerSync with the schema
- * 3. Connects to the backend and starts syncing
- *
- * Call this once during app initialization
+ * Does NOT connect to the backend — call connectDatabase() after
+ * the user has authenticated so sync requests carry a valid token.
  */
 export async function initializeDatabase(): Promise<PowerSyncDatabase> {
   if (powerSyncInstance) {
     return powerSyncInstance;
   }
 
-  // Create the database factory using op-sqlite (New Architecture compatible)
   const factory = new OPSqliteOpenFactory({
     dbFilename: DATABASE_NAME,
   });
 
-  // Create the PowerSync database instance
   powerSyncInstance = new PowerSyncDatabase({
     schema: AppSchema,
     database: factory,
   });
 
-  // Initialize the database (creates tables based on schema)
   await powerSyncInstance.init();
 
-  // Create and set the backend connector
-  const connector = new PowerSyncConnector();
-
-  // Connect to PowerSync and start syncing
-  // This authenticates and begins the sync stream
-  await powerSyncInstance.connect(connector);
-
-  console.log('PowerSync database initialized and connected');
-
   return powerSyncInstance;
+}
+
+/**
+ * Connect PowerSync to the backend and start syncing.
+ *
+ * Call this after the user authenticates so the connector
+ * can include a valid Bearer token in requests.
+ */
+export async function connectDatabase(): Promise<void> {
+  if (!powerSyncInstance) {
+    throw new Error('PowerSync database not initialized. Call initializeDatabase() first.');
+  }
+
+  const connector = new PowerSyncConnector();
+  await powerSyncInstance.connect(connector);
 }
 
 /**
@@ -73,13 +72,5 @@ export function getDatabase(): PowerSyncDatabase {
 export async function disconnectDatabase(): Promise<void> {
   if (powerSyncInstance) {
     await powerSyncInstance.disconnect();
-    powerSyncInstance = null;
-    console.log('PowerSync database disconnected');
   }
 }
-
-/**
- * Export the database instance for direct access
- * Prefer using getDatabase() for safety
- */
-export { powerSyncInstance };

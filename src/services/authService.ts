@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import type {
   IAuthService,
   LoginCredentials,
@@ -5,107 +6,103 @@ import type {
   AuthResponse,
   User,
 } from '@/types/auth';
+import { AuthResponseSchema } from '@database/schemas';
+import { powersyncConfig } from '@constants/config';
+import { secureStorage } from '@utils/secureStorage';
 
-/**
- * STUB: Mock auth service for UI development.
- *
- * PLUGIN POINT: Replace this implementation with real API calls.
- * The IAuthService interface contract stays the same — only the
- * implementation changes. TanStack Query mutations in useAuthMutations
- * call these methods, so swapping this file is the only change needed.
- *
- * Example real implementation:
- * ```ts
- * class RealAuthService implements IAuthService {
- *   async login(credentials: LoginCredentials): Promise<AuthResponse> {
- *     const res = await fetch(`${API_URL}/auth/login`, {
- *       method: 'POST',
- *       headers: { 'Content-Type': 'application/json' },
- *       body: JSON.stringify(credentials),
- *     });
- *     if (!res.ok) throw new Error((await res.json()).error);
- *     return AuthResponseSchema.parse(await res.json());
- *   }
- * }
- * export const authService: IAuthService = new RealAuthService();
- * ```
- */
+const API_URL = powersyncConfig.backendUrl;
 
-const MOCK_DELAY = 1000;
+function getDeviceInfo() {
+  return {
+    fingerprint: `${Platform.OS}-${Platform.Version}`,
+    type: Platform.OS,
+    os_version: String(Platform.Version),
+    name: `${Platform.OS} device`,
+  };
+}
 
-const mockUsers = new Map<string, { password: string; user: User }>();
+interface FetchOptions {
+  method: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
 
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
+async function apiRequest<T>(path: string, options: FetchOptions): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    const message = data?.errors?.detail ?? data?.error ?? 'Request failed';
+    throw new Error(message);
+  }
+
+  return data;
 }
 
-function generateMockToken(userId: string): string {
-  return `mock.${userId}.token.${Date.now()}`;
-}
-
-function simulateDelay(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, MOCK_DELAY));
-}
-
-class MockAuthService implements IAuthService {
+class ApiAuthService implements IAuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    await simulateDelay();
+    const data = await apiRequest<{ user: User; access_token: string; device_id: string }>(
+      '/api/auth/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+          device: getDeviceInfo(),
+        }),
+      }
+    );
 
-    const stored = mockUsers.get(credentials.email);
-    if (!stored || stored.password !== credentials.password) {
-      throw new Error('Invalid email or password');
-    }
-
-    return {
-      user: stored.user,
-      token: generateMockToken(stored.user.id),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    };
+    const result = { user: data.user, token: data.access_token };
+    return AuthResponseSchema.parse(result);
   }
 
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    await simulateDelay();
+    const data = await apiRequest<{ user: User; access_token: string; device_id: string }>(
+      '/api/auth/register',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+          username: credentials.username,
+          first_name: credentials.firstName,
+          last_name: credentials.lastName,
+          device: getDeviceInfo(),
+        }),
+      }
+    );
 
-    if (mockUsers.has(credentials.email)) {
-      throw new Error('Email already registered');
-    }
-
-    const user: User = {
-      id: generateUUID(),
-      email: credentials.email,
-      username: credentials.username,
-    };
-
-    mockUsers.set(credentials.email, { password: credentials.password, user });
-
-    return {
-      user,
-      token: generateMockToken(user.id),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    };
+    const result = { user: data.user, token: data.access_token };
+    return AuthResponseSchema.parse(result);
   }
 
   async logout(): Promise<void> {
-    await simulateDelay();
+    const token = await secureStorage.getToken();
+    if (!token) return;
+
+    await apiRequest('/api/auth/logout', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {
+      // Logout should succeed locally even if the server call fails
+    });
   }
 
   async refreshToken(_token: string): Promise<AuthResponse> {
-    await simulateDelay();
-    throw new Error('Token refresh not implemented in stub');
+    throw new Error('Token refresh not yet implemented');
   }
 
-  async getCurrentUser(token: string): Promise<User> {
-    await simulateDelay();
-    const userId = token.split('.')[1];
-    for (const [, data] of mockUsers) {
-      if (data.user.id === userId) return data.user;
-    }
-    throw new Error('Invalid token');
+  async getCurrentUser(_token: string): Promise<User> {
+    throw new Error('getCurrentUser not yet implemented');
   }
 }
 
-export const authService: IAuthService = new MockAuthService();
+export const authService: IAuthService = new ApiAuthService();
