@@ -1,5 +1,6 @@
 import { useQuery, usePowerSync } from '@powersync/react';
 import type { TestItem } from '@database/schema';
+import { generateUUID } from '@utils/uuid';
 
 /**
  * Hook to fetch all test items with real-time updates
@@ -51,6 +52,11 @@ export function useTestItemMutations() {
       values.push(updates.completed);
     }
 
+    // Always update the local timestamp for immediate UI accuracy.
+    // The server will overwrite this on sync with the authoritative value.
+    setClauses.push('updated_at = ?');
+    values.push(new Date().toISOString());
+
     values.push(id);
 
     await powerSync.execute(`UPDATE test_items SET ${setClauses.join(', ')} WHERE id = ?`, values);
@@ -70,16 +76,4 @@ export function useTestItemMutations() {
     deleteItem,
     toggleComplete,
   };
-}
-
-/**
- * Generate a UUID v4
- * Simple implementation for client-side ID generation
- */
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
 }

@@ -1,2 +1,3 @@
 // Barrel export for utility functions
-// Add utility exports here as they are created
+export { secureStorage } from './secureStorage';
+export { generateUUID } from './uuid';

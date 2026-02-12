@@ -3,7 +3,9 @@ module.exports = {
   preset: 'jest-expo',
   setupFilesAfterEnv: ['./jest.setup.js'],
   moduleNameMapper: {
-    '\\.css$': '<rootDir>/jest.setup.js',
+    '\\.css$': '<rootDir>/__mocks__/styleMock.js',
+    '^@/components/ui/(.*)$': '<rootDir>/components/ui/$1',
+    '^@/global\\.css$': '<rootDir>/__mocks__/styleMock.js',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@components/(.*)$': '<rootDir>/src/components/$1',
     '^@screens/(.*)$': '<rootDir>/src/screens/$1',

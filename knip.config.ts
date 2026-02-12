@@ -15,6 +15,7 @@ const config: KnipConfig = {
     'global.css',
     'nativewind-env.d.ts',
     'components/ui/**',
+    '__mocks__/**',
   ],
   ignoreDependencies: [
     'babel-preset-expo',

@@ -12,7 +12,9 @@
     "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*", "./*"],
+      "@/components/ui/*": ["components/ui/*"],
+      "@/global.css": ["./global.css"],
+      "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
       "@screens/*": ["src/screens/*"],
       "@navigation/*": ["src/navigation/*"],

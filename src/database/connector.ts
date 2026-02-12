@@ -112,6 +112,10 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
 
   /**
    * Upload a single CRUD operation to the backend
+   *
+   * Error classification:
+   * - 4xx errors are permanent (validation, not found, conflict) — skip to avoid infinite retry
+   * - 5xx errors are transient (server issues) — throw to trigger PowerSync retry
    */
   private async uploadCrudEntry(entry: CrudEntry): Promise<void> {
     const { op, table, id, opData } = entry;
@@ -134,6 +138,15 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
     });
 
     if (!response.ok) {
+      if (response.status >= 400 && response.status < 500) {
+        // Permanent failure — log and skip to prevent infinite retry loop.
+        // The server rejected this operation (e.g., validation error, not found).
+        console.error(
+          `[PowerSync] Permanent upload failure for ${table}/${id}: ${response.status} — skipping`
+        );
+        return;
+      }
+      // Transient failure (5xx) — throw so PowerSync retries the transaction
       throw new Error(`Upload failed for ${table}/${id}: ${response.status}`);
     }
   }
