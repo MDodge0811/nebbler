@@ -2,7 +2,7 @@ import React, { createContext, useEffect, useState, useCallback, useMemo } from 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { AuthState, User } from '@/types/auth';
 import { secureStorage } from '@utils/secureStorage';
-import { connectDatabase } from '@database/database';
+import { connectDatabase } from '@database/index';
 
 export interface AuthContextValue extends AuthState {
   setAuth: (user: User, token: string) => void;

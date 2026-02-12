@@ -1,5 +1,5 @@
 // Database initialization and instance
-export { initializeDatabase, getDatabase, disconnectDatabase } from './database';
+export { initializeDatabase, connectDatabase, getDatabase, disconnectDatabase } from './database';
 
 // Schema and types
 export { AppSchema } from './schema';
