@@ -8,3 +8,6 @@ export { useTestItems, useTestItem, useTestItemMutations } from './useTestItems'
 // Auth hooks
 export { useAuth } from './useAuth';
 export { useLogin, useRegister, useLogout } from './useAuthMutations';
+
+// User hooks
+export { useCurrentUser } from './useCurrentUser';
