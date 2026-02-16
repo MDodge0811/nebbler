@@ -30,9 +30,9 @@ npm run test:coverage  # Jest with coverage report
 ```
 src/
 ├── components/     # Reusable UI components
-├── screens/        # Screen components (HomeScreen, SettingsScreen, auth/)
-├── navigation/     # React Navigation config (stack + bottom tabs + auth)
-├── hooks/          # Custom React hooks (useTestItems, useAuth, useAuthMutations)
+├── screens/        # Screen components (ScheduleScreen, HomeScreen, ProfileScreen, SettingsScreen, auth/)
+├── navigation/     # React Navigation config (stack + drawer + bottom tabs + auth)
+├── hooks/          # Custom React hooks (useCurrentUser, useTestItems, useAuth, useAuthMutations)
 ├── context/        # React contexts (AuthContext)
 ├── services/       # API service layer (authService)
 ├── database/       # PowerSync database layer
@@ -104,6 +104,13 @@ Always use path aliases instead of relative imports. These are configured in `ts
 - Native modules (`@op-engineering/op-sqlite`, `@powersync/op-sqlite`) are auto-mocked in `jest.setup.js`
 
 **Adding new native module mocks:** Add `jest.mock('module-name', () => ({...}))` to `jest.setup.js`.
+
+**Jest mock gotchas (`jest.setup.js`):**
+
+- The `nativewind` mock must include `cssInterop: jest.fn()` — Gluestack UI components call `cssInterop()` at module load time
+- `react-native-safe-area-context` and `react-native-gesture-handler` are mocked globally in `jest.setup.js`
+- When testing components that use `useNavigation()`, mock `@react-navigation/native` in the test file — include `getParent()` if the component dispatches drawer actions
+- Adding new Gluestack UI components via `npx gluestack-ui add <name>` may require adding new functions to the `nativewind` mock
 
 ### Unused Code Detection (Knip)
 
@@ -187,9 +194,25 @@ Runs on PRs to `main` and pushes to `main`. Steps: install → lint → format:c
 
 ### Navigation
 
-- Root: `NativeStackNavigator` containing `Main` (tabs) and `Details` (stack)
-- Tabs: `BottomTabNavigator` with `Home` and `Settings`
-- Route types defined in `src/navigation/types.ts`
+- Hierarchy: `NativeStackNavigator` → `DrawerNavigator` (right-side push, `id="MainDrawer"`) → `BottomTabNavigator`
+- Tabs: `Schedule` (first/default), `Home`, `Settings`
+- Stack screens outside tabs: `Details`, `Profile`
+- Drawer: right-side push drawer (`drawerType: 'slide'`), content in `src/components/schedule/DrawerContent.tsx`
+- Route types and `CompositeScreenProps` chains defined in `src/navigation/types.ts`
+- **Gotcha:** `useNavigation()` inside a tab screen returns the tab navigator, NOT the drawer. Use `navigation.getParent('MainDrawer')` to dispatch drawer actions like `DrawerActions.toggleDrawer()`
+- Screens with custom headers set `headerShown: false` on their tab options and use `useSafeAreaInsets()` for top padding
+
+### User Data Access
+
+- Auth context (`useAuth()`) returns `{id, email, username}` — available immediately on login
+- Database `users` table has `first_name`, `last_name`, `display_name` — may lag on first sync
+- `useCurrentUser()` hook bridges both: returns `{ user: DbUser | null, authUser: AuthUser | null }`
+- Components should fall back to `authUser.email` when `user` is null (sync not yet complete)
+
+### Icons
+
+- Use `react-native-svg` (`Svg`, `Circle`, `Path`) for simple custom icons — no icon library installed
+- Example: meatball menu icon (`OverflowMenu.tsx`), future chevrons, etc.
 
 ### Configuration
 
@@ -213,6 +236,11 @@ Runs on PRs to `main` and pushes to `main`. Steps: install → lint → format:c
 2. Add the route to `src/navigation/types.ts`
 3. Register in `src/navigation/AppNavigator.tsx`
 4. Re-export from `src/screens/index.ts`
+
+### Adding Gluestack UI Components
+
+- `npx gluestack-ui add <component>` scaffolds into `components/ui/<component>/`
+- If you remove usage of a Gluestack component, delete its directory from `components/ui/` — they are not cleaned up automatically
 
 ### Adding a new API endpoint schema
 
