@@ -168,6 +168,12 @@ Workflow: `.github/workflows/ci.yml`
 
 Runs on PRs to `main` and pushes to `main`. Steps: install → lint → format:check → typecheck → test (with coverage). Uses Node.js version from `.nvmrc`.
 
+## Environment
+
+- **Node.js:** Version 22 (pinned in `.nvmrc`)
+- **Backend API:** Must be running at `http://localhost:4000` for PowerSync auth and data sync
+- **PowerSync URLs:** Configured in `src/constants/config.ts`, auto-switched via `__DEV__` flag (dev vs prod)
+
 ## Architecture Notes
 
 ### PowerSync / Database Layer
