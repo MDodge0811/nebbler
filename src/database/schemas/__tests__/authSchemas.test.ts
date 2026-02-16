@@ -36,7 +36,6 @@ describe('RegisterSchema', () => {
     lastName: 'User',
     email: 'user@example.com',
     password: 'Password1',
-    username: 'testuser',
     confirmPassword: 'Password1',
   };
 
@@ -79,41 +78,12 @@ describe('RegisterSchema', () => {
     });
     expect(result.success).toBe(false);
   });
-
-  it('rejects username shorter than 3 characters', () => {
-    const result = RegisterSchema.safeParse({ ...validData, username: 'ab' });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects username longer than 20 characters', () => {
-    const result = RegisterSchema.safeParse({
-      ...validData,
-      username: 'a'.repeat(21),
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects username with special characters', () => {
-    const result = RegisterSchema.safeParse({
-      ...validData,
-      username: 'user@name',
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('accepts username with underscores', () => {
-    const result = RegisterSchema.safeParse({
-      ...validData,
-      username: 'test_user_123',
-    });
-    expect(result.success).toBe(true);
-  });
 });
 
 describe('AuthResponseSchema', () => {
   it('accepts valid auth response', () => {
     const result = AuthResponseSchema.safeParse({
-      user: { id: '123', email: 'user@example.com', username: 'testuser' },
+      user: { id: '123', email: 'user@example.com' },
       token: 'jwt-token-here',
       expiresAt: '2025-01-01T00:00:00Z',
     });

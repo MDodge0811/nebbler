@@ -33,7 +33,7 @@ export function ScheduleHeader({ onNavigateToProfile }: ScheduleHeaderProps) {
             userId={authUser?.id ?? ''}
             firstName={dbUser?.first_name}
             lastName={dbUser?.last_name}
-            fallbackName={authUser?.email ?? authUser?.username ?? '?'}
+            fallbackName={authUser?.email ?? '?'}
             onPress={onNavigateToProfile}
           />
           <Text className={monthTextStyle({})}>{monthName}</Text>

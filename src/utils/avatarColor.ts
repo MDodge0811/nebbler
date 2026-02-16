@@ -23,7 +23,7 @@ export function getAvatarColor(userId: string): string {
 
 /**
  * Extracts up to 2 uppercase initials from a user's name.
- * Falls back to the first character of `fallback` (email or username) if names are empty.
+ * Falls back to the first character of `fallback` (e.g. email) if names are empty.
  */
 export function getInitials(
   firstName?: string | null,

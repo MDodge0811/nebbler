@@ -72,7 +72,6 @@ class ApiAuthService implements IAuthService {
         body: JSON.stringify({
           email: credentials.email,
           password: credentials.password,
-          username: credentials.username,
           first_name: credentials.firstName,
           last_name: credentials.lastName,
           device: getDeviceInfo(),

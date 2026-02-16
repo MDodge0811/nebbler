@@ -27,7 +27,6 @@ const users = new Table({
   first_name: column.text,
   last_name: column.text,
   email: column.text,
-  username: column.text,
   display_name: column.text,
   // password_hash and deleted_at are excluded — never synced to clients
   inserted_at: column.text, // Set locally, overwritten by server on sync

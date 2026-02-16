@@ -19,7 +19,7 @@ describe('useCurrentUser', () => {
 
   it('queries the users table with the authenticated user ID', () => {
     mockUseAuth.mockReturnValue({
-      user: { id: 'user-123', email: 'test@example.com', username: 'testuser' },
+      user: { id: 'user-123', email: 'test@example.com' },
     });
     mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: undefined });
 
@@ -34,7 +34,6 @@ describe('useCurrentUser', () => {
       first_name: 'Alice',
       last_name: 'Smith',
       email: 'alice@example.com',
-      username: 'alice',
       display_name: 'Alice S',
       inserted_at: '2025-01-01',
       updated_at: '2025-01-01',

@@ -204,7 +204,7 @@ Runs on PRs to `main` and pushes to `main`. Steps: install → lint → format:c
 
 ### User Data Access
 
-- Auth context (`useAuth()`) returns `{id, email, username}` — available immediately on login
+- Auth context (`useAuth()`) returns `{id, email}` — available immediately on login
 - Database `users` table has `first_name`, `last_name`, `display_name` — may lag on first sync
 - `useCurrentUser()` hook bridges both: returns `{ user: DbUser | null, authUser: AuthUser | null }`
 - Components should fall back to `authUser.email` when `user` is null (sync not yet complete)

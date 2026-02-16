@@ -29,12 +29,6 @@ export const RegisterSchema = z
       .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
       .regex(/[a-z]/, 'Must contain at least one lowercase letter')
       .regex(/[0-9]/, 'Must contain at least one number'),
-    username: z
-      .string()
-      .min(1, 'Username is required')
-      .min(3, 'Username must be at least 3 characters')
-      .max(20, 'Username must be at most 20 characters')
-      .regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscores allowed'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -52,7 +46,6 @@ export const AuthResponseSchema = z.object({
   user: z.object({
     id: z.string(),
     email: z.string().email(),
-    username: z.string().optional(),
   }),
   token: z.string().min(1),
   expiresAt: z.string().optional(),
