@@ -30,12 +30,6 @@ export function SettingsScreen(_props: MainTabScreenProps<'Settings'>) {
         <VStack className={sectionStyle({})}>
           <Text className={labelStyle({})}>Email</Text>
           <Text className={valueStyle({})}>{user.email}</Text>
-          {user.username && (
-            <>
-              <Text className={labelStyle({})}>Username</Text>
-              <Text className={valueStyle({})}>{user.username}</Text>
-            </>
-          )}
         </VStack>
       )}
 

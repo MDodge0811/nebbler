@@ -9,7 +9,7 @@ jest.mock('@powersync/react', () => ({
 
 jest.mock('@hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { id: 'user-123', email: 'test@example.com', username: 'testuser' },
+    user: { id: 'user-123', email: 'test@example.com' },
   }),
 }));
 

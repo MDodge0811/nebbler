@@ -41,7 +41,6 @@ interface FormErrors {
   lastName?: string;
   email?: string;
   password?: string;
-  username?: string;
   confirmPassword?: string;
 }
 
@@ -53,12 +52,11 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [username, setUsername] = useState('');
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   const validateAndRegister = async () => {
     try {
-      RegisterSchema.parse({ firstName, lastName, email, password, username, confirmPassword });
+      RegisterSchema.parse({ firstName, lastName, email, password, confirmPassword });
       setFormErrors({});
     } catch (err) {
       if (err instanceof ZodError) {
@@ -74,7 +72,7 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
       return;
     }
 
-    registerMutation.mutate({ firstName, lastName, email, password, username });
+    registerMutation.mutate({ firstName, lastName, email, password });
   };
 
   const handleNavigateToLogin = () => {
@@ -141,32 +139,6 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
                 <FormControlError>
                   <FormControlErrorText>{formErrors.lastName}</FormControlErrorText>
                 </FormControlError>
-              )}
-            </FormControl>
-
-            <FormControl isInvalid={!!formErrors.username} isRequired>
-              <FormControlLabel>
-                <FormControlLabelText>Username</FormControlLabelText>
-              </FormControlLabel>
-              <Input isInvalid={!!formErrors.username}>
-                <InputField
-                  value={username}
-                  onChangeText={setUsername}
-                  placeholder="Choose a username"
-                  autoCapitalize="none"
-                  autoComplete="username"
-                />
-              </Input>
-              {formErrors.username ? (
-                <FormControlError>
-                  <FormControlErrorText>{formErrors.username}</FormControlErrorText>
-                </FormControlError>
-              ) : (
-                <FormControlHelper>
-                  <FormControlHelperText>
-                    Letters, numbers, and underscores only
-                  </FormControlHelperText>
-                </FormControlHelper>
               )}
             </FormControl>
 

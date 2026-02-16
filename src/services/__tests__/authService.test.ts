@@ -4,7 +4,6 @@ import { secureStorage } from '@utils/secureStorage';
 const mockUser = {
   id: '550e8400-e29b-41d4-a716-446655440000',
   email: 'test@example.com',
-  username: 'testuser',
 };
 
 function mockFetchResponse(status: number, body: unknown) {
@@ -35,13 +34,11 @@ describe('authService', () => {
       const result = await authService.register({
         email: 'test@example.com',
         password: 'Password1',
-        username: 'testuser',
         firstName: 'Test',
         lastName: 'User',
       });
 
       expect(result.user.email).toBe('test@example.com');
-      expect(result.user.username).toBe('testuser');
       expect(result.user.id).toBe(mockUser.id);
       expect(result.token).toBe('jwt-token-123');
     });
@@ -55,7 +52,6 @@ describe('authService', () => {
         authService.register({
           email: 'duplicate@example.com',
           password: 'Password1',
-          username: 'user1',
           firstName: 'Dup',
           lastName: 'User',
         })

@@ -5,7 +5,7 @@ import type { User as DbUser } from '@database/schema';
 /**
  * Queries the local PowerSync users table for the authenticated user's profile.
  *
- * The auth context provides id/email/username immediately, but first_name and
+ * The auth context provides id/email immediately, but first_name and
  * last_name come from the synced users table (may lag on first sync).
  * Consumers should handle `user === null` gracefully.
  */

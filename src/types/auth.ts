@@ -8,7 +8,6 @@
 export interface User {
   id: string;
   email: string;
-  username?: string;
 }
 
 export interface AuthState {
@@ -26,7 +25,6 @@ export interface LoginCredentials {
 export interface RegisterCredentials {
   email: string;
   password: string;
-  username: string;
   firstName: string;
   lastName: string;
 }
