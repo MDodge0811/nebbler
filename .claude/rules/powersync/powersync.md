@@ -24,6 +24,21 @@ React Native (SQLite) ←→ PowerSync Service ←→ PostgreSQL
 3. Local writes queue automatically, upload to Phoenix API via connector
 4. API persists to Postgres, PowerSync replicates back to all clients
 
+## Official Docs
+
+PowerSync documentation is AI-friendly. When you need to look something up:
+
+- Append `.md` to any docs URL to get clean markdown (e.g., `https://docs.powersync.com/client-sdks/reference/javascript-web.md`)
+- Full docs in one file: `https://docs.powersync.com/llms-full.txt`
+- Docs index: `https://docs.powersync.com/llms.txt`
+
+Key reference pages:
+
+- [React Native / Expo SDK](https://docs.powersync.com/client-sdks/reference/react-native-and-expo)
+- [React hooks](https://docs.powersync.com/client-sdks/reference/react-hooks)
+- [Sync rules](https://docs.powersync.com/installation/sync-rules)
+- [Debugging](https://docs.powersync.com/usage/tools/debugging)
+
 ## File Map
 
 | File                         | Role                                                                   |
