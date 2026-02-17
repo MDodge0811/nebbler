@@ -1,27 +1,44 @@
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 import { ScheduleHeader } from '@components/schedule/ScheduleHeader';
+import { WeekMonthCalendar } from '@components/schedule/WeekMonthCalendar';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
-const placeholderStyle = tva({ base: 'flex-1 items-center justify-center' });
-const placeholderTextStyle = tva({ base: 'text-base text-typography-500' });
+
+function todayString() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 export function ScheduleScreen() {
   const navigation = useNavigation();
+
+  const [today] = useState(todayString);
+  const [displayMonth, setDisplayMonth] = useState(today);
 
   const handleNavigateToProfile = useCallback(() => {
     navigation.navigate('Profile');
   }, [navigation]);
 
+  const handleDateChange = useCallback((date: string) => {
+    setDisplayMonth(date);
+  }, []);
+
+  const handleMonthChange = useCallback((monthDate: string) => {
+    setDisplayMonth(monthDate);
+  }, []);
+
   return (
     <Box className={containerStyle({})}>
-      <ScheduleHeader onNavigateToProfile={handleNavigateToProfile} />
-      <Box className={placeholderStyle({})}>
-        <Text className={placeholderTextStyle({})}>Schedule content coming soon</Text>
-      </Box>
+      <ScheduleHeader onNavigateToProfile={handleNavigateToProfile} displayDate={displayMonth} />
+      <WeekMonthCalendar
+        selectedDate={today}
+        onDateChange={handleDateChange}
+        onMonthChange={handleMonthChange}
+      />
     </Box>
   );
 }
