@@ -32,9 +32,6 @@ Screens with custom headers set `headerShown: false` on their tab options and us
 3. Register in `src/navigation/AppNavigator.tsx`
 4. Re-export from `src/screens/index.ts`
 
-## User Data Access
+## User Data in Screens
 
-- Auth context (`useAuth()`) returns `{id, email}` — available immediately on login
-- Database `users` table has `first_name`, `last_name`, `display_name` — may lag on first sync
-- `useCurrentUser()` hook bridges both: returns `{ user: DbUser | null, authUser: AuthUser | null }`
-- Components should fall back to `authUser.email` when `user` is null (sync not yet complete)
+There are two "user" objects (auth user vs. DB user) — see `.claude/rules/auth.md` for the full two-layer user model. Key point: use `useCurrentUser()` and fall back to `authUser.email` when the DB user hasn't synced yet.
