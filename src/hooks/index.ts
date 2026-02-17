@@ -11,3 +11,6 @@ export { useLogin, useRegister, useLogout } from './useAuthMutations';
 
 // User hooks
 export { useCurrentUser } from './useCurrentUser';
+
+// Calendar hooks
+export { useCalendarEvents, useMarkedDates } from './useCalendarEvents';

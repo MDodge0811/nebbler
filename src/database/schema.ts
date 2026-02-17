@@ -33,6 +33,19 @@ const users = new Table({
   updated_at: column.text,
 });
 
+const events = new Table({
+  calendar_id: column.text,
+  created_by_user_id: column.text,
+  title: column.text,
+  description: column.text,
+  start_time: column.text, // ISO 8601 datetime string (UTC)
+  end_time: column.text, // ISO 8601 datetime string (UTC)
+  is_recurring: column.integer, // SQLite boolean 0/1 — always 0 for MVP
+  deleted_at: column.text,
+  inserted_at: column.text, // Set locally, overwritten by server on sync
+  updated_at: column.text,
+});
+
 /**
  * AppSchema defines all synced tables
  * Table names must match the sync rules defined in PowerSync dashboard
@@ -40,6 +53,7 @@ const users = new Table({
 export const AppSchema = new Schema({
   test_items: testItems,
   users: users,
+  events: events,
 });
 
 /**
@@ -49,3 +63,4 @@ export const AppSchema = new Schema({
 export type Database = (typeof AppSchema)['types'];
 export type TestItem = Database['test_items'];
 export type User = Database['users'];
+export type Event = Database['events'];

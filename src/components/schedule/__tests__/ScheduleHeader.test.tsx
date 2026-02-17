@@ -58,4 +58,10 @@ describe('ScheduleHeader', () => {
     fireEvent.press(screen.getByLabelText('More options'));
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_DRAWER' });
   });
+
+  it('renders the month and year from displayDate when provided', () => {
+    render(<ScheduleHeader onNavigateToProfile={jest.fn()} displayDate="2025-06-15" />);
+    expect(screen.getByText('June')).toBeTruthy();
+    expect(screen.getByText('2025')).toBeTruthy();
+  });
 });

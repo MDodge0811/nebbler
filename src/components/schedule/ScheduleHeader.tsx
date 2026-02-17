@@ -15,15 +15,17 @@ const yearTextStyle = tva({ base: 'text-lg text-typography-400' });
 
 interface ScheduleHeaderProps {
   onNavigateToProfile: () => void;
+  /** ISO date string (YYYY-MM-DD) controlling the displayed month/year. Defaults to today. */
+  displayDate?: string;
 }
 
-export function ScheduleHeader({ onNavigateToProfile }: ScheduleHeaderProps) {
+export function ScheduleHeader({ onNavigateToProfile, displayDate }: ScheduleHeaderProps) {
   const insets = useSafeAreaInsets();
   const { user: dbUser, authUser } = useCurrentUser();
 
-  const now = new Date();
-  const monthName = now.toLocaleDateString('en-US', { month: 'long' });
-  const year = now.getFullYear().toString();
+  const date = displayDate ? new Date(displayDate + 'T12:00:00') : new Date();
+  const monthName = date.toLocaleDateString('en-US', { month: 'long' });
+  const year = date.getFullYear().toString();
 
   return (
     <Box className={headerContainerStyle({})} style={{ paddingTop: insets.top }}>
