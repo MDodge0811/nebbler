@@ -4,11 +4,13 @@ import type { Event } from '@database/schema';
 import { calendarColors } from '@constants/calendarColors';
 
 /**
- * Reactive query for events within a date range.
+ * Reactive query for events overlapping a date range.
+ * Returns all non-deleted events whose time span intersects
+ * [startDate 00:00 UTC, endDate 23:59:59 UTC].
  * Returns empty results until events are synced from the backend.
  *
- * @param startDate ISO date string (YYYY-MM-DD) — inclusive
- * @param endDate   ISO date string (YYYY-MM-DD) — inclusive
+ * @param startDate YYYY-MM-DD — start of the query window
+ * @param endDate   YYYY-MM-DD — end of the query window
  */
 export function useCalendarEvents(startDate: string, endDate: string) {
   const startDateTime = `${startDate}T00:00:00Z`;
@@ -28,15 +30,20 @@ export function useCalendarEvents(startDate: string, endDate: string) {
  * Compute marked-dates object for react-native-calendars from an event list.
  * Returns `{ 'YYYY-MM-DD': { marked: true, dotColor: '...' } }`.
  */
+const EMPTY_MARKED: Record<string, { marked: true; dotColor: string }> = {};
+
 export function useMarkedDates(events: Event[]) {
   return useMemo(() => {
+    if (events.length === 0) return EMPTY_MARKED;
+
     const marked: Record<string, { marked: true; dotColor: string }> = {};
 
     for (const event of events) {
-      const dateMatch = event.start_time?.match(/^(\d{4}-\d{2}-\d{2})/);
-      if (dateMatch) {
-        marked[dateMatch[1]] = { marked: true, dotColor: calendarColors.eventDot };
-      }
+      if (!event.start_time) continue;
+      const d = new Date(event.start_time);
+      if (isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      marked[key] = { marked: true, dotColor: calendarColors.eventDot };
     }
 
     return marked;

@@ -38,12 +38,21 @@ describe('useCalendarEvents', () => {
       '2026-02-01T00:00:00Z',
     ]);
   });
+
+  it('includes deleted_at IS NULL filter in the SQL', () => {
+    renderHook(() => useCalendarEvents('2026-02-01', '2026-02-28'));
+
+    const sql = mockUseQuery.mock.calls[0][0] as string;
+    expect(sql).toContain('deleted_at IS NULL');
+  });
 });
 
 describe('useMarkedDates', () => {
-  it('returns empty object when no events', () => {
-    const { result } = renderHook(() => useMarkedDates([]));
-    expect(result.current).toEqual({});
+  it('returns a stable empty object reference when no events', () => {
+    const { result, rerender } = renderHook(() => useMarkedDates([]));
+    const first = result.current;
+    rerender(undefined);
+    expect(result.current).toBe(first);
   });
 
   it('marks dates that have events', () => {
@@ -76,5 +85,17 @@ describe('useMarkedDates', () => {
     expect(Object.keys(result.current)).toHaveLength(2);
     expect(result.current['2026-02-10']).toBeDefined();
     expect(result.current['2026-02-20']).toBeDefined();
+  });
+
+  it('skips events with null start_time', () => {
+    const events = [makeEvent({ start_time: null as unknown as string })];
+    const { result } = renderHook(() => useMarkedDates(events));
+    expect(result.current).toEqual({});
+  });
+
+  it('skips events with invalid start_time', () => {
+    const events = [makeEvent({ start_time: 'not-a-date' })];
+    const { result } = renderHook(() => useMarkedDates(events));
+    expect(result.current).toEqual({});
   });
 });

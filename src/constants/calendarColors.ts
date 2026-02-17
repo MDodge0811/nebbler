@@ -6,7 +6,7 @@
 export const calendarColors = {
   /** Today indicator — green filled circle */
   today: '#00DB74',
-  /** Selected date indicator — blue bordered circle */
+  /** Selected date indicator — blue filled circle */
   selected: '#00B0DB',
   /** Event dot beneath dates with events */
   eventDot: '#00DB74',
@@ -18,6 +18,4 @@ export const calendarColors = {
   dayText: '#262627',
   /** Day-of-week header letters (S, M, T, …) */
   dayHeaderText: '#666666',
-  /** Grab handle pill */
-  grabHandle: '#C4C4C4',
 } as const;

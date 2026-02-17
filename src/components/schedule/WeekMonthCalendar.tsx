@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef, useState } from 'react';
+import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { CalendarProvider, ExpandableCalendar } from 'react-native-calendars';
 import type { DateData } from 'react-native-calendars';
 import { calendarColors } from '@constants/calendarColors';
@@ -15,8 +15,8 @@ interface WeekMonthCalendarProps {
 
 // Force the CalendarHeader container to a fixed height that matches just
 // the day-names row. The stylesheet override collapses the title row to 0,
-// so this is all that's needed. ExpandableCalendar uses this measurement
-// for closedHeight and WeekCalendar positioning.
+// so this is all that's needed. ExpandableCalendar measures the header's
+// rendered height via onLayout to compute closedHeight and positioning.
 const HEADER_HEIGHT = 32;
 
 const headerContainerStyle = { height: HEADER_HEIGHT };
@@ -39,7 +39,7 @@ const calendarTheme = {
   textMonthFontSize: 16,
   textDayHeaderFontSize: 12,
   todayDotColor: calendarColors.eventDot,
-  // Collapse the title row (arrows + "February 2026") to 0 height.
+  // Collapse the title row (arrows + month/year title) to 0 height.
   // The ScheduleHeader already shows month/year, so this is redundant.
   // We force the CalendarHeader's outer height via headerStyle to keep
   // ExpandableCalendar's positioning math correct.
@@ -48,7 +48,8 @@ const calendarTheme = {
       height: 0,
       overflow: 'hidden' as const,
     },
-    // Preserve ExpandableCalendar's week style override
+    // Must re-declare week styles here because 'stylesheet.calendar.header'
+    // replaces the entire header stylesheet. Omitting this loses the default layout.
     week: {
       marginTop: 7,
       marginBottom: -4,
@@ -90,12 +91,15 @@ export function WeekMonthCalendar({
 
   const { startDate, endDate } = useMemo(() => getQueryRange(queryDate), [queryDate]);
 
-  const { data: events = [] } = useCalendarEvents(startDate, endDate);
+  const { data: events = [], error } = useCalendarEvents(startDate, endDate);
   const markedDates = useMarkedDates(events);
+
+  useEffect(() => {
+    if (error) console.warn('useCalendarEvents query failed:', error);
+  }, [error]);
 
   const handleDateChanged = useCallback(
     (date: string) => {
-      setQueryDate(date);
       onDateChange(date);
     },
     [onDateChange]
@@ -103,6 +107,7 @@ export function WeekMonthCalendar({
 
   const handleMonthChange = useCallback(
     (month: DateData) => {
+      setQueryDate(month.dateString);
       onMonthChange?.(month.dateString);
     },
     [onMonthChange]
