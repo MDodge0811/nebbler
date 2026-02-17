@@ -4,8 +4,8 @@ import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { useCurrentUser } from '@hooks/useCurrentUser';
-import { UserAvatar } from './UserAvatar';
-import { OverflowMenu } from './OverflowMenu';
+import { UserAvatar } from '@components/schedule/UserAvatar';
+import { OverflowMenu } from '@components/schedule/OverflowMenu';
 
 const headerContainerStyle = tva({ base: 'bg-background-0' });
 const headerRowStyle = tva({ base: 'h-14 items-center justify-between px-4' });

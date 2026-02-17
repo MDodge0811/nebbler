@@ -40,9 +40,8 @@ export function useMarkedDates(events: Event[]) {
 
     for (const event of events) {
       if (!event.start_time) continue;
-      const d = new Date(event.start_time);
-      if (isNaN(d.getTime())) continue;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const key = event.start_time.slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
       marked[key] = { marked: true, dotColor: calendarColors.eventDot };
     }
 

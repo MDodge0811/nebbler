@@ -16,14 +16,15 @@ function todayString() {
 export function ScheduleScreen() {
   const navigation = useNavigation();
 
-  const [today] = useState(todayString);
-  const [displayMonth, setDisplayMonth] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(todayString);
+  const [displayMonth, setDisplayMonth] = useState(selectedDate);
 
   const handleNavigateToProfile = useCallback(() => {
     navigation.navigate('Profile');
   }, [navigation]);
 
   const handleDateChange = useCallback((date: string) => {
+    setSelectedDate(date);
     setDisplayMonth(date);
   }, []);
 
@@ -35,7 +36,7 @@ export function ScheduleScreen() {
     <Box className={containerStyle({})}>
       <ScheduleHeader onNavigateToProfile={handleNavigateToProfile} displayDate={displayMonth} />
       <WeekMonthCalendar
-        selectedDate={today}
+        selectedDate={selectedDate}
         onDateChange={handleDateChange}
         onMonthChange={handleMonthChange}
       />
