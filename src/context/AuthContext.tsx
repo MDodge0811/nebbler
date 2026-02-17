@@ -1,5 +1,4 @@
 import React, { createContext, useEffect, useState, useCallback, useMemo } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { AuthState, User } from '@/types/auth';
 import { secureStorage } from '@utils/secureStorage';
 import { connectDatabase } from '@database/index';
@@ -10,14 +9,6 @@ export interface AuthContextValue extends AuthState {
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    mutations: {
-      retry: false,
-    },
-  },
-});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -85,9 +76,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [state, setAuth, clearAuth]
   );
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-    </QueryClientProvider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

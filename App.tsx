@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PowerSyncContext } from '@powersync/react';
 import { PowerSyncDatabase } from '@powersync/react-native';
 import { Box } from '@/components/ui/box';
@@ -12,6 +13,14 @@ import { initializeDatabase } from '@database/database';
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '@/global.css';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    mutations: {
+      retry: false,
+    },
+  },
+});
 
 const loadingContainerStyle = tva({
   base: 'flex-1 items-center justify-center bg-background-0',
@@ -53,12 +62,14 @@ export default function App() {
 
   return (
     <GluestackUIProvider mode="light">
-      <AuthProvider>
-        <PowerSyncContext.Provider value={database}>
-          <StatusBar style="auto" />
-          <AppNavigator />
-        </PowerSyncContext.Provider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <PowerSyncContext.Provider value={database}>
+            <StatusBar style="auto" />
+            <AppNavigator />
+          </PowerSyncContext.Provider>
+        </AuthProvider>
+      </QueryClientProvider>
     </GluestackUIProvider>
   );
 }

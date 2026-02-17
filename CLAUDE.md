@@ -35,11 +35,7 @@ src/
 ├── hooks/          # Custom React hooks (useCurrentUser, useTestItems, useAuth, useAuthMutations)
 ├── context/        # React contexts (AuthContext)
 ├── services/       # API service layer (authService)
-├── database/       # PowerSync database layer
-│   ├── schema.ts       # Table definitions (must match backend Postgres + sync rules)
-│   ├── database.ts     # Singleton DB initialization and lifecycle
-│   ├── connector.ts    # Backend API communication (auth + CRUD upload)
-│   └── schemas/        # Zod runtime validation schemas
+├── database/       # PowerSync database layer (schema, connector, sync)
 ├── constants/      # App constants (config, colors)
 ├── types/          # TypeScript type declarations
 └── utils/          # Utility functions
@@ -64,76 +60,6 @@ Always use path aliases instead of relative imports. These are configured in `ts
 | `@services/*`   | `src/services/*`   |
 
 **If you add a new path alias**, you must update all three files: `tsconfig.json`, `babel.config.js`, and `jest.config.js` (`moduleNameMapper`).
-
-## Code Quality Tools
-
-### Linting (ESLint)
-
-- Config: `eslint.config.js` (flat config format, ESLint v9)
-- Plugins: TypeScript, React, React Hooks, React Native, Prettier
-- Test files (`__tests__/`, `*.test.ts`, `*.spec.ts`) have Jest globals (`describe`, `it`, `expect`, `jest`, etc.) available automatically
-- JS config files have `global`, `jest`, `module`, `require` globals
-- The `URL` global is available in TS files
-
-### Formatting (Prettier)
-
-- Config: `.prettierrc`
-- Key settings: semicolons, single quotes, 100 char print width, 2-space indent, ES5 trailing commas
-- Runs automatically on save (VS Code) and on pre-commit via lint-staged
-
-### Type Checking (TypeScript)
-
-- Config: `tsconfig.json` (extends `expo/tsconfig.base`)
-- Strict mode enabled
-- Module resolution: `bundler`
-- Untyped third-party modules get declarations in `src/types/` (e.g., `react-native-polyfill-globals.d.ts`)
-
-### Testing (Jest + React Native Testing Library)
-
-- Config: `jest.config.js`
-- Preset: `jest-expo` (handles RN transforms, asset mocking, platform resolution)
-- Setup file: `jest.setup.js` (sets `__DEV__ = true`, mocks native modules)
-- Test location: place tests in `__tests__/` directories next to the code they test
-- Test naming: `*.test.ts` or `*.test.tsx`
-
-**Writing tests:**
-
-- Pure logic tests (schemas, utils, constants) need no mocking
-- Component tests use `@testing-library/react-native` (`render`, `screen`, `fireEvent`, `waitFor`)
-- Database/hook tests must mock `@powersync/react` and `@powersync/react-native`
-- Native modules (`@op-engineering/op-sqlite`, `@powersync/op-sqlite`) are auto-mocked in `jest.setup.js`
-
-**Adding new native module mocks:** Add `jest.mock('module-name', () => ({...}))` to `jest.setup.js`.
-
-**Jest mock gotchas (`jest.setup.js`):**
-
-- The `nativewind` mock must include `cssInterop: jest.fn()` — Gluestack UI components call `cssInterop()` at module load time
-- `react-native-safe-area-context` and `react-native-gesture-handler` are mocked globally in `jest.setup.js`
-- When testing components that use `useNavigation()`, mock `@react-navigation/native` in the test file — include `getParent()` if the component dispatches drawer actions
-- Adding new Gluestack UI components via `npx gluestack-ui add <name>` may require adding new functions to the `nativewind` mock
-
-### Unused Code Detection (Knip)
-
-- Config: `knip.config.ts`
-- Detects: unused files, exports, types, and dependencies
-- Run `npm run knip` to check — it exits non-zero when findings exist
-- Some dependencies are in `ignoreDependencies` because they're used implicitly (Expo native linking, babel plugins, peer deps)
-- If you add a new config file (e.g., `foo.config.js`), add it to the `ignore` array in `knip.config.ts`
-- If you add a new implicitly-used dependency, add it to `ignoreDependencies`
-
-### Runtime Validation (Zod)
-
-- Schemas are in `src/database/schemas/`
-- `PowerSyncConfigSchema` validates the config URLs at startup — if a URL is malformed, the app crashes early with a clear error
-- `FetchCredentialsResponseSchema` validates API responses from the auth endpoint before using the data
-- Use `z.string().refine()` with `new URL()` instead of `z.string().url()` for URL validation — this supports `http://localhost:*` development URLs
-- Export Zod-inferred types alongside schemas: `export type Foo = z.infer<typeof FooSchema>`
-
-**When to add Zod schemas:**
-
-- Any data crossing a trust boundary (API responses, external config, user input)
-- Use `.parse()` when the data must be valid (throw on failure)
-- Use `.safeParse()` when you want to handle errors gracefully
 
 ## Git Hooks & Commit Conventions
 
@@ -169,81 +95,17 @@ chore: update dependencies
 - No start-case, pascal-case, or upper-case subjects
 - Multi-line bodies and footers (like `Co-Authored-By:`) are allowed
 
-## CI/CD (GitHub Actions)
+## Domain-Specific Rules
 
-Workflow: `.github/workflows/ci.yml`
+Detailed patterns are in `.claude/rules/` — auto-loaded when you work on matching files:
 
-Runs on PRs to `main` and pushes to `main`. Steps: install → lint → format:check → typecheck → test (with coverage). Uses Node.js version from `.nvmrc`.
+| Domain        | Files scoped to                                      | What it covers                                                      |
+| ------------- | ---------------------------------------------------- | ------------------------------------------------------------------- |
+| PowerSync     | `src/database/`, `src/hooks/`                        | Schema, connector, sync, offline-first patterns                     |
+| Auth          | `src/context/`, `src/services/`, `src/screens/auth/` | Auth flow, TanStack mutations, secure storage, two-layer user model |
+| Testing       | `__tests__/`, `jest.setup.js`                        | Jest config, mocking patterns, gotchas                              |
+| Navigation    | `src/navigation/`, `src/screens/`                    | Nav hierarchy, routing, adding screens                              |
+| UI Components | `src/components/`                                    | Icons, Gluestack UI, calendars, colors                              |
+| Code Quality  | config files, `src/database/schemas/`                | ESLint, Prettier, TS, Knip, Zod, CI/CD                              |
 
-## Architecture Notes
-
-### PowerSync / Database Layer
-
-- **Offline-first**: All data reads come from local SQLite. Writes go to a local queue, then sync to the backend.
-- **Schema**: `src/database/schema.ts` defines synced tables. These must match the backend Postgres schema and PowerSync sync rules.
-- **Connector**: `src/database/connector.ts` handles auth (`POST /api/powersync/auth`) and uploading local changes (`PUT/PATCH/DELETE /api/data/{table}/{id}`).
-- **Singleton**: The database is initialized once via `initializeDatabase()` in `src/database/database.ts`.
-- **Timestamps**: `inserted_at`/`updated_at` are set locally for immediate UI, but the server overwrites them on sync.
-- **IDs**: Client-generated UUID v4 (simple implementation in hooks — `generateUUID()`).
-
-### Hooks Pattern
-
-- Query hooks (e.g., `useTestItems`) return reactive data using `useQuery` from `@powersync/react`
-- Mutation hooks (e.g., `useTestItemMutations`) use `usePowerSync()` to get the DB instance and execute raw SQL
-- Hooks are in `src/hooks/` and re-exported from `src/hooks/index.ts`
-
-### Navigation
-
-- Hierarchy: `NativeStackNavigator` → `DrawerNavigator` (right-side push, `id="MainDrawer"`) → `BottomTabNavigator`
-- Tabs: `Schedule` (first/default), `Home`, `Settings`
-- Stack screens outside tabs: `Details`, `Profile`
-- Drawer: right-side push drawer (`drawerType: 'slide'`), content in `src/components/schedule/DrawerContent.tsx`
-- Route types and `CompositeScreenProps` chains defined in `src/navigation/types.ts`
-- **Gotcha:** `useNavigation()` inside a tab screen returns the tab navigator, NOT the drawer. Use `navigation.getParent('MainDrawer')` to dispatch drawer actions like `DrawerActions.toggleDrawer()`
-- Screens with custom headers set `headerShown: false` on their tab options and use `useSafeAreaInsets()` for top padding
-
-### User Data Access
-
-- Auth context (`useAuth()`) returns `{id, email}` — available immediately on login
-- Database `users` table has `first_name`, `last_name`, `display_name` — may lag on first sync
-- `useCurrentUser()` hook bridges both: returns `{ user: DbUser | null, authUser: AuthUser | null }`
-- Components should fall back to `authUser.email` when `user` is null (sync not yet complete)
-
-### Icons
-
-- Use `react-native-svg` (`Svg`, `Circle`, `Path`) for simple custom icons — no icon library installed
-- Example: meatball menu icon (`OverflowMenu.tsx`), future chevrons, etc.
-
-### Configuration
-
-- `src/constants/config.ts`: PowerSync URLs (dev vs prod via `__DEV__`), validated with Zod at startup
-- `src/constants/colors.ts`: Theme color palette
-
-## Common Patterns
-
-### Adding a new synced table
-
-1. Add the table definition in `src/database/schema.ts`
-2. Add it to the `AppSchema` object
-3. Export the TypeScript type: `export type NewTable = Database['new_table']`
-4. Create a hook in `src/hooks/` with query + mutation functions
-5. Re-export from `src/hooks/index.ts`
-6. Add Zod schemas if the table has API endpoints
-
-### Adding a new screen
-
-1. Create the component in `src/screens/`
-2. Add the route to `src/navigation/types.ts`
-3. Register in `src/navigation/AppNavigator.tsx`
-4. Re-export from `src/screens/index.ts`
-
-### Adding Gluestack UI Components
-
-- `npx gluestack-ui add <component>` scaffolds into `components/ui/<component>/`
-- If you remove usage of a Gluestack component, delete its directory from `components/ui/` — they are not cleaned up automatically
-
-### Adding a new API endpoint schema
-
-1. Add the Zod schema in `src/database/schemas/apiSchemas.ts`
-2. Export from `src/database/schemas/index.ts`
-3. Use `.parse()` or `.safeParse()` on the response in the connector
+See `.claude/rules/rules.md` for the full index.
