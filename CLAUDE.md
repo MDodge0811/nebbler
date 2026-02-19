@@ -25,6 +25,8 @@ npm run test:coverage  # Jest with coverage report
 
 **Always run `npm run check` before committing** to catch issues early.
 
+**Coverage:** Codecov enforces 80% patch coverage on PRs (changed lines must be tested). See `codecov.yml`.
+
 ## Project Structure
 
 ```

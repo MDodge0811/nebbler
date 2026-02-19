@@ -1,0 +1,20 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true    # shows trend, doesn't block PRs
+    patch:
+      default:
+        target: 80%            # changed lines must be 80% covered
+        threshold: 5%          # 5% grace buffer for small PRs
+
+  ignore:
+    - "src/**/index.ts"
+    - "src/**/*.d.ts"
+    - "src/navigation/**"
+    - "src/types/**"
+
+comment:
+  layout: "header, diff, flags, components"
+  behavior: default
+  require_changes: true        # no comment on PRs that don't affect coverage

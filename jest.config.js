@@ -22,6 +22,7 @@ module.exports = {
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@powersync/.*|@op-engineering/.*|nativewind|tailwind-variants|react-aria|react-stately|@react-aria/.*|@react-stately/.*|@legendapp/.*|@gluestack-ui/.*|react-native-calendars)',
   ],
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts', '!src/**/index.ts'],
+  coverageReporters: ['text', 'lcov', 'clover'],
   coverageDirectory: 'coverage',
   testMatch: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
 };
