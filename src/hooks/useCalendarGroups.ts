@@ -1,6 +1,5 @@
 import { useQuery, usePowerSync } from '@powersync/react';
 import type { CalendarGroup, CalendarGroupMembership, CalendarGroupUser } from '@database/schema';
-import { generateUUID } from '@utils/uuid';
 
 /**
  * Reactive query for all calendar groups.
@@ -47,24 +46,25 @@ export function useCalendarGroupMutations() {
   const powerSync = usePowerSync();
 
   const createGroup = async (ownerId: string, name: string, type?: string) => {
-    const groupId = generateUUID();
-    const groupUserId = generateUUID();
     const now = new Date().toISOString();
 
-    await powerSync.writeTransaction(async (tx) => {
-      await tx.execute(
+    const groupId = await powerSync.writeTransaction(async (tx) => {
+      const result = await tx.execute(
         `INSERT INTO calendar_groups
            (id, owner_id, name, type, inserted_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [groupId, ownerId, name, type ?? 'personal', now, now]
+         VALUES (uuid(), ?, ?, ?, ?, ?) RETURNING id`,
+        [ownerId, name, type ?? 'personal', now, now]
       );
+      const id = result.rows?._array[0]?.id as string;
 
       await tx.execute(
         `INSERT INTO calendar_group_users
            (id, calendar_group_id, user_id, role, inserted_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [groupUserId, groupId, ownerId, 'owner', now, now]
+         VALUES (uuid(), ?, ?, ?, ?, ?)`,
+        [id, ownerId, 'owner', now, now]
       );
+
+      return id;
     });
 
     return groupId;
@@ -85,17 +85,16 @@ export function useCalendarGroupMutations() {
   };
 
   const addCalendarToGroup = async (groupId: string, calendarId: string, viewMode?: string) => {
-    const id = generateUUID();
     const now = new Date().toISOString();
 
-    await powerSync.execute(
+    const result = await powerSync.execute(
       `INSERT INTO calendar_group_memberships
          (id, calendar_group_id, calendar_id, view_mode, inserted_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, groupId, calendarId, viewMode ?? null, now, now]
+       VALUES (uuid(), ?, ?, ?, ?, ?) RETURNING id`,
+      [groupId, calendarId, viewMode ?? null, now, now]
     );
 
-    return id;
+    return result.rows?._array[0]?.id as string;
   };
 
   const removeCalendarFromGroup = async (id: string) => {

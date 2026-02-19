@@ -1,6 +1,5 @@
 import { useQuery, usePowerSync } from '@powersync/react';
 import type { TestItem } from '@database/schema';
-import { generateUUID } from '@utils/uuid';
 
 /**
  * Hook to fetch all test items with real-time updates
@@ -23,16 +22,15 @@ export function useTestItemMutations() {
   const powerSync = usePowerSync();
 
   const createItem = async (name: string, description: string) => {
-    const id = generateUUID();
     const now = new Date().toISOString();
 
-    await powerSync.execute(
+    const result = await powerSync.execute(
       `INSERT INTO test_items (id, name, description, completed, inserted_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, name, description, 0, now, now]
+       VALUES (uuid(), ?, ?, ?, ?, ?) RETURNING id`,
+      [name, description, 0, now, now]
     );
 
-    return id;
+    return result.rows?._array[0]?.id as string;
   };
 
   const updateItem = async (id: string, updates: Partial<Omit<TestItem, 'id'>>) => {
