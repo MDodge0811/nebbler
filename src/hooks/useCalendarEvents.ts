@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useQuery, usePowerSync } from '@powersync/react';
 import type { Event } from '@database/schema';
 import { calendarColors } from '@constants/calendarColors';
-import { generateUUID } from '@utils/uuid';
 
 /**
  * Reactive query for events overlapping a date range.
@@ -89,16 +88,14 @@ export function useEventMutations() {
     startTime: string;
     endTime: string;
   }) => {
-    const id = generateUUID();
     const now = new Date().toISOString();
 
-    await powerSync.execute(
+    const result = await powerSync.execute(
       `INSERT INTO events
          (id, calendar_id, created_by_user_id, title, description,
           start_time, end_time, is_recurring, inserted_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
-        id,
         attrs.calendarId,
         attrs.createdByUserId,
         attrs.title,
@@ -111,7 +108,7 @@ export function useEventMutations() {
       ]
     );
 
-    return id;
+    return result.rows?._array[0]?.id as string;
   };
 
   const updateEvent = async (id: string, updates: Partial<Omit<Event, 'id'>>) => {

@@ -42,19 +42,17 @@ const { data } = useQuery<User>(
 
 ```typescript
 import { usePowerSync } from '@powersync/react';
-import { generateUUID } from '@utils/uuid';
 
 function useMyMutations() {
   const powerSync = usePowerSync();
 
   const create = async (name: string) => {
-    const id = generateUUID();
     const now = new Date().toISOString();
-    await powerSync.execute(
-      'INSERT INTO my_table (id, name, inserted_at, updated_at) VALUES (?, ?, ?, ?)',
-      [id, name, now, now]
+    const result = await powerSync.execute(
+      'INSERT INTO my_table (id, name, inserted_at, updated_at) VALUES (uuid(), ?, ?, ?) RETURNING id',
+      [name, now, now]
     );
-    return id;
+    return result.rows?._array[0]?.id as string;
   };
 
   const update = async (id: string, name: string) => {
@@ -75,7 +73,7 @@ function useMyMutations() {
 
 **Rules:**
 
-- Always generate UUID with `generateUUID()` from `@utils/uuid` for new records
+- Always generate UUID with PowerSync's built-in `uuid()` SQLite function in INSERT statements — use `RETURNING id` to capture the generated value
 - Always set `inserted_at` and `updated_at` locally (ISO 8601) — gives immediate UI feedback
 - Server overwrites timestamps on sync — local values are temporary
 - Use `powerSync.execute(sql, params)` for all writes

@@ -49,7 +49,7 @@ Key reference pages:
 | `src/database/schemas/`      | Zod validation for config URLs and API responses                       |
 | `src/constants/config.ts`    | PowerSync + backend URLs (dev/prod), validated with Zod                |
 | `src/hooks/use*.ts`          | Query hooks (`useQuery`) and mutation hooks (`usePowerSync`)           |
-| `src/utils/uuid.ts`          | Client-side UUID v4 generation                                         |
+| ~~`src/utils/uuid.ts`~~      | Removed — UUIDs now generated via PowerSync's built-in `uuid()` in SQL |
 | `src/utils/secureStorage.ts` | Token persistence for auth                                             |
 | `App.tsx`                    | `<PowerSyncContext.Provider>` wrapping the app                         |
 
@@ -68,7 +68,7 @@ Import from `@powersync/react` for: `useQuery`, `usePowerSync`, `useStatus`, `Po
 
 ## Critical Conventions
 
-- **IDs:** Client-generated UUID v4 via `generateUUID()` — PowerSync auto-creates the `id` column, never define it in schema
+- **IDs:** Client-generated UUID v4 via PowerSync's built-in `uuid()` SQLite function — PowerSync auto-creates the `id` column, never define it in schema
 - **Timestamps:** Set `inserted_at`/`updated_at` locally (ISO 8601 string) for immediate UI; server overwrites on sync
 - **Column types:** Only `column.text`, `column.integer`, `column.real` — no booleans (use integer 0/1), no dates (use text)
 - **Offline-first:** All reads from local SQLite. Writes go to local queue, sync automatically. App works fully offline
