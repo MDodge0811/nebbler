@@ -46,6 +46,26 @@ Workflow: `.github/workflows/ci.yml`
 
 Runs on PRs to `main` and pushes to `main`. Steps: install → lint → format:check → typecheck → test (with coverage). Uses Node.js version from `.nvmrc`.
 
+### Coverage Enforcement (Istanbul via Jest)
+
+Coverage thresholds are enforced per-glob in `jest.config.js` → `coverageThreshold`. The test command fails if any threshold is violated.
+
+Current thresholds:
+
+| Glob | Branches | Functions | Lines | Statements |
+|------|----------|-----------|-------|------------|
+| `src/database/schemas/**` | 90% | 90% | 90% | 90% |
+| `src/services/**` | 80% | 60% | 80% | 80% |
+
+**Adding new thresholds:** When a directory reaches good coverage, add it to `coverageThreshold`. Set thresholds slightly below current coverage to allow minor fluctuations.
+
+### Branch Protection
+
+`main` has branch protection enabled:
+
+- The **Code Quality & Tests** CI job must pass before merging
+- Branch must be up-to-date with `main` before merging (`strict: true`)
+
 ## Runtime Validation (Zod)
 
 - Schemas are in `src/database/schemas/`
