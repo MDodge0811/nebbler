@@ -24,5 +24,19 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts', '!src/**/index.ts'],
   coverageReporters: ['text', 'lcov', 'clover'],
   coverageDirectory: 'coverage',
+  coverageThreshold: {
+    'src/database/schemas/**': {
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90,
+    },
+    'src/services/**': {
+      branches: 80,
+      functions: 60,
+      lines: 80,
+      statements: 80,
+    },
+  },
   testMatch: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
 };

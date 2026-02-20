@@ -25,7 +25,7 @@ npm run test:coverage  # Jest with coverage report
 
 **Always run `npm run check` before committing** to catch issues early.
 
-**Coverage:** Codecov enforces 80% patch coverage on PRs (changed lines must be tested). See `codecov.yml`.
+**Coverage:** Per-glob Istanbul thresholds in `jest.config.js` — CI fails if covered directories drop below their minimums.
 
 ## Project Structure
 
