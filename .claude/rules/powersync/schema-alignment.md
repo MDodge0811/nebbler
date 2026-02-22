@@ -60,7 +60,6 @@ const events = new Table({
   calendar_id: column.text,
   title: column.text,
   start_time: column.text, // timestamptz → text
-  is_recurring: column.integer, // boolean → integer 0/1
   deleted_at: column.text,
   inserted_at: column.text,
   updated_at: column.text,
@@ -74,7 +73,6 @@ schema "events" do
   field :calendar_id, Ecto.UUID
   field :title, :string
   field :start_time, :utc_datetime
-  field :is_recurring, :boolean, default: false
   field :deleted_at, :utc_datetime
   timestamps()  # creates inserted_at + updated_at
 end
@@ -88,7 +86,6 @@ create table(:events, primary_key: false) do
   add :calendar_id, references(:calendars, type: :binary_id)
   add :title, :text, null: false
   add :start_time, :utc_datetime, null: false
-  add :is_recurring, :boolean, default: false
   add :deleted_at, :utc_datetime
   timestamps()
 end

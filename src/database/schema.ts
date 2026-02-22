@@ -98,7 +98,6 @@ const events = new Table({
   description: column.text,
   start_time: column.text, // ISO 8601 datetime string (UTC)
   end_time: column.text, // ISO 8601 datetime string (UTC)
-  is_recurring: column.integer, // SQLite boolean 0/1 — derived from rrule presence
   rrule: column.text,
   duration_minutes: column.integer,
   recurring_event_id: column.text,

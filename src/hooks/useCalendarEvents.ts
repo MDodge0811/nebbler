@@ -93,8 +93,8 @@ export function useEventMutations() {
     const result = await powerSync.execute(
       `INSERT INTO events
          (id, calendar_id, created_by_user_id, title, description,
-          start_time, end_time, is_recurring, inserted_at, updated_at)
-       VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+          start_time, end_time, inserted_at, updated_at)
+       VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         attrs.calendarId,
         attrs.createdByUserId,
@@ -102,7 +102,6 @@ export function useEventMutations() {
         attrs.description ?? null,
         attrs.startTime,
         attrs.endTime,
-        0, // is_recurring — always 0 for MVP
         now,
         now,
       ]
