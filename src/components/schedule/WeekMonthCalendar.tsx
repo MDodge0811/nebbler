@@ -3,15 +3,7 @@ import { CalendarProvider, ExpandableCalendar } from 'react-native-calendars';
 import type { DateData } from 'react-native-calendars';
 import { calendarColors } from '@constants/calendarColors';
 import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
-
-interface WeekMonthCalendarProps {
-  /** Currently selected date in YYYY-MM-DD format */
-  selectedDate: string;
-  /** Called when the user taps a date */
-  onDateChange: (date: string) => void;
-  /** Called when the visible month changes (for header sync) */
-  onMonthChange?: (monthDate: string) => void;
-}
+import { useScheduleStore } from '@stores/useScheduleStore';
 
 // Force the CalendarHeader container to a fixed height that matches just
 // the day-names row. The stylesheet override collapses the title row to 0,
@@ -77,11 +69,11 @@ function getQueryRange(dateString: string) {
   return { startDate: fmt(start), endDate: fmt(end) };
 }
 
-export function WeekMonthCalendar({
-  selectedDate,
-  onDateChange,
-  onMonthChange,
-}: WeekMonthCalendarProps) {
+export function WeekMonthCalendar() {
+  const selectedDate = useScheduleStore((s) => s.selectedDate);
+  const selectDate = useScheduleStore((s) => s.selectDate);
+  const setVisibleDate = useScheduleStore((s) => s.setVisibleDate);
+
   // CalendarProvider manages its own date state internally. We use a ref
   // for the initial date and local state for the query range so the parent
   // never feeds date changes back as a prop (which causes a scroll-jump
@@ -100,17 +92,17 @@ export function WeekMonthCalendar({
 
   const handleDateChanged = useCallback(
     (date: string) => {
-      onDateChange(date);
+      selectDate(date);
     },
-    [onDateChange]
+    [selectDate]
   );
 
   const handleMonthChange = useCallback(
     (month: DateData) => {
       setQueryDate(month.dateString);
-      onMonthChange?.(month.dateString);
+      setVisibleDate(month.dateString);
     },
-    [onMonthChange]
+    [setVisibleDate]
   );
 
   return (

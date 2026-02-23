@@ -6,6 +6,7 @@ import { Text } from '@/components/ui/text';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { UserAvatar } from '@components/schedule/UserAvatar';
 import { OverflowMenu } from '@components/schedule/OverflowMenu';
+import { useScheduleStore } from '@stores/useScheduleStore';
 
 const headerContainerStyle = tva({ base: 'bg-background-0' });
 const headerRowStyle = tva({ base: 'h-14 items-center justify-between px-4' });
@@ -15,15 +16,14 @@ const yearTextStyle = tva({ base: 'text-lg text-typography-400' });
 
 interface ScheduleHeaderProps {
   onNavigateToProfile: () => void;
-  /** ISO date string (YYYY-MM-DD) controlling the displayed month/year. Defaults to today. */
-  displayDate?: string;
 }
 
-export function ScheduleHeader({ onNavigateToProfile, displayDate }: ScheduleHeaderProps) {
+export function ScheduleHeader({ onNavigateToProfile }: ScheduleHeaderProps) {
   const insets = useSafeAreaInsets();
   const { user: dbUser, authUser } = useCurrentUser();
+  const visibleDate = useScheduleStore((s) => s.visibleDate);
 
-  const date = displayDate ? new Date(displayDate + 'T12:00:00') : new Date();
+  const date = new Date(visibleDate + 'T12:00:00');
   const monthName = date.toLocaleDateString('en-US', { month: 'long' });
   const year = date.getFullYear().toString();
 
