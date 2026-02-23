@@ -52,10 +52,10 @@ Coverage thresholds are enforced per-glob in `jest.config.js` → `coverageThres
 
 Current thresholds:
 
-| Glob | Branches | Functions | Lines | Statements |
-|------|----------|-----------|-------|------------|
-| `src/database/schemas/**` | 90% | 90% | 90% | 90% |
-| `src/services/**` | 80% | 60% | 80% | 80% |
+| Glob                      | Branches | Functions | Lines | Statements |
+| ------------------------- | -------- | --------- | ----- | ---------- |
+| `src/database/schemas/**` | 90%      | 90%       | 90%   | 90%        |
+| `src/services/**`         | 80%      | 60%       | 80%   | 80%        |
 
 **Adding new thresholds:** When a directory reaches good coverage, add it to `coverageThreshold`. Set thresholds slightly below current coverage to allow minor fluctuations.
 
