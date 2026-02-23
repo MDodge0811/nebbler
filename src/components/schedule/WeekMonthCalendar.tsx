@@ -1,5 +1,5 @@
-import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
-import { CalendarProvider, ExpandableCalendar } from 'react-native-calendars';
+import { useMemo, useCallback, useEffect, useRef, useState, useContext } from 'react';
+import { CalendarProvider, ExpandableCalendar, CalendarContext } from 'react-native-calendars';
 import type { DateData } from 'react-native-calendars';
 import { calendarColors } from '@constants/calendarColors';
 import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
@@ -69,10 +69,36 @@ function getQueryRange(dateString: string) {
   return { startDate: fmt(start), endDate: fmt(end) };
 }
 
-export function WeekMonthCalendar() {
+/**
+ * Bridge component that syncs the feed's selected date back into the
+ * calendar strip when the change originated from feed scrolling (isSyncLocked).
+ * Must be rendered inside CalendarProvider to access CalendarContext.
+ */
+function CalendarSyncBridge() {
+  const calendarContext = useContext(CalendarContext);
+  const selectedDate = useScheduleStore((s) => s.selectedDate);
+  const isSyncLocked = useScheduleStore((s) => s.isSyncLocked);
+
+  useEffect(() => {
+    if (isSyncLocked && calendarContext?.setDate) {
+      // 'listDrag' is UpdateSources.LIST_DRAG — imported from internal path
+      // to avoid TS error (not re-exported from top-level module)
+      calendarContext.setDate(selectedDate, 'listDrag' as never);
+    }
+  }, [selectedDate, isSyncLocked, calendarContext]);
+
+  return null;
+}
+
+interface WeekMonthCalendarProps {
+  onDateSelected?: (date: string) => void;
+}
+
+export function WeekMonthCalendar({ onDateSelected }: WeekMonthCalendarProps) {
   const selectedDate = useScheduleStore((s) => s.selectedDate);
   const selectDate = useScheduleStore((s) => s.selectDate);
   const setVisibleDate = useScheduleStore((s) => s.setVisibleDate);
+  const isSyncLocked = useScheduleStore((s) => s.isSyncLocked);
 
   // CalendarProvider manages its own date state internally. We use a ref
   // for the initial date and local state for the query range so the store's
@@ -92,9 +118,14 @@ export function WeekMonthCalendar() {
 
   const handleDateChanged = useCallback(
     (date: string) => {
+      // When sync is locked, the change came from the feed scroll —
+      // don't re-select or notify the parent (would cause a loop).
+      if (isSyncLocked) return;
+
       selectDate(date);
+      onDateSelected?.(date);
     },
-    [selectDate]
+    [selectDate, isSyncLocked, onDateSelected]
   );
 
   const handleMonthChange = useCallback(
@@ -111,6 +142,7 @@ export function WeekMonthCalendar() {
       onDateChanged={handleDateChanged}
       onMonthChange={handleMonthChange}
     >
+      <CalendarSyncBridge />
       <ExpandableCalendar
         theme={calendarTheme}
         markedDates={markedDates}
