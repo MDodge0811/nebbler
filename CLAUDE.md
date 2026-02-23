@@ -25,6 +25,8 @@ npm run test:coverage  # Jest with coverage report
 
 **Always run `npm run check` before committing** to catch issues early.
 
+**Coverage:** Per-glob Istanbul thresholds in `jest.config.js` — CI fails if covered directories drop below their minimums.
+
 ## Project Structure
 
 ```
