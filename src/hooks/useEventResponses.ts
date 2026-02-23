@@ -1,6 +1,5 @@
 import { useQuery, usePowerSync } from '@powersync/react';
 import type { EventResponse } from '@database/schema';
-import { generateUUID } from '@utils/uuid';
 
 /**
  * Reactive query for event responses (RSVPs) for a specific event.
@@ -25,19 +24,18 @@ export function useEventResponseMutations() {
   const powerSync = usePowerSync();
 
   const createResponse = async (eventId: string, userId: string, status?: string) => {
-    const id = generateUUID();
     const now = new Date().toISOString();
     const resolvedStatus = status ?? 'pending';
     const respondedAt = resolvedStatus !== 'pending' ? now : null;
 
-    await powerSync.execute(
+    const result = await powerSync.execute(
       `INSERT INTO event_responses
          (id, event_id, user_id, status, responded_at, inserted_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, eventId, userId, resolvedStatus, respondedAt, now, now]
+       VALUES (uuid(), ?, ?, ?, ?, ?, ?) RETURNING id`,
+      [eventId, userId, resolvedStatus, respondedAt, now, now]
     );
 
-    return id;
+    return result.rows?._array[0]?.id as string;
   };
 
   const updateResponse = async (id: string, status: string) => {

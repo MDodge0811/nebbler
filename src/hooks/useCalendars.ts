@@ -1,6 +1,5 @@
 import { useQuery, usePowerSync } from '@powersync/react';
 import type { Calendar, CalendarMember } from '@database/schema';
-import { generateUUID } from '@utils/uuid';
 
 /**
  * Reactive query for all non-deleted calendars, ordered by name.
@@ -35,8 +34,6 @@ export function useCalendarMutations() {
     attrs: { ownerId: string; type: string; name: string; description?: string },
     ownerRoleId: string
   ) => {
-    const calendarId = generateUUID();
-    const memberId = generateUUID();
     const now = new Date().toISOString();
 
     // Type-based defaults matching backend logic (calendar.ex)
@@ -45,14 +42,13 @@ export function useCalendarMutations() {
     const defaultViewMode = 'full';
     const householdSharing = 1;
 
-    await powerSync.writeTransaction(async (tx) => {
-      await tx.execute(
+    const calendarId = await powerSync.writeTransaction(async (tx) => {
+      const result = await tx.execute(
         `INSERT INTO calendars
            (id, owner_id, type, name, description, rsvp_enabled, discoverable,
             default_view_mode, household_sharing, inserted_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         [
-          calendarId,
           attrs.ownerId,
           attrs.type,
           attrs.name,
@@ -65,13 +61,16 @@ export function useCalendarMutations() {
           now,
         ]
       );
+      const id = result.rows?._array[0]?.id as string;
 
       await tx.execute(
         `INSERT INTO calendar_members
            (id, calendar_id, user_id, role_id, can_delete_events, inserted_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [memberId, calendarId, attrs.ownerId, ownerRoleId, 1, now, now]
+         VALUES (uuid(), ?, ?, ?, ?, ?, ?)`,
+        [id, attrs.ownerId, ownerRoleId, 1, now, now]
       );
+
+      return id;
     });
 
     return calendarId;
