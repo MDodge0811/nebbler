@@ -98,7 +98,11 @@ const events = new Table({
   description: column.text,
   start_time: column.text, // ISO 8601 datetime string (UTC)
   end_time: column.text, // ISO 8601 datetime string (UTC)
-  is_recurring: column.integer, // SQLite boolean 0/1 — always 0 for MVP
+  rrule: column.text,
+  duration_minutes: column.integer,
+  recurring_event_id: column.text,
+  recurrence_id: column.text, // utc_datetime synced as ISO 8601 string
+  exdates: column.text,
   deleted_at: column.text,
   inserted_at: column.text, // Set locally, overwritten by server on sync
   updated_at: column.text,

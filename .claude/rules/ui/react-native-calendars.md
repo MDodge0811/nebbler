@@ -165,7 +165,6 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
     description: '',
     start_time: '2026-02-15T10:00:00Z',
     end_time: '2026-02-15T11:00:00Z',
-    is_recurring: 0,
     deleted_at: null,
     inserted_at: '2026-02-01T00:00:00Z',
     updated_at: '2026-02-01T00:00:00Z',
