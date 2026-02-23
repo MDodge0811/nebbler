@@ -4,6 +4,7 @@ import type { DateData } from 'react-native-calendars';
 import { calendarColors } from '@constants/calendarColors';
 import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
+import { getMonthBufferRange } from '@utils/dateRange';
 
 // Force the CalendarHeader container to a fixed height that matches just
 // the day-names row. The stylesheet override collapses the title row to 0,
@@ -52,26 +53,9 @@ const calendarTheme = {
 };
 
 /**
- * Compute the query date range as a +/-1 month buffer around the given date.
- * Returns YYYY-MM-DD strings for start and end.
- */
-function getQueryRange(dateString: string) {
-  const date = new Date(dateString + 'T12:00:00');
-  const year = date.getFullYear();
-  const month = date.getMonth();
-
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month + 2, 0); // last day of next month
-
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-  return { startDate: fmt(start), endDate: fmt(end) };
-}
-
-/**
- * Bridge component that syncs the feed's selected date back into the
- * calendar strip when the change originated from feed scrolling (isSyncLocked).
+ * Bridge component that programmatically moves the calendar strip to match
+ * the store's selectedDate whenever isSyncLocked is true (i.e. the date
+ * change came from outside the calendar — typically feed scrolling).
  * Must be rendered inside CalendarProvider to access CalendarContext.
  */
 function CalendarSyncBridge() {
@@ -107,7 +91,7 @@ export function WeekMonthCalendar({ onDateSelected }: WeekMonthCalendarProps) {
   const initialDate = useRef(selectedDate);
   const [queryDate, setQueryDate] = useState(selectedDate);
 
-  const { startDate, endDate } = useMemo(() => getQueryRange(queryDate), [queryDate]);
+  const { startDate, endDate } = useMemo(() => getMonthBufferRange(queryDate), [queryDate]);
 
   const { data: events = [], error } = useCalendarEvents(startDate, endDate);
   const markedDates = useMarkedDates(events);

@@ -77,6 +77,32 @@ describe('buildSections', () => {
     const sections = buildSections(events, '2026-02-24', '2026-02-24');
     expect(isEmptySentinel(sections[0].data[0])).toBe(true);
   });
+
+  it('preserves insertion order of events within a day section', () => {
+    const events = [
+      makeFeedEvent({ id: 'evt-early', start_time: '2026-02-24T08:00:00Z' }),
+      makeFeedEvent({ id: 'evt-late', start_time: '2026-02-24T18:00:00Z' }),
+      makeFeedEvent({ id: 'evt-mid', start_time: '2026-02-24T12:00:00Z' }),
+    ];
+    const sections = buildSections(events, '2026-02-24', '2026-02-24');
+    const ids = sections[0].data.map((item) => item.id);
+    // buildSections preserves input order — callers (the SQL query) are
+    // responsible for sorting by start_time ASC
+    expect(ids).toEqual(['evt-early', 'evt-late', 'evt-mid']);
+  });
+
+  it('ignores events outside the date range', () => {
+    const events = [
+      makeFeedEvent({ id: 'evt-in', start_time: '2026-02-24T10:00:00Z' }),
+      makeFeedEvent({ id: 'evt-out', start_time: '2026-02-26T10:00:00Z' }),
+    ];
+    const sections = buildSections(events, '2026-02-24', '2026-02-25');
+    // evt-out's date (02-26) is outside the range, so it won't appear
+    const allIds = sections.flatMap((s) =>
+      s.data.filter((d) => !isEmptySentinel(d)).map((d) => d.id)
+    );
+    expect(allIds).toEqual(['evt-in']);
+  });
 });
 
 describe('useScheduleFeed', () => {

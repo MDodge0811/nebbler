@@ -7,6 +7,13 @@ import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 
+const TAB_COLORS = {
+  active: '#00DB74',
+  inactive: '#999999',
+  background: '#FFFFFF',
+  border: '#E5E5E5',
+} as const;
+
 function CalendarIcon({ color }: { color: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -64,7 +71,7 @@ export function CustomTabBar({ state, descriptors, navigation: tabNavigation }: 
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
-        const color = isFocused ? '#00DB74' : '#999999';
+        const color = isFocused ? TAB_COLORS.active : TAB_COLORS.inactive;
         const Icon = TAB_ICONS[route.name];
 
         // Insert the FAB before the middle tab
@@ -114,9 +121,9 @@ export function CustomTabBar({ state, descriptors, navigation: tabNavigation }: 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: TAB_COLORS.background,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: TAB_COLORS.border,
   },
   tabWrapper: {
     flex: 1,
@@ -142,7 +149,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#00DB74',
+    backgroundColor: TAB_COLORS.active,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

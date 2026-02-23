@@ -31,6 +31,7 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
 
   useImperativeHandle(ref, () => ({
     scrollToSection: (sectionIndex: number) => {
+      if (sectionIndex < 0 || sectionIndex >= sections.length) return;
       sectionListRef.current?.scrollToLocation({
         sectionIndex,
         itemIndex: 0,

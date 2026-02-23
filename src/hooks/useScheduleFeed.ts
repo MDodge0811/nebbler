@@ -80,11 +80,13 @@ export function buildSections(
  * Stage 2: useQuery with dynamic WHERE calendar_id IN (...) → events JOIN calendars
  */
 export function useScheduleFeed(startDate: string, endDate: string) {
-  const { user } = useCurrentUser();
+  const { user, error: userError } = useCurrentUser();
   const primaryGroupId = user?.primary_calendar_group_id;
 
   // Stage 1: get calendar IDs in the primary group
-  const { data: memberships = [] } = useCalendarGroupMemberships(primaryGroupId ?? undefined);
+  const { data: memberships = [], error: membershipsError } = useCalendarGroupMemberships(
+    primaryGroupId ?? undefined
+  );
 
   const calendarIds = useMemo(() => memberships.map((m) => m.calendar_id), [memberships]);
 
@@ -94,6 +96,8 @@ export function useScheduleFeed(startDate: string, endDate: string) {
   const startDateTime = `${startDate}T00:00:00Z`;
   const endDateTime = `${endDate}T23:59:59Z`;
 
+  // Range-overlap query: an event overlaps the visible window when
+  // event.start_time <= window.end AND event.end_time >= window.start.
   const sql = hasCalendars
     ? `SELECT e.*, c.name AS calendar_name, c.type AS calendar_type
        FROM events e
@@ -114,5 +118,5 @@ export function useScheduleFeed(startDate: string, endDate: string) {
     [events, startDate, endDate]
   );
 
-  return { sections, events, isLoading, error };
+  return { sections, events, isLoading, error: userError ?? membershipsError ?? error };
 }

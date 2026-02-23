@@ -19,8 +19,8 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 /**
  * Formats a YYYY-MM-DD date string into a section header label.
- * - Today: "Today, Monday Feb 24"
- * - Other: "Tuesday, Feb 25"
+ * - Today: "Today, Tuesday Feb 24"
+ * - Other: "Wednesday, Feb 25"
  */
 export function formatSectionDate(dateString: string, today: string): string {
   const date = new Date(dateString + 'T12:00:00');

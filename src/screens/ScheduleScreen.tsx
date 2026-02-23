@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ViewToken } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
@@ -8,35 +8,38 @@ import { WeekMonthCalendar } from '@components/schedule/WeekMonthCalendar';
 import { EventFeed, type EventFeedRef } from '@components/schedule/EventFeed';
 import { useScheduleFeed } from '@hooks/useScheduleFeed';
 import { useScheduleStore } from '@stores/useScheduleStore';
+import { getMonthBufferRange, monthKeyOf } from '@utils/dateRange';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 
-function getFeedRange(selectedDate: string) {
-  const date = new Date(selectedDate + 'T12:00:00');
-  const year = date.getFullYear();
-  const month = date.getMonth();
-
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month + 2, 0);
-
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-  return { startDate: fmt(start), endDate: fmt(end) };
-}
+// Delay (ms) before unlocking scroll↔calendar sync. Shorter for feed-driven
+// updates (the calendar strip moves instantly), longer for calendar-driven
+// updates (the animated scroll needs time to settle).
+const FEED_SYNC_UNLOCK_DELAY_MS = 100;
+const CALENDAR_SYNC_UNLOCK_DELAY_MS = 300;
 
 export function ScheduleScreen() {
   const navigation = useNavigation();
   const selectedDate = useScheduleStore((s) => s.selectedDate);
-  const isSyncLocked = useScheduleStore((s) => s.isSyncLocked);
   const lockSync = useScheduleStore((s) => s.lockSync);
   const unlockSync = useScheduleStore((s) => s.unlockSync);
   const selectDate = useScheduleStore((s) => s.selectDate);
   const [refreshing, setRefreshing] = useState(false);
 
   const feedRef = useRef<EventFeedRef>(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const { startDate, endDate } = useMemo(() => getFeedRange(selectedDate), [selectedDate]);
+  // Clear any pending sync-unlock timer on unmount
+  useEffect(() => {
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, []);
+
+  // Memoize by month key so the query only re-runs when the month changes
+  const monthKey = monthKeyOf(selectedDate);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memoize by month, not by day
+  const { startDate, endDate } = useMemo(() => getMonthBufferRange(selectedDate), [monthKey]);
   const { sections } = useScheduleFeed(startDate, endDate);
 
   const handleNavigateToProfile = useCallback(() => {
@@ -52,7 +55,8 @@ export function ScheduleScreen() {
   // Feed scroll → calendar update
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (isSyncLocked) return;
+      // Read lock state at call time to avoid stale closure
+      if (useScheduleStore.getState().isSyncLocked) return;
 
       // Find the topmost visible section header date
       const topItem = viewableItems.find((item) => item.section != null);
@@ -63,9 +67,9 @@ export function ScheduleScreen() {
 
       lockSync();
       selectDate(topDate);
-      setTimeout(unlockSync, 100);
+      syncTimerRef.current = setTimeout(unlockSync, FEED_SYNC_UNLOCK_DELAY_MS);
     },
-    [isSyncLocked, lockSync, selectDate, unlockSync]
+    [lockSync, selectDate, unlockSync]
   );
 
   // Calendar tap → feed scroll
@@ -76,7 +80,7 @@ export function ScheduleScreen() {
 
       lockSync();
       feedRef.current?.scrollToSection(sectionIndex);
-      setTimeout(unlockSync, 300);
+      syncTimerRef.current = setTimeout(unlockSync, CALENDAR_SYNC_UNLOCK_DELAY_MS);
     },
     [sections, lockSync, unlockSync]
   );
