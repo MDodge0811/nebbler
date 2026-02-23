@@ -21,6 +21,7 @@ module.exports = function (api) {
             '@database': './src/database',
             '@context': './src/context',
             '@services': './src/services',
+            '@stores': './src/stores',
             '@/components/ui': './components/ui',
             '@/global.css': './global.css',
             '@': './src',

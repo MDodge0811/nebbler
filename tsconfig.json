@@ -25,6 +25,7 @@
       "@database/*": ["src/database/*"],
       "@context/*": ["src/context/*"],
       "@services/*": ["src/services/*"],
+      "@stores/*": ["src/stores/*"],
       "tailwind.config": ["./tailwind.config.js"]
     }
   },

@@ -1,5 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import { ScheduleHeader } from '../ScheduleHeader';
+import { useScheduleStore } from '@stores/useScheduleStore';
 
 const mockDispatch = jest.fn();
 
@@ -25,15 +26,13 @@ jest.mock('@react-navigation/native', () => ({
 describe('ScheduleHeader', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    useScheduleStore.setState({ visibleDate: '2026-02-23' });
   });
 
   it('renders the current month name and year', () => {
-    const now = new Date();
-    const expectedMonth = now.toLocaleDateString('en-US', { month: 'long' });
-    const expectedYear = now.getFullYear().toString();
     render(<ScheduleHeader onNavigateToProfile={jest.fn()} />);
-    expect(screen.getByText(expectedMonth)).toBeTruthy();
-    expect(screen.getByText(expectedYear)).toBeTruthy();
+    expect(screen.getByText('February')).toBeTruthy();
+    expect(screen.getByText('2026')).toBeTruthy();
   });
 
   it('renders the user avatar', () => {
@@ -59,9 +58,22 @@ describe('ScheduleHeader', () => {
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_DRAWER' });
   });
 
-  it('renders the month and year from displayDate when provided', () => {
-    render(<ScheduleHeader onNavigateToProfile={jest.fn()} displayDate="2025-06-15" />);
+  it('renders the month and year from visibleDate in the store', () => {
+    useScheduleStore.setState({ visibleDate: '2025-06-15' });
+    render(<ScheduleHeader onNavigateToProfile={jest.fn()} />);
     expect(screen.getByText('June')).toBeTruthy();
     expect(screen.getByText('2025')).toBeTruthy();
+  });
+
+  it('re-renders when visibleDate changes in the store after mount', () => {
+    render(<ScheduleHeader onNavigateToProfile={jest.fn()} />);
+    expect(screen.getByText('February')).toBeTruthy();
+
+    act(() => {
+      useScheduleStore.setState({ visibleDate: '2026-08-10' });
+    });
+
+    expect(screen.getByText('August')).toBeTruthy();
+    expect(screen.getByText('2026')).toBeTruthy();
   });
 });

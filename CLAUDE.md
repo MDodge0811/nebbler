@@ -60,6 +60,7 @@ Always use path aliases instead of relative imports. These are configured in `ts
 | `@database/*`   | `src/database/*`   |
 | `@context/*`    | `src/context/*`    |
 | `@services/*`   | `src/services/*`   |
+| `@stores/*`     | `src/stores/*`     |
 
 **If you add a new path alias**, you must update all three files: `tsconfig.json`, `babel.config.js`, and `jest.config.js` (`moduleNameMapper`).
 
@@ -108,6 +109,7 @@ Detailed patterns are in `.claude/rules/` — auto-loaded when you work on match
 | Testing       | `__tests__/`, `jest.setup.js`                        | Jest config, mocking patterns, gotchas                              |
 | Navigation    | `src/navigation/`, `src/screens/`                    | Nav hierarchy, routing, adding screens                              |
 | UI Components | `src/components/`                                    | Icons, Gluestack UI, calendars, colors                              |
+| State Mgmt    | `src/stores/`, `src/context/`                        | Zustand stores, React Context, choosing between them                |
 | Code Quality  | config files, `src/database/schemas/`                | ESLint, Prettier, TS, Knip, Zod, CI/CD                              |
 
 See `.claude/rules/rules.md` for the full index.

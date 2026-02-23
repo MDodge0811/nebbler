@@ -15,6 +15,13 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
+// Mock AsyncStorage (native module not available in Jest, used by Zustand persist middleware)
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn().mockResolvedValue(null),
+  setItem: jest.fn().mockResolvedValue(undefined),
+  removeItem: jest.fn().mockResolvedValue(undefined),
+}));
+
 // Mock native modules that cannot be loaded in Jest
 jest.mock('@op-engineering/op-sqlite', () => ({}));
 jest.mock('@powersync/op-sqlite', () => ({
