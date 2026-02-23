@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import { ScheduleHeader } from '../ScheduleHeader';
 import { useScheduleStore } from '@stores/useScheduleStore';
 
@@ -63,5 +63,17 @@ describe('ScheduleHeader', () => {
     render(<ScheduleHeader onNavigateToProfile={jest.fn()} />);
     expect(screen.getByText('June')).toBeTruthy();
     expect(screen.getByText('2025')).toBeTruthy();
+  });
+
+  it('re-renders when visibleDate changes in the store after mount', () => {
+    render(<ScheduleHeader onNavigateToProfile={jest.fn()} />);
+    expect(screen.getByText('February')).toBeTruthy();
+
+    act(() => {
+      useScheduleStore.setState({ visibleDate: '2026-08-10' });
+    });
+
+    expect(screen.getByText('August')).toBeTruthy();
+    expect(screen.getByText('2026')).toBeTruthy();
   });
 });

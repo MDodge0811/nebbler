@@ -23,11 +23,12 @@ describe('useScheduleStore', () => {
     expect(state.today).toBe(storeToday);
   });
 
-  it('selectDate updates both selectedDate and visibleDate', () => {
+  it('selectDate updates both selectedDate and visibleDate but not today', () => {
     useScheduleStore.getState().selectDate('2026-03-15');
     const state = useScheduleStore.getState();
     expect(state.selectedDate).toBe('2026-03-15');
     expect(state.visibleDate).toBe('2026-03-15');
+    expect(state.today).toBe(storeToday);
   });
 
   it('setVisibleDate updates only visibleDate', () => {
@@ -71,6 +72,15 @@ describe('useScheduleStore', () => {
     useScheduleStore.getState().setCardMode('2026-03-16', 'full');
     const state = useScheduleStore.getState();
     expect(state.cardDisplayMode['2026-03-15']).toBe('compact');
+    expect(state.cardDisplayMode['2026-03-16']).toBe('full');
+  });
+
+  it('setCardMode overwrites a key without losing other entries', () => {
+    useScheduleStore.getState().setCardMode('2026-03-15', 'compact');
+    useScheduleStore.getState().setCardMode('2026-03-16', 'full');
+    useScheduleStore.getState().setCardMode('2026-03-15', 'full');
+    const state = useScheduleStore.getState();
+    expect(state.cardDisplayMode['2026-03-15']).toBe('full');
     expect(state.cardDisplayMode['2026-03-16']).toBe('full');
   });
 

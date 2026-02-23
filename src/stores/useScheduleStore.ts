@@ -8,30 +8,37 @@ function todayString(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+type CardMode = 'full' | 'compact';
+
 interface ScheduleState {
   // Date state
+  /** The date the user last tapped (drives the event list below the calendar). */
   selectedDate: string;
+  /** The month currently visible in the calendar (may differ from selectedDate during month swiping). */
   visibleDate: string;
+  /** Wall-clock today, set at launch and updated on midnight rollover. */
   today: string;
 
   // View state
   isMonthExpanded: boolean;
 
   // Sync coordination
+  /** Prevents scroll↔date feedback loops during programmatic calendar updates. */
   isSyncLocked: boolean;
 
   // Display preferences (persisted)
-  cardDisplayMode: Record<string, 'full' | 'compact'>;
-  defaultCardMode: 'full' | 'compact';
+  cardDisplayMode: Record<string, CardMode>;
+  defaultCardMode: CardMode;
 
-  // Actions
+  // Actions — selectDate sets both selectedDate and visibleDate so the header
+  // month stays in sync. setVisibleDate moves only the viewport (month swipe).
   selectDate: (date: string) => void;
   setVisibleDate: (date: string) => void;
   setToday: (date: string) => void;
   toggleMonthExpanded: () => void;
   setMonthExpanded: (expanded: boolean) => void;
-  setCardMode: (date: string, mode: 'full' | 'compact') => void;
-  setDefaultCardMode: (mode: 'full' | 'compact') => void;
+  setCardMode: (date: string, mode: CardMode) => void;
+  setDefaultCardMode: (mode: CardMode) => void;
   lockSync: () => void;
   unlockSync: () => void;
 }

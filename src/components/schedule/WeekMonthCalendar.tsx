@@ -75,9 +75,9 @@ export function WeekMonthCalendar() {
   const setVisibleDate = useScheduleStore((s) => s.setVisibleDate);
 
   // CalendarProvider manages its own date state internally. We use a ref
-  // for the initial date and local state for the query range so the parent
-  // never feeds date changes back as a prop (which causes a scroll-jump
-  // feedback loop inside the library).
+  // for the initial date and local state for the query range so the store's
+  // selectedDate is never fed back into CalendarProvider as a controlled prop
+  // (which causes a scroll-jump feedback loop inside the library).
   const initialDate = useRef(selectedDate);
   const [queryDate, setQueryDate] = useState(selectedDate);
 
