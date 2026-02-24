@@ -5,180 +5,65 @@ paths:
   - 'src/constants/calendarColors.ts'
 ---
 
-# react-native-calendars Deep-Dive
+# Custom WeekStrip Calendar
 
-Docs: [react-native-calendars](https://github.com/wix/react-native-calendars)
+`react-native-calendars` has been replaced with a custom week-strip calendar built from scratch.
 
 ## Architecture
 
-The calendar uses `CalendarProvider` + `ExpandableCalendar` from `react-native-calendars`. Events come from PowerSync via `useCalendarEvents`, and are transformed into `markedDates` via `useMarkedDates`.
-
 ```
-CalendarProvider (date management, gestures)
-  └─ ExpandableCalendar (week ↔ month toggle with knob)
-       └─ theme={calendarTheme}       ← from calendarColors.ts
-       └─ markedDates={markedDates}   ← from useMarkedDates(events)
+WeekStrip (orchestrator — FlatList + day cells)
+├── WeekStripDayHeaders (static S M T W T F S row)
+├── FlatList<WeekPage> (horizontal, pagingEnabled, ±6 week buffer)
+│   └── WeekStripDayCell × 7 per page (memo'd presentational component)
+└── useWeekPages(anchorDate) (data hook: generates week pages)
+    └── weekUtils.ts (pure date math)
 ```
 
 **Key files:**
 
-- `src/components/schedule/WeekMonthCalendar.tsx` — main calendar component
+- `src/components/schedule/week-strip/WeekStrip.tsx` — orchestrator
+- `src/components/schedule/week-strip/WeekStripDayCell.tsx` — single day cell
+- `src/components/schedule/week-strip/WeekStripDayHeaders.tsx` — day header row
+- `src/components/schedule/week-strip/useWeekPages.ts` — week page generation hook
+- `src/utils/weekUtils.ts` — pure date math utilities
 - `src/hooks/useCalendarEvents.ts` — `useCalendarEvents()` + `useMarkedDates()`
-- `src/constants/calendarColors.ts` — hex color constants for the calendar theme
+- `src/constants/calendarColors.ts` — hex color constants
 
-## CalendarProvider + ExpandableCalendar
+## Store-Driven Design
 
-`CalendarProvider` manages internal date state and gesture coordination. **Critical pattern:** only pass the initial date via a ref — do NOT feed date changes back as a prop, or it creates a scroll-jump feedback loop:
+The WeekStrip reads state directly from `useScheduleStore` via selectors:
 
-```typescript
-const initialDate = useRef(selectedDate);
+- `selectedDate` — highlights the tapped day cell
+- `today` — anchors the week buffer and highlights today
+- `isSyncLocked` — prevents tap handling during programmatic sync
+- `setVisibleDate` — updates the header month on week swipe
 
-<CalendarProvider
-  date={initialDate.current}           // ← ref, NOT reactive state
-  onDateChanged={handleDateChanged}     // ← user taps a date
-  onMonthChange={handleMonthChange}     // ← visible month changes (swipe)
->
-  <ExpandableCalendar
-    theme={calendarTheme}
-    markedDates={markedDates}
-    firstDay={0}            // Sunday start
-    closeOnDayPress={false} // stay expanded when tapping dates
-    hideKnob={false}        // show the week↔month drag knob
-    allowShadow={false}
-    hideArrows              // no left/right month arrows
-    headerStyle={headerContainerStyle}
-  />
-</CalendarProvider>
-```
+No CalendarProvider wrapper or context bridge needed.
 
-## Custom Header Trick
+## Colors
 
-The built-in calendar header (month title + arrows) is hidden by collapsing it to 0px via `stylesheet.calendar.header` theme override. A custom `ScheduleHeader` component renders the month/year title instead.
-
-**Important:** when overriding `stylesheet.calendar.header`, you must re-declare `week` styles — the override replaces the entire header stylesheet, losing defaults:
-
-```typescript
-'stylesheet.calendar.header': {
-  header: { height: 0, overflow: 'hidden' as const },
-  week: {                    // ← must redeclare or day-name row breaks
-    marginTop: 7,
-    marginBottom: -4,
-    flexDirection: 'row' as const,
-    justifyContent: 'space-around' as const,
-  },
-},
-```
-
-The outer container height is forced to `HEADER_HEIGHT = 32` via `headerStyle` so `ExpandableCalendar`'s positioning math stays correct.
-
-## Theme Configuration
-
-Calendar colors live in `src/constants/calendarColors.ts` (hex values required by the library):
+Calendar colors in `src/constants/calendarColors.ts`:
 
 | Key             | Color             | Purpose                     |
 | --------------- | ----------------- | --------------------------- |
 | `today`         | `#00DB74` (green) | Today's date circle         |
 | `selected`      | `#00B0DB` (blue)  | Selected date circle        |
 | `eventDot`      | `#00DB74` (green) | Dot below dates with events |
-| `disabled`      | `#A3A3A3`         | Adjacent month dates        |
-| `background`    | `#FFFFFF`         | Calendar background         |
 | `dayText`       | `#262627`         | Date number text            |
 | `dayHeaderText` | `#666666`         | Day-of-week letters         |
 
-These map to `calendarTheme` properties like `todayBackgroundColor`, `selectedDayBackgroundColor`, `dotColor`, etc.
+## Week Swiping
 
-## Event Data Flow (PowerSync → Calendar)
+- `FlatList` with `pagingEnabled` — native snap-to-page
+- `getItemLayout` (fixed width = screen width) enables instant `scrollToIndex`
+- `onMomentumScrollEnd` detects user swipe → updates `visibleDate` if month changed
+- External sync via `useEffect` watching `selectedDate` → `scrollToIndex({ animated: false })`
 
-### useCalendarEvents(startDate, endDate)
+## Month Expansion (Future)
 
-Reactive query returning events whose time span overlaps the given range:
+Store has `isMonthExpanded` + `toggleMonthExpanded()`. WeekStrip is ready to swap in a `MonthGrid` when expanded. `WeekStripDayCell` can be reused in the grid.
 
-```sql
-SELECT * FROM events
-WHERE deleted_at IS NULL
-  AND start_time <= ?     -- endDateTime (end of range)
-  AND end_time >= ?       -- startDateTime (start of range)
-ORDER BY start_time ASC
-```
+## Date Math
 
-Parameters are ISO 8601 with time: `startDate + 'T00:00:00Z'` and `endDate + 'T23:59:59Z'`.
-
-### useMarkedDates(events)
-
-Transforms an `Event[]` into the `markedDates` object format:
-
-```typescript
-{ '2026-02-15': { marked: true, dotColor: '#00DB74' } }
-```
-
-- Uses `useMemo` keyed on `events` array reference
-- Skips events with null or invalid `start_time`
-- Deduplicates — multiple events on the same date produce one dot
-- Returns a stable `EMPTY_MARKED` constant when there are no events (referential equality optimization)
-
-### Query Range Buffering
-
-The calendar queries ±1 month around the currently visible month to pre-fetch data for swipes:
-
-```typescript
-function getQueryRange(dateString: string) {
-  // start = first day of previous month
-  // end = last day of next month
-}
-```
-
-The query date updates on `onMonthChange` (when the user swipes to a new month), not on every date tap.
-
-## Testing
-
-### Jest Mock (jest.setup.js)
-
-```javascript
-jest.mock('react-native-calendars', () => ({
-  CalendarProvider: ({ children }) => children, // passthrough wrapper
-  ExpandableCalendar: jest.fn(() => null), // renders nothing
-}));
-```
-
-### Testing useCalendarEvents
-
-Mock `@powersync/react`'s `useQuery` to control the return value:
-
-```typescript
-const mockUseQuery = jest.fn().mockReturnValue({ data: [], isLoading: false, error: undefined });
-jest.mock('@powersync/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
-```
-
-### Testing useMarkedDates
-
-Use a `makeEvent()` helper for readable test data:
-
-```typescript
-function makeEvent(overrides: Partial<Event> = {}): Event {
-  return {
-    id: 'evt-1',
-    calendar_id: 'cal-1',
-    created_by_user_id: 'user-1',
-    title: 'Test Event',
-    description: '',
-    start_time: '2026-02-15T10:00:00Z',
-    end_time: '2026-02-15T11:00:00Z',
-    deleted_at: null,
-    inserted_at: '2026-02-01T00:00:00Z',
-    updated_at: '2026-02-01T00:00:00Z',
-    ...overrides,
-  } as Event;
-}
-```
-
-**Key test cases to cover:** empty events, single event marking, same-date deduplication, null/invalid start_time handling, stable empty reference.
-
-## Common Gotchas
-
-- **Scroll-jump loop:** Never pass a reactive state variable as `CalendarProvider`'s `date` prop. Use a ref for the initial value.
-- **Header override kills day-name row:** `stylesheet.calendar.header` replaces the _entire_ header stylesheet — you must re-declare `week` styles.
-- **TypeScript types:** Import `DateData` from `react-native-calendars` for callback signatures (`onMonthChange` gives `DateData`, not a string).
-- **Date parsing:** The library works with `YYYY-MM-DD` strings. Avoid timezone issues by appending `T12:00:00` when constructing `Date` objects for range calculations.
-- **Large event sets:** `useMarkedDates` runs in `useMemo` on every event array change. The ±1 month query buffer keeps the working set small, but if adding multi-month views, consider pagination.
+All date utilities in `src/utils/weekUtils.ts` use `T12:00:00` noon-pinning to avoid timezone/DST issues, matching the project's `dateRange.ts` convention.

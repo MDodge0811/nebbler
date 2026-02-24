@@ -34,7 +34,6 @@ const config: KnipConfig = {
     'react-aria',
     'react-native-reanimated',
     'react-native-svg',
-    'react-native-calendars',
     'react-native-worklets',
     'react-stately',
     'tailwind-variants',

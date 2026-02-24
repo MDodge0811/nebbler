@@ -1,7 +1,6 @@
 /**
  * Calendar-specific color constants.
- * Used for react-native-calendars theme customization.
- * Hex values required by react-native-calendars theme API.
+ * Used by the custom WeekStrip calendar and event components.
  */
 export const calendarColors = {
   /** Today indicator — green filled circle */
