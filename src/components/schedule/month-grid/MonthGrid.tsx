@@ -26,7 +26,7 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
   const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
   const setVisibleDate = useScheduleStore((s) => s.setVisibleDate);
 
-  const { months, centerIndex, getPageIndexForMonth } = useMonthPages(today);
+  const { months, centerIndex, getPageIndexForMonth } = useMonthPages(displayMonth);
   const flatListRef = useRef<FlatList<MonthPage>>(null);
   const currentPageRef = useRef(centerIndex);
 
@@ -50,13 +50,12 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
         // Adjacent month day tap — navigate to that month
         const targetMonth = getMonthStart(date);
         setDisplayMonth(targetMonth);
-        setVisibleDate(targetMonth);
       }
 
       useScheduleStore.getState().selectDate(date);
       onDateSelected?.(date);
     },
-    [onDateSelected, setDisplayMonth, setVisibleDate]
+    [onDateSelected, setDisplayMonth]
   );
 
   const handleMomentumScrollEnd = useCallback(

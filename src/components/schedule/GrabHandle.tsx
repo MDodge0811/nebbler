@@ -11,6 +11,8 @@ export function GrabHandle() {
         justifyContent: 'center',
       }}
       testID="grab-handle"
+      accessibilityRole="adjustable"
+      accessibilityLabel="Drag to expand or collapse calendar"
     >
       <View
         style={{

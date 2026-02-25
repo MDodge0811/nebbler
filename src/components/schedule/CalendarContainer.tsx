@@ -39,7 +39,9 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
 
   // Once MonthGrid has been shown, keep it mounted to avoid remount costs
   const hasExpandedRef = useRef(false);
-  if (viewMode === 'month') hasExpandedRef.current = true;
+  useEffect(() => {
+    if (viewMode === 'month') hasExpandedRef.current = true;
+  }, [viewMode]);
   const showMonthGrid = viewMode === 'month' || hasExpandedRef.current;
 
   const heightSV = useSharedValue(COLLAPSED_HEIGHT);
@@ -67,6 +69,8 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
   }, [setViewMode]);
 
   const panGesture = Gesture.Pan()
+    .activeOffsetY([-10, 10])
+    .failOffsetX([-20, 20])
     .onStart(() => {
       'worklet';
       startHeight.value = heightSV.value;
@@ -112,7 +116,7 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
         </View>
       </Animated.View>
       <GestureDetector gesture={panGesture}>
-        <Animated.View>
+        <Animated.View hitSlop={{ top: 16, bottom: 16 }}>
           <GrabHandle />
         </Animated.View>
       </GestureDetector>

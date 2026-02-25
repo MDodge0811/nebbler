@@ -59,6 +59,8 @@ jest.mock('react-native-gesture-handler', () => ({
   Directions: {},
   Gesture: {
     Pan: () => ({
+      activeOffsetY: jest.fn().mockReturnThis(),
+      failOffsetX: jest.fn().mockReturnThis(),
       onStart: jest.fn().mockReturnThis(),
       onUpdate: jest.fn().mockReturnThis(),
       onEnd: jest.fn().mockReturnThis(),

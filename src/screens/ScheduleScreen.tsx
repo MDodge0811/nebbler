@@ -38,10 +38,14 @@ export function ScheduleScreen() {
     };
   }, []);
 
-  // Memoize by month key so the query only re-runs when the month changes
-  const monthKey = monthKeyOf(selectedDate);
+  // In month mode, drive query range from displayMonth so far-off months load events.
+  // In week mode, drive from selectedDate as before.
+  const viewMode = useScheduleStore((s) => s.viewMode);
+  const displayMonth = useScheduleStore((s) => s.displayMonth);
+  const queryAnchor = viewMode === 'month' ? displayMonth : selectedDate;
+  const monthKey = monthKeyOf(queryAnchor);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memoize by month, not by day
-  const { startDate, endDate } = useMemo(() => getMonthBufferRange(selectedDate), [monthKey]);
+  const { startDate, endDate } = useMemo(() => getMonthBufferRange(queryAnchor), [monthKey]);
   const { sections } = useScheduleFeed(startDate, endDate, today);
 
   // Calendar event dots — shared date range with the feed query
@@ -74,6 +78,7 @@ export function ScheduleScreen() {
 
       lockSync();
       selectDate(topDate);
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       syncTimerRef.current = setTimeout(unlockSync, FEED_SYNC_UNLOCK_DELAY_MS);
     },
     [lockSync, selectDate, unlockSync]
@@ -89,6 +94,7 @@ export function ScheduleScreen() {
 
       lockSync();
       feedRef.current?.scrollToSection(sectionIndex);
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       syncTimerRef.current = setTimeout(unlockSync, CALENDAR_SYNC_UNLOCK_DELAY_MS);
     },
     [sections, lockSync, unlockSync]
