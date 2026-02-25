@@ -17,6 +17,7 @@ interface WeekStripDayCellProps {
   hasEvent: boolean;
   dotColor: string;
   onPress: (date: string) => void;
+  isAdjacentMonth?: boolean;
 }
 
 export const WeekStripDayCell = memo(function WeekStripDayCell({
@@ -27,12 +28,17 @@ export const WeekStripDayCell = memo(function WeekStripDayCell({
   hasEvent,
   dotColor,
   onPress,
+  isAdjacentMonth,
 }: WeekStripDayCellProps) {
   const handlePress = useCallback(() => onPress(dateString), [onPress, dateString]);
 
-  const isTodayOnly = isToday && !isSelected;
-  const circleColor = isSelected ? calendarColors.selected : undefined;
-  const textColor = isSelected ? '#FFFFFF' : calendarColors.dayText;
+  const isTodayOnly = isToday && !isSelected && !isAdjacentMonth;
+  const circleColor = isSelected && !isAdjacentMonth ? calendarColors.selected : undefined;
+  const textColor = isAdjacentMonth
+    ? calendarColors.disabled
+    : isSelected
+      ? '#FFFFFF'
+      : calendarColors.dayText;
 
   return (
     <Pressable

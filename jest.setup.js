@@ -57,4 +57,15 @@ jest.mock('react-native-gesture-handler', () => ({
   NativeViewGestureHandler: jest.fn(),
   gestureHandlerRootHOC: jest.fn((component) => component),
   Directions: {},
+  Gesture: {
+    Pan: () => ({
+      onStart: jest.fn().mockReturnThis(),
+      onUpdate: jest.fn().mockReturnThis(),
+      onEnd: jest.fn().mockReturnThis(),
+    }),
+  },
+  GestureDetector: ({ children }) => children,
 }));
+
+// Mock react-native-reanimated (native module not available in Jest)
+jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));

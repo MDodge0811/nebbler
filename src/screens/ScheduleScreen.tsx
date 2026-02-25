@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { Box } from '@/components/ui/box';
 import { ScheduleHeader } from '@components/schedule/ScheduleHeader';
-import { WeekStrip } from '@components/schedule/week-strip/WeekStrip';
+import { CalendarContainer } from '@components/schedule/CalendarContainer';
 import { EventFeed, type EventFeedRef } from '@components/schedule/EventFeed';
 import { useScheduleFeed } from '@hooks/useScheduleFeed';
 import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
@@ -61,8 +61,9 @@ export function ScheduleScreen() {
   // Feed scroll → calendar update
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      // Read lock state at call time to avoid stale closure
+      // Read lock/mode state at call time to avoid stale closure
       if (useScheduleStore.getState().isSyncLocked) return;
+      if (useScheduleStore.getState().viewMode === 'month') return;
 
       // Find the topmost visible section header date
       const topItem = viewableItems.find((item) => item.section != null);
@@ -78,9 +79,11 @@ export function ScheduleScreen() {
     [lockSync, selectDate, unlockSync]
   );
 
-  // Calendar tap → feed scroll
+  // Calendar tap → feed scroll (week mode only; month mode drives its own selection)
   const handleDateSelected = useCallback(
     (date: string) => {
+      if (useScheduleStore.getState().viewMode === 'month') return;
+
       const sectionIndex = sections.findIndex((s) => s.title === date);
       if (sectionIndex === -1) return;
 
@@ -94,7 +97,7 @@ export function ScheduleScreen() {
   return (
     <Box className={containerStyle({})}>
       <ScheduleHeader onNavigateToProfile={handleNavigateToProfile} />
-      <WeekStrip onDateSelected={handleDateSelected} markedDates={markedDates} />
+      <CalendarContainer onDateSelected={handleDateSelected} markedDates={markedDates} />
       <EventFeed
         ref={feedRef}
         sections={sections}

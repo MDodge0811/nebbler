@@ -8,6 +8,11 @@ function todayString(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+function toMonthStart(dateString: string): string {
+  return dateString.slice(0, 7) + '-01';
+}
+
+export type ViewMode = 'week' | 'month';
 type CardMode = 'full' | 'compact';
 
 interface ScheduleState {
@@ -20,7 +25,9 @@ interface ScheduleState {
   today: string;
 
   // View state
-  isMonthExpanded: boolean;
+  viewMode: ViewMode;
+  /** The month currently shown in MonthGrid (YYYY-MM-01). */
+  displayMonth: string;
 
   // Sync coordination
   /** Prevents scroll↔date feedback loops during programmatic calendar updates. */
@@ -35,8 +42,8 @@ interface ScheduleState {
   selectDate: (date: string) => void;
   setVisibleDate: (date: string) => void;
   setToday: (date: string) => void;
-  toggleMonthExpanded: () => void;
-  setMonthExpanded: (expanded: boolean) => void;
+  setViewMode: (mode: ViewMode) => void;
+  setDisplayMonth: (month: string) => void;
   setCardMode: (date: string, mode: CardMode) => void;
   setDefaultCardMode: (mode: CardMode) => void;
   lockSync: () => void;
@@ -51,7 +58,8 @@ export const useScheduleStore = create<ScheduleState>()(
       selectedDate: initialToday,
       visibleDate: initialToday,
       today: initialToday,
-      isMonthExpanded: false,
+      viewMode: 'week',
+      displayMonth: toMonthStart(initialToday),
       isSyncLocked: false,
       cardDisplayMode: {},
       defaultCardMode: 'full',
@@ -59,8 +67,8 @@ export const useScheduleStore = create<ScheduleState>()(
       selectDate: (date) => set({ selectedDate: date, visibleDate: date }),
       setVisibleDate: (date) => set({ visibleDate: date }),
       setToday: (date) => set({ today: date }),
-      toggleMonthExpanded: () => set((s) => ({ isMonthExpanded: !s.isMonthExpanded })),
-      setMonthExpanded: (expanded) => set({ isMonthExpanded: expanded }),
+      setViewMode: (mode) => set({ viewMode: mode }),
+      setDisplayMonth: (month) => set({ displayMonth: month }),
       setCardMode: (date, mode) =>
         set((s) => ({ cardDisplayMode: { ...s.cardDisplayMode, [date]: mode } })),
       setDefaultCardMode: (mode) => set({ defaultCardMode: mode }),

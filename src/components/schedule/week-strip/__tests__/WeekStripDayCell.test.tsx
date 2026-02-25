@@ -61,4 +61,36 @@ describe('WeekStripDayCell', () => {
     const text = getByText('24');
     expect(text.props.style).toEqual(expect.objectContaining({ color: '#FFFFFF' }));
   });
+
+  describe('isAdjacentMonth', () => {
+    it('renders with disabled color when isAdjacentMonth is true', () => {
+      const { getByText } = render(<WeekStripDayCell {...defaultProps} isAdjacentMonth />);
+      const text = getByText('24');
+      expect(text.props.style).toEqual(expect.objectContaining({ color: calendarColors.disabled }));
+    });
+
+    it('overrides selected styling when isAdjacentMonth is true', () => {
+      const { getByText } = render(
+        <WeekStripDayCell {...defaultProps} isSelected isAdjacentMonth />
+      );
+      const text = getByText('24');
+      // Should use disabled color, not white
+      expect(text.props.style).toEqual(expect.objectContaining({ color: calendarColors.disabled }));
+    });
+
+    it('overrides today styling when isAdjacentMonth is true', () => {
+      const { getByText } = render(<WeekStripDayCell {...defaultProps} isToday isAdjacentMonth />);
+      const text = getByText('24');
+      expect(text.props.style).toEqual(expect.objectContaining({ color: calendarColors.disabled }));
+    });
+
+    it('is still tappable when isAdjacentMonth is true', () => {
+      const onPress = jest.fn();
+      const { getByRole } = render(
+        <WeekStripDayCell {...defaultProps} isAdjacentMonth onPress={onPress} />
+      );
+      fireEvent.press(getByRole('button'));
+      expect(onPress).toHaveBeenCalledWith('2026-02-24');
+    });
+  });
 });

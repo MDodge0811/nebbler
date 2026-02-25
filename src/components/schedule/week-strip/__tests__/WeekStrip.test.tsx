@@ -17,14 +17,6 @@ describe('WeekStrip', () => {
     expect(() => render(<WeekStrip markedDates={{}} />)).not.toThrow();
   });
 
-  it('renders day header letters', () => {
-    const { getByText } = render(<WeekStrip markedDates={{}} />);
-    // At least S and M should appear (there are multiple S/T)
-    expect(getByText('M')).toBeTruthy();
-    expect(getByText('W')).toBeTruthy();
-    expect(getByText('F')).toBeTruthy();
-  });
-
   it('renders day numbers for the current week', () => {
     const { getAllByText } = render(<WeekStrip markedDates={{}} />);
     // 2026-02-24 is a Tuesday; multiple weeks may contain a "24"

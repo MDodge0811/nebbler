@@ -2,6 +2,7 @@ import { useScheduleStore } from '../useScheduleStore';
 
 // Capture the initial "today" value the store computed at module load
 const storeToday = useScheduleStore.getState().today;
+const storeDisplayMonth = storeToday.slice(0, 7) + '-01';
 
 describe('useScheduleStore', () => {
   beforeEach(() => {
@@ -9,7 +10,8 @@ describe('useScheduleStore', () => {
       selectedDate: storeToday,
       visibleDate: storeToday,
       today: storeToday,
-      isMonthExpanded: false,
+      viewMode: 'week',
+      displayMonth: storeDisplayMonth,
       isSyncLocked: false,
       cardDisplayMode: {},
       defaultCardMode: 'full',
@@ -44,19 +46,24 @@ describe('useScheduleStore', () => {
     expect(useScheduleStore.getState().today).toBe('2026-12-25');
   });
 
-  it('toggleMonthExpanded flips the boolean', () => {
-    expect(useScheduleStore.getState().isMonthExpanded).toBe(false);
-    useScheduleStore.getState().toggleMonthExpanded();
-    expect(useScheduleStore.getState().isMonthExpanded).toBe(true);
-    useScheduleStore.getState().toggleMonthExpanded();
-    expect(useScheduleStore.getState().isMonthExpanded).toBe(false);
+  it('initializes with viewMode week', () => {
+    expect(useScheduleStore.getState().viewMode).toBe('week');
   });
 
-  it('setMonthExpanded sets the value directly', () => {
-    useScheduleStore.getState().setMonthExpanded(true);
-    expect(useScheduleStore.getState().isMonthExpanded).toBe(true);
-    useScheduleStore.getState().setMonthExpanded(false);
-    expect(useScheduleStore.getState().isMonthExpanded).toBe(false);
+  it('setViewMode updates viewMode', () => {
+    useScheduleStore.getState().setViewMode('month');
+    expect(useScheduleStore.getState().viewMode).toBe('month');
+    useScheduleStore.getState().setViewMode('week');
+    expect(useScheduleStore.getState().viewMode).toBe('week');
+  });
+
+  it('initializes displayMonth from today', () => {
+    expect(useScheduleStore.getState().displayMonth).toBe(storeDisplayMonth);
+  });
+
+  it('setDisplayMonth updates displayMonth', () => {
+    useScheduleStore.getState().setDisplayMonth('2026-04-01');
+    expect(useScheduleStore.getState().displayMonth).toBe('2026-04-01');
   });
 
   it('lockSync and unlockSync toggle isSyncLocked', () => {

@@ -9,12 +9,11 @@ import { View } from 'react-native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { Box } from '@/components/ui/box';
 import { WeekStripDayCell } from './WeekStripDayCell';
-import { WeekStripDayHeaders } from './WeekStripDayHeaders';
 import { useWeekPages, type WeekPage } from './useWeekPages';
 import { getWeekMonth } from '@utils/weekUtils';
 import { useScheduleStore } from '@stores/useScheduleStore';
 
-const containerStyle = tva({ base: 'bg-background-0 pb-1' });
+const containerStyle = tva({ base: 'bg-background-0' });
 
 interface WeekStripProps {
   onDateSelected?: (date: string) => void;
@@ -103,10 +102,9 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
 
   return (
     <Box className={containerStyle({})}>
-      <WeekStripDayHeaders />
       <FlatList
         ref={flatListRef}
-        style={{ height: 54 }}
+        style={{ height: 40 }}
         data={weeks}
         renderItem={renderWeekPage}
         keyExtractor={keyExtractor}
