@@ -5,8 +5,8 @@
 export const calendarColors = {
   /** Today indicator — green filled circle */
   today: '#00DB74',
-  /** Selected date indicator — blue filled circle */
-  selected: '#00B0DB',
+  /** Selected date indicator — green filled circle */
+  selected: '#00DB74',
   /** Event dot beneath dates with events */
   eventDot: '#00DB74',
   /** Adjacent month dates (grayed out) */

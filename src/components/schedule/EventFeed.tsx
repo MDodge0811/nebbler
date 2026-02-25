@@ -69,6 +69,7 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
 
   return (
     <SectionList
+      style={{ flex: 1 }}
       ref={sectionListRef}
       sections={sections}
       renderSectionHeader={renderSectionHeader}

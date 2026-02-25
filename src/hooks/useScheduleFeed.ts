@@ -47,8 +47,12 @@ function getDateRange(startDate: string, endDate: string): string[] {
 export function buildSections(
   events: FeedEvent[],
   startDate: string,
-  endDate: string
+  endDate: string,
+  displayStartDate?: string
 ): DateSection[] {
+  if (displayStartDate && displayStartDate > startDate) {
+    startDate = displayStartDate;
+  }
   const dateRange = getDateRange(startDate, endDate);
 
   const eventsByDate = new Map<string, FeedEvent[]>();
@@ -79,7 +83,7 @@ export function buildSections(
  * Stage 1: useCalendarGroupMemberships → calendar IDs
  * Stage 2: useQuery with dynamic WHERE calendar_id IN (...) → events JOIN calendars
  */
-export function useScheduleFeed(startDate: string, endDate: string) {
+export function useScheduleFeed(startDate: string, endDate: string, displayStartDate?: string) {
   const { user, error: userError } = useCurrentUser();
   const primaryGroupId = user?.primary_calendar_group_id;
 
@@ -114,8 +118,8 @@ export function useScheduleFeed(startDate: string, endDate: string) {
   const { data: events = [], isLoading, error } = useQuery<FeedEvent>(sql, params);
 
   const sections = useMemo(
-    () => buildSections(events, startDate, endDate),
-    [events, startDate, endDate]
+    () => buildSections(events, startDate, endDate, displayStartDate),
+    [events, startDate, endDate, displayStartDate]
   );
 
   return { sections, events, isLoading, error: userError ?? membershipsError ?? error };

@@ -30,12 +30,9 @@ export const WeekStripDayCell = memo(function WeekStripDayCell({
 }: WeekStripDayCellProps) {
   const handlePress = useCallback(() => onPress(dateString), [onPress, dateString]);
 
-  const circleColor = isSelected
-    ? calendarColors.selected
-    : isToday
-      ? calendarColors.today
-      : undefined;
-  const textColor = circleColor ? '#FFFFFF' : calendarColors.dayText;
+  const isTodayOnly = isToday && !isSelected;
+  const circleColor = isSelected ? calendarColors.selected : undefined;
+  const textColor = isSelected ? '#FFFFFF' : calendarColors.dayText;
 
   return (
     <Pressable
@@ -54,7 +51,11 @@ export const WeekStripDayCell = memo(function WeekStripDayCell({
               alignItems: 'center',
               justifyContent: 'center',
             },
-            circleColor ? { backgroundColor: circleColor } : undefined,
+            circleColor
+              ? { backgroundColor: circleColor }
+              : isTodayOnly
+                ? { borderWidth: 2, borderColor: calendarColors.today }
+                : undefined,
           ]}
         >
           <Text className={dayNumberStyle({})} style={{ color: textColor }}>

@@ -91,6 +91,19 @@ describe('buildSections', () => {
     expect(ids).toEqual(['evt-early', 'evt-late', 'evt-mid']);
   });
 
+  it('narrows sections to displayStartDate when provided', () => {
+    const sections = buildSections([], '2026-02-20', '2026-02-26', '2026-02-24');
+    expect(sections).toHaveLength(3);
+    expect(sections[0].title).toBe('2026-02-24');
+    expect(sections[2].title).toBe('2026-02-26');
+  });
+
+  it('ignores displayStartDate when it precedes startDate', () => {
+    const sections = buildSections([], '2026-02-24', '2026-02-26', '2026-02-22');
+    expect(sections).toHaveLength(3);
+    expect(sections[0].title).toBe('2026-02-24');
+  });
+
   it('ignores events outside the date range', () => {
     const events = [
       makeFeedEvent({ id: 'evt-in', start_time: '2026-02-24T10:00:00Z' }),

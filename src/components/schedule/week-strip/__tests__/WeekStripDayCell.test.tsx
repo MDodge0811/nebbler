@@ -37,16 +37,16 @@ describe('WeekStripDayCell', () => {
     expect(getByTestId('event-dot')).toBeTruthy();
   });
 
-  it('renders with selected style (blue circle, white text)', () => {
+  it('renders with selected style (green filled circle, white text)', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} isSelected />);
     const text = getByText('24');
     expect(text.props.style).toEqual(expect.objectContaining({ color: '#FFFFFF' }));
   });
 
-  it('renders with today style (green circle, white text) when not selected', () => {
+  it('renders with today style (green outline, dark text) when not selected', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} isToday />);
     const text = getByText('24');
-    expect(text.props.style).toEqual(expect.objectContaining({ color: '#FFFFFF' }));
+    expect(text.props.style).toEqual(expect.objectContaining({ color: calendarColors.dayText }));
   });
 
   it('renders with normal style (day text color) when not selected and not today', () => {
@@ -57,7 +57,7 @@ describe('WeekStripDayCell', () => {
 
   it('selected takes priority over today', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} isSelected isToday />);
-    // Both result in white text, but the circle should be selected color (blue)
+    // Selected wins: green filled circle with white text
     const text = getByText('24');
     expect(text.props.style).toEqual(expect.objectContaining({ color: '#FFFFFF' }));
   });
