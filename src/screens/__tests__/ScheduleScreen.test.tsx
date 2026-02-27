@@ -144,7 +144,7 @@ describe('ScheduleScreen scroll-date sync', () => {
     expect(useScheduleStore.getState().selectedDate).toBe('2026-03-01');
   });
 
-  it('debounces rapid date taps (300ms)', () => {
+  it('throttles rapid date taps (300ms)', () => {
     render(<ScheduleScreen />);
 
     // First tap goes through

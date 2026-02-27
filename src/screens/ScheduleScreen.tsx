@@ -37,13 +37,14 @@ export function ScheduleScreen() {
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lastDateTapRef = useRef(0);
 
-  // Clear any pending timers on unmount
+  // Clear any pending timers and release sync lock on unmount
   useEffect(() => {
     return () => {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      if (useScheduleStore.getState().isSyncLocked) unlockSync();
     };
-  }, []);
+  }, [unlockSync]);
 
   // In month mode, drive query range from displayMonth so far-off months load events.
   // In week mode, drive from selectedDate as before.
@@ -120,16 +121,16 @@ export function ScheduleScreen() {
   // Calendar tap → feed scroll (works in both week and month modes)
   const handleDateSelected = useCallback(
     (date: string) => {
-      // Debounce: ignore rapid taps within 300ms
+      // Throttle: allow one tap per 300ms (leading edge — first tap fires immediately)
       const now = Date.now();
       if (now - lastDateTapRef.current < 300) return;
       lastDateTapRef.current = now;
 
       const sectionIndex = sectionIndexMap.get(date);
-      if (sectionIndex === undefined) return;
+      if (sectionIndex === undefined || !feedRef.current) return;
 
       lockSync();
-      feedRef.current?.scrollToSection(sectionIndex);
+      feedRef.current.scrollToSection(sectionIndex);
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       syncTimerRef.current = setTimeout(unlockSync, CALENDAR_SYNC_UNLOCK_DELAY_MS);
     },
