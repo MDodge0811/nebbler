@@ -9,7 +9,9 @@ import { HomeScreen } from '@screens/HomeScreen';
 import { SettingsScreen } from '@screens/SettingsScreen';
 import { DetailsScreen } from '@screens/DetailsScreen';
 import { ProfileScreen } from '@screens/ProfileScreen';
+import { CreateEventScreen } from '@screens/CreateEventScreen';
 import { DrawerContent } from '@components/schedule/DrawerContent';
+import { CustomTabBar } from '@components/schedule/CustomTabBar';
 import { AuthNavigator } from './AuthNavigator';
 import { navigationTheme } from '@constants/theme';
 import { useAuth } from '@hooks/useAuth';
@@ -27,7 +29,7 @@ const loadingTextStyle = tva({ base: 'mt-4 text-base text-typography-600' });
 
 function MainTabs() {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator tabBar={(props) => <CustomTabBar {...props} />}>
       <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
@@ -58,6 +60,11 @@ function MainNavigator() {
       <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
       <Stack.Screen name="Details" component={DetailsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen
+        name="CreateEvent"
+        component={CreateEventScreen}
+        options={{ presentation: 'modal', headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }

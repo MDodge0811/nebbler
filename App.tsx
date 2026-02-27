@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PowerSyncContext } from '@powersync/react';
@@ -61,15 +62,17 @@ export default function App() {
   }
 
   return (
-    <GluestackUIProvider mode="light">
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <PowerSyncContext.Provider value={database}>
-            <StatusBar style="auto" />
-            <AppNavigator />
-          </PowerSyncContext.Provider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </GluestackUIProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <GluestackUIProvider mode="light">
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <PowerSyncContext.Provider value={database}>
+              <StatusBar style="auto" />
+              <AppNavigator />
+            </PowerSyncContext.Provider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </GluestackUIProvider>
+    </GestureHandlerRootView>
   );
 }

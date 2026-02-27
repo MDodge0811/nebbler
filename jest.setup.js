@@ -35,12 +35,6 @@ jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }) => children,
 }));
 
-// Mock react-native-calendars (complex gestures + calendar UI not available in Jest)
-jest.mock('react-native-calendars', () => ({
-  CalendarProvider: ({ children }) => children,
-  ExpandableCalendar: jest.fn(() => null),
-}));
-
 // Mock react-native-gesture-handler (native module not available in Jest)
 jest.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: ({ children }) => children,
@@ -63,4 +57,17 @@ jest.mock('react-native-gesture-handler', () => ({
   NativeViewGestureHandler: jest.fn(),
   gestureHandlerRootHOC: jest.fn((component) => component),
   Directions: {},
+  Gesture: {
+    Pan: () => ({
+      activeOffsetY: jest.fn().mockReturnThis(),
+      failOffsetX: jest.fn().mockReturnThis(),
+      onStart: jest.fn().mockReturnThis(),
+      onUpdate: jest.fn().mockReturnThis(),
+      onEnd: jest.fn().mockReturnThis(),
+    }),
+  },
+  GestureDetector: ({ children }) => children,
 }));
+
+// Mock react-native-reanimated (native module not available in Jest)
+jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));

@@ -52,7 +52,7 @@ export function useEvents(calendarId: string | undefined, startDate: string, end
 }
 
 /**
- * Compute marked-dates object for react-native-calendars from an event list.
+ * Compute marked-dates object from an event list.
  * Returns `{ 'YYYY-MM-DD': { marked: true, dotColor: '...' } }`.
  */
 const EMPTY_MARKED: Record<string, { marked: true; dotColor: string }> = {};
