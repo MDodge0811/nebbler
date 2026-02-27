@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
@@ -7,7 +8,7 @@ const containerStyle = tva({ base: 'mx-4 mb-3 items-center justify-center rounde
 const titleStyle = tva({ base: 'text-base text-typography-400' });
 const subtitleStyle = tva({ base: 'mt-1 text-sm text-typography-300' });
 
-export function EmptyDayCard() {
+export const EmptyDayCard = memo(function EmptyDayCard() {
   return (
     <Box className={containerStyle({})}>
       <VStack className="items-center">
@@ -16,4 +17,4 @@ export function EmptyDayCard() {
       </VStack>
     </Box>
   );
-}
+});

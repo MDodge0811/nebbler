@@ -8,7 +8,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { getCalendarColor } from '@utils/calendarColor';
 import { formatTimeRange } from '@utils/formatTime';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 
 const cardStyle = tva({ base: 'mx-4 mb-3 overflow-hidden rounded-xl shadow-sm' });
 const bodyStyle = tva({ base: 'px-4 py-3' });
@@ -23,7 +23,7 @@ interface EventCardProps {
   footer?: ReactNode;
 }
 
-export function EventCard({ event, onPress, footer }: EventCardProps) {
+export const EventCard = memo(function EventCard({ event, onPress, footer }: EventCardProps) {
   const color = getCalendarColor(event.calendar_id ?? '');
   const timeRange =
     event.start_time && event.end_time ? formatTimeRange(event.start_time, event.end_time) : '';
@@ -51,4 +51,4 @@ export function EventCard({ event, onPress, footer }: EventCardProps) {
       </Box>
     </Pressable>
   );
-}
+});

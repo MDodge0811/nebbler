@@ -12,7 +12,7 @@ import { WeekStrip } from './week-strip/WeekStrip';
 import { MonthGrid, ROW_HEIGHT as MONTH_ROW_HEIGHT } from './month-grid/MonthGrid';
 import { GrabHandle, GRAB_HANDLE_HEIGHT } from './GrabHandle';
 import { useScheduleStore } from '@stores/useScheduleStore';
-import { getMonthGrid } from '@utils/monthUtils';
+import { getMonthRowCount } from '@utils/monthUtils';
 
 const DAY_HEADERS_HEIGHT = 24;
 const WEEK_ROW_HEIGHT = 40;
@@ -22,8 +22,7 @@ const SNAP_VELOCITY_THRESHOLD = 500;
 const SNAP_POSITION_THRESHOLD = 0.4;
 
 function getExpandedHeight(monthKey: string): number {
-  const grid = getMonthGrid(monthKey);
-  return DAY_HEADERS_HEIGHT + grid.rowCount * MONTH_ROW_HEIGHT + GRAB_HANDLE_HEIGHT;
+  return DAY_HEADERS_HEIGHT + getMonthRowCount(monthKey) * MONTH_ROW_HEIGHT + GRAB_HANDLE_HEIGHT;
 }
 
 interface CalendarContainerProps {

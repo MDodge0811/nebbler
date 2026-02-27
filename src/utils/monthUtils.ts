@@ -36,6 +36,14 @@ export function isDateInMonth(dateString: string, monthKey: string): boolean {
   return dateString.slice(0, 7) === monthKey.slice(0, 7);
 }
 
+/** Returns the number of rows (4, 5, or 6) a month grid would have, without building the full grid. */
+export function getMonthRowCount(monthKey: string): number {
+  const d = noon(monthKey);
+  const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  const firstDow = new Date(d.getFullYear(), d.getMonth(), 1).getDay();
+  return Math.ceil((firstDow + daysInMonth) / 7);
+}
+
 /** Builds a month grid: rows of 7 day strings, padded with leading/trailing days. */
 export function getMonthGrid(monthKey: string): MonthGrid {
   const d = noon(monthKey);

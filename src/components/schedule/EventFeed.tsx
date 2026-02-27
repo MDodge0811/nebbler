@@ -4,6 +4,7 @@ import { DateSectionHeader } from '@components/schedule/DateSectionHeader';
 import { EventCard } from '@components/schedule/EventCard';
 import { EmptyDayCard } from '@components/schedule/EmptyDayCard';
 import { isEmptySentinel } from '@hooks/useScheduleFeed';
+import { useScheduleStore } from '@stores/useScheduleStore';
 import type { DateSection, FeedEvent, EmptySentinel } from '@hooks/useScheduleFeed';
 
 export interface EventFeedRef {
@@ -27,6 +28,7 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
   { sections, refreshing, onRefresh, onEventPress, onViewableItemsChanged },
   ref
 ) {
+  const today = useScheduleStore((s) => s.today);
   const sectionListRef = useRef<SectionList<FeedEvent | EmptySentinel, DateSection>>(null);
 
   useImperativeHandle(ref, () => ({
@@ -51,9 +53,12 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
     []
   );
 
-  const renderSectionHeader = useCallback(({ section }: { section: DateSection }) => {
-    return <DateSectionHeader dateString={section.title} />;
-  }, []);
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: DateSection }) => {
+      return <DateSectionHeader dateString={section.title} today={today} />;
+    },
+    [today]
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: FeedEvent | EmptySentinel }) => {
@@ -76,6 +81,8 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
       renderItem={renderItem}
       keyExtractor={keyExtractor}
       stickySectionHeadersEnabled
+      windowSize={5}
+      maxToRenderPerBatch={5}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       onViewableItemsChanged={handleViewableItemsChanged}
       viewabilityConfig={viewabilityConfigRef.current}

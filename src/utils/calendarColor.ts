@@ -9,15 +9,22 @@ const CALENDAR_COLORS = [
   '#FDE6A8', // soft yellow
 ];
 
+const colorCache = new Map<string, string>();
+
 /**
  * Returns a deterministic pastel color for a calendar based on its ID.
  * Stubs in for the missing `calendars.color` schema field — once that column
  * exists, callers should prefer the stored color and fall back to this.
  */
 export function getCalendarColor(calendarId: string): string {
+  const cached = colorCache.get(calendarId);
+  if (cached) return cached;
+
   let hash = 0;
   for (let i = 0; i < calendarId.length; i++) {
     hash = hash + calendarId.charCodeAt(i);
   }
-  return CALENDAR_COLORS[hash % CALENDAR_COLORS.length];
+  const color = CALENDAR_COLORS[hash % CALENDAR_COLORS.length];
+  colorCache.set(calendarId, color);
+  return color;
 }
