@@ -24,6 +24,9 @@ interface EventCardProps {
 }
 
 export const EventCard = memo(function EventCard({ event, onPress, footer }: EventCardProps) {
+  if (__DEV__ && !event.calendar_id) {
+    console.warn('[EventCard] Event missing calendar_id:', event.id);
+  }
   const color = getCalendarColor(event.calendar_id ?? '');
   const timeRange =
     event.start_time && event.end_time ? formatTimeRange(event.start_time, event.end_time) : '';

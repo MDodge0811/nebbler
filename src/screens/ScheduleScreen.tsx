@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ViewToken } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { Box } from '@/components/ui/box';
+import { Text } from '@/components/ui/text';
 import { ScheduleHeader } from '@components/schedule/ScheduleHeader';
 import { CalendarContainer } from '@components/schedule/CalendarContainer';
 import { EventFeed, type EventFeedRef } from '@components/schedule/EventFeed';
@@ -12,6 +14,8 @@ import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthBufferRange, monthKeyOf } from '@utils/dateRange';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
+const errorBannerStyle = tva({ base: 'bg-error-50 px-4 py-2' });
+const errorTextStyle = tva({ base: 'text-sm text-error-600' });
 
 // Delay (ms) before unlocking scroll↔calendar sync. Shorter for feed-driven
 // updates (the calendar strip moves instantly), longer for calendar-driven
@@ -30,11 +34,13 @@ export function ScheduleScreen() {
 
   const feedRef = useRef<EventFeedRef>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Clear any pending sync-unlock timer on unmount
+  // Clear any pending timers on unmount
   useEffect(() => {
     return () => {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
   }, []);
 
@@ -46,11 +52,20 @@ export function ScheduleScreen() {
   const monthKey = monthKeyOf(queryAnchor);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memoize by month, not by day
   const { startDate, endDate } = useMemo(() => getMonthBufferRange(queryAnchor), [monthKey]);
-  const { sections } = useScheduleFeed(startDate, endDate, today);
+  const { sections, isLoading, error: feedError } = useScheduleFeed(startDate, endDate, today);
 
   // Calendar event dots — shared date range with the feed query
-  const { data: calendarEvents = [] } = useCalendarEvents(startDate, endDate);
+  const { data: calendarEvents = [], error: calendarEventsError } = useCalendarEvents(
+    startDate,
+    endDate
+  );
   const markedDates = useMarkedDates(calendarEvents);
+
+  useEffect(() => {
+    if (feedError) console.error('[ScheduleScreen] Schedule feed query failed:', feedError);
+    if (calendarEventsError)
+      console.error('[ScheduleScreen] Calendar events query failed:', calendarEventsError);
+  }, [feedError, calendarEventsError]);
 
   const handleNavigateToProfile = useCallback(() => {
     navigation.navigate('Profile');
@@ -58,8 +73,9 @@ export function ScheduleScreen() {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    // PowerSync syncs reactively — this is cosmetic
-    setTimeout(() => setRefreshing(false), 800);
+    // TODO: tie to actual PowerSync reconnect/sync trigger once available.
+    // PowerSync syncs reactively — this is cosmetic for now.
+    refreshTimerRef.current = setTimeout(() => setRefreshing(false), 800);
   }, []);
 
   // Feed scroll → calendar update
@@ -73,8 +89,8 @@ export function ScheduleScreen() {
       const topItem = viewableItems.find((item) => item.section != null);
       if (!topItem?.section) return;
 
-      const topDate = (topItem.section as { title: string }).title;
-      if (topDate === useScheduleStore.getState().selectedDate) return;
+      const topDate = (topItem.section as { title?: string })?.title;
+      if (!topDate || topDate === useScheduleStore.getState().selectedDate) return;
 
       lockSync();
       selectDate(topDate);
@@ -100,17 +116,32 @@ export function ScheduleScreen() {
     [sections, lockSync, unlockSync]
   );
 
+  const error = feedError ?? calendarEventsError;
+
   return (
     <Box className={containerStyle({})}>
       <ScheduleHeader onNavigateToProfile={handleNavigateToProfile} />
       <CalendarContainer onDateSelected={handleDateSelected} markedDates={markedDates} />
-      <EventFeed
-        ref={feedRef}
-        sections={sections}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        onViewableItemsChanged={handleViewableItemsChanged}
-      />
+      {error && (
+        <Box className={errorBannerStyle({})}>
+          <Text className={errorTextStyle({})}>
+            Could not load your schedule. Pull down to retry.
+          </Text>
+        </Box>
+      )}
+      {isLoading && sections.length === 0 ? (
+        <Box className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" />
+        </Box>
+      ) : (
+        <EventFeed
+          ref={feedRef}
+          sections={sections}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          onViewableItemsChanged={handleViewableItemsChanged}
+        />
+      )}
     </Box>
   );
 }
