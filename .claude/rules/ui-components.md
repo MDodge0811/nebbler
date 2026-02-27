@@ -18,12 +18,14 @@ paths:
 - Adding new Gluestack components may require adding new functions to the `nativewind` mock in `jest.setup.js`
 - Uses TVA (Tailwind Variants Array) pattern with NativeWind — `tva()`, `withStyleContext`, `useStyleContext`
 
-## Custom WeekStrip Calendar
+## Custom Calendar (Week + Month)
 
-- Custom week-strip calendar in `src/components/schedule/week-strip/`
-- Event data flows from PowerSync via `useCalendarEvents()` → `useMarkedDates()` → `markedDates` prop
-- Calendar colors: `src/constants/calendarColors.ts`
-- Store-driven: reads `selectedDate`, `today`, `isSyncLocked` directly from `useScheduleStore`
+- Entry point: `CalendarContainer` → `src/components/schedule/CalendarContainer.tsx`
+- Week view: `src/components/schedule/week-strip/`
+- Month view: `src/components/schedule/month-grid/`
+- Event data: PowerSync → `useCalendarEvents()` → `useMarkedDates()` → `markedDates` prop
+- Colors: `src/constants/calendarColors.ts`
+- Store-driven: reads `selectedDate`, `today`, `viewMode`, `displayMonth` from `useScheduleStore`
 
 ## Colors
 
@@ -33,7 +35,7 @@ paths:
 
 ## Deep-Dive References
 
-| Topic              | File                                         | When to Read                                                          |
-| ------------------ | -------------------------------------------- | --------------------------------------------------------------------- |
-| Gluestack UI       | `.claude/rules/ui/gluestack.md`              | Adding/modifying/removing Gluestack components, theming, TVA patterns |
-| WeekStrip Calendar | `.claude/rules/ui/react-native-calendars.md` | Working on schedule calendar, event display, date selection           |
+| Topic        | File                            | When to Read                                                             |
+| ------------ | ------------------------------- | ------------------------------------------------------------------------ |
+| Gluestack UI | `.claude/rules/ui/gluestack.md` | Adding/modifying/removing Gluestack components, theming, TVA patterns    |
+| Calendar     | `.claude/rules/ui/calendar.md`  | Working on schedule calendar, week/month views, gestures, date selection |
