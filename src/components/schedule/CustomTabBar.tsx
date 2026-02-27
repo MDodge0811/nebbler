@@ -50,15 +50,27 @@ function GearIcon({ color }: { color: string }) {
 
 function PlusIcon() {
   return (
-    <Svg width={28} height={28} viewBox="0 0 28 28" fill="none">
-      <Path d="M14 4v20M4 14h20" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" />
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 4v16M4 12h16" stroke="#FFFFFF" strokeWidth={2.5} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function PeopleIcon({ color }: { color: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Circle cx={9} cy={7} r={3} stroke={color} strokeWidth={2} />
+      <Path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke={color} strokeWidth={2} />
+      <Circle cx={17} cy={8} r={2.5} stroke={color} strokeWidth={2} />
+      <Path d="M21 21v-1.5a3 3 0 00-3-3h-.5" stroke={color} strokeWidth={2} strokeLinecap="round" />
     </Svg>
   );
 }
 
 const TAB_ICONS: Record<string, (props: { color: string }) => ReactNode> = {
-  Schedule: CalendarIcon,
+  Calendars: CalendarIcon,
   Home: HomeIcon,
+  People: PeopleIcon,
   Settings: GearIcon,
 };
 
@@ -71,47 +83,50 @@ export function CustomTabBar({ state, descriptors, navigation: tabNavigation }: 
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
+        const isCreateTab = route.name === 'Create';
+
+        if (isCreateTab) {
+          return (
+            <Pressable
+              key={route.key}
+              style={styles.tab}
+              onPress={() => rootNavigation.navigate('CreateEvent')}
+              accessibilityRole="button"
+              accessibilityLabel="Create event"
+            >
+              <View style={styles.createButton}>
+                <PlusIcon />
+              </View>
+              <Text style={[styles.label, { color: TAB_COLORS.inactive }]}>New</Text>
+            </Pressable>
+          );
+        }
+
         const color = isFocused ? TAB_COLORS.active : TAB_COLORS.inactive;
         const Icon = TAB_ICONS[route.name];
 
-        // Insert the FAB before the middle tab
-        const middleIndex = Math.floor(state.routes.length / 2);
-
         return (
-          <View key={route.key} style={styles.tabWrapper}>
-            {index === middleIndex && (
-              <View style={styles.fabContainer}>
-                <Pressable
-                  style={styles.fab}
-                  onPress={() => rootNavigation.navigate('CreateEvent')}
-                  accessibilityRole="button"
-                  accessibilityLabel="Create event"
-                >
-                  <PlusIcon />
-                </Pressable>
-              </View>
-            )}
-            <Pressable
-              onPress={() => {
-                const event = tabNavigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
+          <Pressable
+            key={route.key}
+            onPress={() => {
+              const event = tabNavigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
 
-                if (!isFocused && !event.defaultPrevented) {
-                  tabNavigation.navigate(route.name);
-                }
-              }}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isFocused }}
-              accessibilityLabel={options.tabBarAccessibilityLabel ?? route.name}
-              style={styles.tab}
-            >
-              {Icon && <Icon color={color} />}
-              <Text style={[styles.label, { color }]}>{route.name}</Text>
-            </Pressable>
-          </View>
+              if (!isFocused && !event.defaultPrevented) {
+                tabNavigation.navigate(route.name);
+              }
+            }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isFocused }}
+            accessibilityLabel={options.tabBarAccessibilityLabel ?? route.name}
+            style={styles.tab}
+          >
+            {Icon && <Icon color={color} />}
+            <Text style={[styles.label, { color }]}>{route.name}</Text>
+          </Pressable>
         );
       })}
     </View>
@@ -125,11 +140,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: TAB_COLORS.border,
   },
-  tabWrapper: {
-    flex: 1,
-    alignItems: 'center',
-  },
   tab: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 8,
@@ -139,23 +151,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 2,
   },
-  fabContainer: {
-    position: 'absolute',
-    top: -28,
-    alignSelf: 'center',
-    zIndex: 1,
-  },
-  fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  createButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: TAB_COLORS.active,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
 });

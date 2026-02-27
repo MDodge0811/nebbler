@@ -5,9 +5,9 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
 import { ScheduleScreen } from '@screens/ScheduleScreen';
-import { HomeScreen } from '@screens/HomeScreen';
+import { CalendarsScreen } from '@screens/CalendarsScreen';
+import { PeopleScreen } from '@screens/PeopleScreen';
 import { SettingsScreen } from '@screens/SettingsScreen';
-import { DetailsScreen } from '@screens/DetailsScreen';
 import { ProfileScreen } from '@screens/ProfileScreen';
 import { CreateEventScreen } from '@screens/CreateEventScreen';
 import { DrawerContent } from '@components/schedule/DrawerContent';
@@ -27,11 +27,28 @@ const Drawer = createDrawerNavigator<DrawerParamList>();
 const loadingContainerStyle = tva({ base: 'flex-1 items-center justify-center bg-background-0' });
 const loadingTextStyle = tva({ base: 'mt-4 text-base text-typography-600' });
 
+// Empty component for the Create tab (navigation is handled by CustomTabBar)
+function EmptyScreen() {
+  return null;
+}
+
 function MainTabs() {
   return (
-    <Tab.Navigator tabBar={(props) => <CustomTabBar {...props} />}>
-      <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Home" component={HomeScreen} />
+    <Tab.Navigator initialRouteName="Home" tabBar={(props) => <CustomTabBar {...props} />}>
+      <Tab.Screen name="Calendars" component={CalendarsScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Home" component={ScheduleScreen} options={{ headerShown: false }} />
+      <Tab.Screen
+        name="Create"
+        component={EmptyScreen}
+        options={{ headerShown: false }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.getParent('MainDrawer')?.getParent()?.navigate('CreateEvent');
+          },
+        })}
+      />
+      <Tab.Screen name="People" component={PeopleScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
@@ -58,12 +75,11 @@ function MainNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
-      <Stack.Screen name="Details" component={DetailsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen
         name="CreateEvent"
         component={CreateEventScreen}
-        options={{ presentation: 'modal', headerShown: false }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
