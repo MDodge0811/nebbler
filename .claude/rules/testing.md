@@ -36,3 +36,5 @@ Add `jest.mock('module-name', () => ({...}))` to `jest.setup.js`.
 - `react-native-safe-area-context` and `react-native-gesture-handler` are mocked globally in `jest.setup.js`
 - When testing components that use `useNavigation()`, mock `@react-navigation/native` in the test file — include `getParent()` if the component dispatches drawer actions
 - Adding new Gluestack UI components via `npx gluestack-ui add <name>` may require adding new functions to the `nativewind` mock
+- `react-native-reanimated` is mocked via `react-native-reanimated/mock` in `jest.setup.js`
+- When adding chained Gesture API methods (`.activeOffsetY()`, `.failOffsetX()`, etc.), add matching `jest.fn().mockReturnThis()` to the `Gesture.Pan()` mock in `jest.setup.js`
