@@ -1,6 +1,10 @@
-import { NavigationContainer } from '@react-navigation/native';
+import { useEffect } from 'react';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {
+  createBottomTabNavigator,
+  type BottomTabNavigationProp,
+} from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
@@ -27,8 +31,13 @@ const Drawer = createDrawerNavigator<DrawerParamList>();
 const loadingContainerStyle = tva({ base: 'flex-1 items-center justify-center bg-background-0' });
 const loadingTextStyle = tva({ base: 'mt-4 text-base text-typography-600' });
 
-// Empty component for the Create tab (navigation is handled by CustomTabBar)
-function EmptyScreen() {
+// Fallback for the Create tab — CustomTabBar handles navigation, but if a user
+// lands here via deep link or state restoration, redirect to Home.
+function CreateFallback() {
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  useEffect(() => {
+    navigation.navigate('Home');
+  }, [navigation]);
   return null;
 }
 
@@ -39,17 +48,16 @@ function MainTabs() {
       <Tab.Screen name="Home" component={ScheduleScreen} options={{ headerShown: false }} />
       <Tab.Screen
         name="Create"
-        component={EmptyScreen}
+        component={CreateFallback}
         options={{ headerShown: false }}
-        listeners={({ navigation }) => ({
+        listeners={{
           tabPress: (e) => {
             e.preventDefault();
-            navigation.getParent('MainDrawer')?.getParent()?.navigate('CreateEvent');
           },
-        })}
+        }}
       />
       <Tab.Screen name="People" component={PeopleScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 }

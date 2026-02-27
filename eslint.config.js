@@ -122,6 +122,7 @@ module.exports = [
       'web-build/',
       'coverage/',
       'components/ui/**',
+      '.claude/worktrees/**',
     ],
   },
 ];

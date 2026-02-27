@@ -12,8 +12,8 @@ React Navigation 7 with native stack, drawer, and bottom tabs.
 
 `NativeStackNavigator` → `DrawerNavigator` (right-side push, `id="MainDrawer"`) → `BottomTabNavigator`
 
-- **Tabs:** `Schedule` (first/default), `Home`, `Settings`
-- **Stack screens** (outside tabs): `Details`, `Profile`
+- **Tabs:** `Calendars`, `Home` (default, renders ScheduleScreen), `Create` (action-only — redirects to CreateEvent via CustomTabBar, never renders), `People`, `Settings`
+- **Stack screens** (outside tabs): `Profile`, `CreateEvent`
 - **Drawer:** right-side push (`drawerType: 'slide'`), content in `src/components/schedule/DrawerContent.tsx`
 - **Route types** and `CompositeScreenProps` chains defined in `src/navigation/types.ts`
 
