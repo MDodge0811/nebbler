@@ -14,8 +14,33 @@ export function formatTimeRange(startTime: string, endTime: string): string {
   return `${timeFormatter.format(start)} – ${timeFormatter.format(end)}`;
 }
 
+/**
+ * Formats a single timestamp into a short time string.
+ * e.g. "2:00 PM"
+ */
+export function formatTimeShort(isoString: string): string {
+  return timeFormatter.format(new Date(isoString));
+}
+
+const shortWeekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * Formats a Date object into a short date string.
+ * e.g. "Fri, Feb 28"
+ */
+export function formatDateShort(date: Date): string {
+  return `${shortWeekdays[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+}
+
+/**
+ * Formats a Date object into a short time string.
+ * e.g. "3:00 PM"
+ */
+export function formatTime(date: Date): string {
+  return timeFormatter.format(date);
+}
 
 /**
  * Formats a YYYY-MM-DD date string into a section header label.

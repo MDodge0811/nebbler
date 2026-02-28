@@ -84,11 +84,7 @@ function MainNavigator() {
     <Stack.Navigator>
       <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen
-        name="CreateEvent"
-        component={CreateEventScreen}
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
     </Stack.Navigator>
   );
 }
