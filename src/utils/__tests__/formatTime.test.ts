@@ -1,4 +1,4 @@
-import { formatTimeRange, formatSectionDate } from '@utils/formatTime';
+import { formatTimeRange, formatTimeShort, formatSectionDate } from '@utils/formatTime';
 
 describe('formatTimeRange', () => {
   it('formats a time range with AM/PM', () => {
@@ -11,6 +11,18 @@ describe('formatTimeRange', () => {
   it('handles same start and end time', () => {
     const result = formatTimeRange('2026-02-24T09:00:00Z', '2026-02-24T09:00:00Z');
     expect(result).toContain('–');
+  });
+});
+
+describe('formatTimeShort', () => {
+  it('formats a single time with AM/PM', () => {
+    const result = formatTimeShort('2026-02-24T14:00:00Z');
+    expect(result).toMatch(/[AP]M/);
+  });
+
+  it('returns a non-empty string', () => {
+    const result = formatTimeShort('2026-02-24T09:30:00Z');
+    expect(result.length).toBeGreaterThan(0);
   });
 });
 

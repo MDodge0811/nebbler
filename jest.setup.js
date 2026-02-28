@@ -71,3 +71,22 @@ jest.mock('react-native-gesture-handler', () => ({
 
 // Mock react-native-reanimated (native module not available in Jest)
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+
+// Mock expo-linear-gradient (native module not available in Jest)
+jest.mock('expo-linear-gradient', () => {
+  const { View } = require('react-native');
+  return { LinearGradient: View };
+});
+
+// Mock @gorhom/bottom-sheet (native module not available in Jest)
+jest.mock('@gorhom/bottom-sheet', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: View,
+    BottomSheetModal: ({ children }) => children,
+    BottomSheetModalProvider: ({ children }) => children,
+    BottomSheetView: View,
+    BottomSheetBackdrop: View,
+  };
+});

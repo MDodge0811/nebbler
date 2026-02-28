@@ -17,6 +17,7 @@ export interface EmptySentinel {
 export interface DateSection {
   title: string; // YYYY-MM-DD
   data: (FeedEvent | EmptySentinel)[];
+  eventCount: number;
 }
 
 export function isEmptySentinel(item: FeedEvent | EmptySentinel): item is EmptySentinel {
@@ -69,9 +70,11 @@ export function buildSections(
 
   return dateRange.map((date) => {
     const dayEvents = eventsByDate.get(date);
+    const count = dayEvents?.length ?? 0;
     return {
       title: date,
-      data: dayEvents && dayEvents.length > 0 ? dayEvents : [{ _empty: true, id: `empty-${date}` }],
+      data: count > 0 ? dayEvents! : [{ _empty: true, id: `empty-${date}` }],
+      eventCount: count,
     };
   });
 }
