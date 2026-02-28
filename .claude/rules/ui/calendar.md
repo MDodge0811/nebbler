@@ -199,11 +199,37 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
 
 **Key test cases:** empty events, single event marking, same-date deduplication, null/invalid start_time handling, stable empty reference.
 
+## ScheduleScreen Scroll↔Calendar Sync
+
+`ScheduleScreen` coordinates bidirectional sync between the event feed and the calendar (week strip / month grid). Both directions work in both week and month modes.
+
+**Feed scroll → calendar update** (`handleViewableItemsChanged`):
+
+- Reads the topmost visible section header date from `EventFeed`'s `onViewableItemsChanged`
+- Updates `selectedDate` in the store so the calendar highlights the correct day
+- In month mode, auto-advances `displayMonth` when scrolling crosses a month boundary
+- Rate-limited by `EventFeed`'s `viewabilityConfig.minimumViewTime` (150ms) — no additional throttle needed
+
+**Calendar tap → feed scroll** (`handleDateSelected`):
+
+- Uses `sectionIndexMap` (O(1) Map lookup) to find the feed section for the tapped date
+- Scrolls the feed to that section via `feedRef.current.scrollToSection()`
+- Throttled: leading-edge, one tap per 300ms via `lastDateTapRef`
+- Guards on `feedRef.current` — skips if feed isn't mounted (loading state)
+
+**Sync lock mechanism** (prevents feedback loops):
+
+- `lockSync()` / `unlockSync()` toggle `isSyncLocked` in the Zustand store
+- Both directions acquire the lock before updating, preventing cascading updates
+- Feed-driven unlock delay: `FEED_SYNC_UNLOCK_DELAY_MS` (100ms) — calendar strip moves instantly
+- Calendar-driven unlock delay: `CALENDAR_SYNC_UNLOCK_DELAY_MS` (300ms) — animated scroll needs settling time
+- Lock is released on component unmount to prevent permanent lock across navigation cycles
+
 ## Gotchas
 
 - **worklet/JS boundary:** Pan gesture callbacks are worklets. Store mutations must go through `runOnJS()`. Forgetting this causes a "Cannot access JS function from worklet" error.
 - **`scrollToOffset` > `scrollToIndex` for MonthGrid:** MonthGrid uses `scrollToOffset` for programmatic sync because `scrollToIndex` can be unreliable when page dimensions depend on dynamic row counts.
-- **Bidirectional sync guards:** Both WeekStrip and MonthGrid check `isSyncLocked` before handling taps, and compare `currentPageRef` before updating store on scroll — this prevents feedback loops where a store update triggers a scroll that triggers another store update.
+- **Bidirectional sync guards:** Both WeekStrip and MonthGrid check `isSyncLocked` before handling taps, and compare `currentPageRef` before updating store on scroll — this prevents feedback loops where a store update triggers a scroll that triggers another store update. ScheduleScreen adds an additional sync lock layer on top (see section above).
 - **Noon-pinning in date math:** `new Date(dateString + 'T12:00:00')` in weekUtils/monthUtils. Using midnight can shift dates across day boundaries depending on device timezone.
 - **MonthGrid stays mounted:** Once expanded, MonthGrid stays mounted (via `hasExpandedRef`) even when collapsed back to week mode. This avoids remount costs but means MonthGrid continues to hold state.
 - **Multi-day events:** `useMarkedDates` uses only `start_time` to place dots — multi-day events only get a dot on their start date.

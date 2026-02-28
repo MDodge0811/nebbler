@@ -35,14 +35,16 @@ export function ScheduleScreen() {
   const feedRef = useRef<EventFeedRef>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastDateTapRef = useRef(0);
 
-  // Clear any pending timers on unmount
+  // Clear any pending timers and release sync lock on unmount
   useEffect(() => {
     return () => {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      if (useScheduleStore.getState().isSyncLocked) unlockSync();
     };
-  }, []);
+  }, [unlockSync]);
 
   // In month mode, drive query range from displayMonth so far-off months load events.
   // In week mode, drive from selectedDate as before.
@@ -53,6 +55,13 @@ export function ScheduleScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memoize by month, not by day
   const { startDate, endDate } = useMemo(() => getMonthBufferRange(queryAnchor), [monthKey]);
   const { sections, isLoading, error: feedError } = useScheduleFeed(startDate, endDate, today);
+
+  // O(1) section lookup by date string — avoids linear scans on every date tap
+  const sectionIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    sections.forEach((section, index) => map.set(section.title, index));
+    return map;
+  }, [sections]);
 
   // Calendar event dots — shared date range with the feed query
   const { data: calendarEvents = [], error: calendarEventsError } = useCalendarEvents(
@@ -78,12 +87,11 @@ export function ScheduleScreen() {
     refreshTimerRef.current = setTimeout(() => setRefreshing(false), 800);
   }, []);
 
-  // Feed scroll → calendar update
+  // Feed scroll → calendar update (works in both week and month modes)
+  const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      // Read lock/mode state at call time to avoid stale closure
       if (useScheduleStore.getState().isSyncLocked) return;
-      if (useScheduleStore.getState().viewMode === 'month') return;
 
       // Find the topmost visible section header date
       const topItem = viewableItems.find((item) => item.section != null);
@@ -94,26 +102,39 @@ export function ScheduleScreen() {
 
       lockSync();
       selectDate(topDate);
+
+      // In month mode, auto-advance the month grid if we scrolled into a new month
+      const state = useScheduleStore.getState();
+      if (state.viewMode === 'month') {
+        const topMonthStart = topDate.slice(0, 7) + '-01';
+        if (topMonthStart !== state.displayMonth) {
+          setDisplayMonth(topMonthStart);
+        }
+      }
+
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       syncTimerRef.current = setTimeout(unlockSync, FEED_SYNC_UNLOCK_DELAY_MS);
     },
-    [lockSync, selectDate, unlockSync]
+    [lockSync, selectDate, unlockSync, setDisplayMonth]
   );
 
-  // Calendar tap → feed scroll (week mode only; month mode drives its own selection)
+  // Calendar tap → feed scroll (works in both week and month modes)
   const handleDateSelected = useCallback(
     (date: string) => {
-      if (useScheduleStore.getState().viewMode === 'month') return;
+      // Throttle: allow one tap per 300ms (leading edge — first tap fires immediately)
+      const now = Date.now();
+      if (now - lastDateTapRef.current < 300) return;
+      lastDateTapRef.current = now;
 
-      const sectionIndex = sections.findIndex((s) => s.title === date);
-      if (sectionIndex === -1) return;
+      const sectionIndex = sectionIndexMap.get(date);
+      if (sectionIndex === undefined || !feedRef.current) return;
 
       lockSync();
-      feedRef.current?.scrollToSection(sectionIndex);
+      feedRef.current.scrollToSection(sectionIndex);
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       syncTimerRef.current = setTimeout(unlockSync, CALENDAR_SYNC_UNLOCK_DELAY_MS);
     },
-    [sections, lockSync, unlockSync]
+    [sectionIndexMap, lockSync, unlockSync]
   );
 
   const error = feedError ?? calendarEventsError;
