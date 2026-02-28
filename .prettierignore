@@ -5,4 +5,5 @@ ios/
 dist/
 web-build/
 components/ui/
+.claude/worktrees/
 *.lock

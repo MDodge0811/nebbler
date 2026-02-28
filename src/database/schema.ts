@@ -14,15 +14,6 @@ import { column, Schema, Table } from '@powersync/react-native';
  *   completes and PowerSync syncs the authoritative timestamps back.
  */
 
-const testItems = new Table({
-  // PowerSync auto-includes 'id' column as primary key (TEXT type, UUID)
-  name: column.text,
-  description: column.text,
-  completed: column.integer, // SQLite has no boolean, use 0/1
-  inserted_at: column.text, // Set locally, overwritten by server on sync
-  updated_at: column.text,
-});
-
 const users = new Table({
   first_name: column.text,
   last_name: column.text,
@@ -123,7 +114,6 @@ const eventResponses = new Table({
  * Table names must match the sync rules defined in PowerSync dashboard
  */
 export const AppSchema = new Schema({
-  test_items: testItems,
   users: users,
   roles: roles,
   calendars: calendars,
@@ -140,7 +130,6 @@ export const AppSchema = new Schema({
  * Used for type-safe database operations
  */
 export type Database = (typeof AppSchema)['types'];
-export type TestItem = Database['test_items'];
 export type User = Database['users'];
 export type Role = Database['roles'];
 export type Calendar = Database['calendars'];
