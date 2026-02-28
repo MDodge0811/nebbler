@@ -3,6 +3,7 @@ import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
+import { SyncStatusIndicator } from '@components/SyncStatusIndicator';
 import { useAuth } from '@hooks/useAuth';
 import { useLogout } from '@hooks/useAuthMutations';
 import type { MainTabScreenProps } from '@navigation/types';
@@ -13,6 +14,7 @@ const sectionStyle = tva({ base: 'mt-6 gap-2' });
 const labelStyle = tva({ base: 'text-sm text-typography-500' });
 const valueStyle = tva({ base: 'text-base font-medium text-typography-900' });
 const logoutContainerStyle = tva({ base: 'mt-8' });
+const syncContainerStyle = tva({ base: 'mt-6' });
 
 export function SettingsScreen(_props: MainTabScreenProps<'Settings'>) {
   const { user } = useAuth();
@@ -32,6 +34,10 @@ export function SettingsScreen(_props: MainTabScreenProps<'Settings'>) {
           <Text className={valueStyle({})}>{user.email}</Text>
         </VStack>
       )}
+
+      <Box className={syncContainerStyle({})}>
+        <SyncStatusIndicator detailed />
+      </Box>
 
       <Box className={logoutContainerStyle({})}>
         <Button

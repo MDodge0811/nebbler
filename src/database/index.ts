@@ -3,7 +3,7 @@ export { initializeDatabase, connectDatabase, getDatabase, disconnectDatabase } 
 
 // Schema and types
 export { AppSchema } from './schema';
-export type { Database, TestItem } from './schema';
+export type { Database } from './schema';
 
 // Connector
 export { PowerSyncConnector } from './connector';

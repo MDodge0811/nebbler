@@ -14,14 +14,15 @@ export type DrawerParamList = {
 
 export type RootStackParamList = {
   Main: NavigatorScreenParams<DrawerParamList>;
-  Details: { itemId: number; title: string };
   Profile: undefined;
   CreateEvent: undefined;
 };
 
 export type MainTabParamList = {
-  Schedule: undefined;
+  Calendars: undefined;
   Home: undefined;
+  Create: undefined;
+  People: undefined;
   Settings: undefined;
 };
 

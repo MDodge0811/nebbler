@@ -1,7 +1,7 @@
-export { HomeScreen } from './HomeScreen';
 export { ScheduleScreen } from './ScheduleScreen';
 export { SettingsScreen } from './SettingsScreen';
-export { DetailsScreen } from './DetailsScreen';
+export { CalendarsScreen } from './CalendarsScreen';
+export { PeopleScreen } from './PeopleScreen';
 export { ProfileScreen } from './ProfileScreen';
 export { CreateEventScreen } from './CreateEventScreen';
 export { LoginScreen } from './auth/LoginScreen';
