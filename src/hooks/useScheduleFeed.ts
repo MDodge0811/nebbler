@@ -58,7 +58,10 @@ export function buildSections(
   const eventsByDate = new Map<string, FeedEvent[]>();
   for (const event of events) {
     if (!event.start_time) continue;
-    const dateKey = event.start_time.slice(0, 10);
+    // Convert UTC to local date for correct day bucketing
+    const localDate = new Date(event.start_time);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dateKey = `${localDate.getFullYear()}-${pad(localDate.getMonth() + 1)}-${pad(localDate.getDate())}`;
     const existing = eventsByDate.get(dateKey);
     if (existing) {
       existing.push(event);
