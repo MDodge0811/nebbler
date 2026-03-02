@@ -1,32 +1,16 @@
+import Constants from 'expo-constants';
+
 import { PowerSyncConfigSchema } from '@database/schemas';
 
-/**
- * PowerSync configuration
- *
- * For local development with Docker:
- * - PowerSync service runs on port 8080
- * - Phoenix API runs on port 4000
- *
- * For production, replace with your actual URLs.
- *
- * Validated at startup with Zod — throws if URLs are invalid.
- */
+const apiPort = Constants.expoConfig?.extra?.apiPort ?? '4000';
+const powersyncPort = Constants.expoConfig?.extra?.powersyncPort ?? '8080';
+
 export const powersyncConfig = PowerSyncConfigSchema.parse({
-  /**
-   * PowerSync instance URL
-   * Local: http://localhost:8080
-   * Production: https://<instance-id>.powersync.journeyapps.com
-   */
   powersyncUrl: __DEV__
-    ? 'http://localhost:8080'
+    ? `http://localhost:${powersyncPort}`
     : 'https://YOUR_INSTANCE_ID.powersync.journeyapps.com',
 
-  /**
-   * Backend API URL for authentication and write operations
-   * Local: http://localhost:4000
-   * Production: Your deployed API URL
-   */
-  backendUrl: __DEV__ ? 'http://localhost:4000' : 'https://your-backend-api.com',
+  backendUrl: __DEV__ ? `http://localhost:${apiPort}` : 'https://your-backend-api.com',
 });
 
 /**
