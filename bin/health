@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Check the health of the API and PowerSync services.
+# Auto-detects worktree ports from ../api/.env if present.
+#
+# Usage: ./bin/health
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="$(dirname "$SCRIPT_DIR")"
+API_ENV="$APP_DIR/../api/.env"
+
+API_PORT=4000
+POWERSYNC_PORT=8080
+
+if [[ -f "$API_ENV" ]]; then
+  API_PORT=$(grep -E '^API_PORT=' "$API_ENV" | cut -d= -f2)
+  POWERSYNC_PORT=$(grep -E '^POWERSYNC_PORT=' "$API_ENV" | cut -d= -f2)
+  SLOT=$(( (API_PORT - 4000) / 100 ))
+  echo "Worktree (slot $SLOT)"
+else
+  echo "Main stack"
+fi
+
+echo ""
+
+printf "API        (:%s)  " "$API_PORT"
+if curl -sf "http://localhost:$API_PORT/api/health" > /dev/null 2>&1; then
+  echo "OK"
+else
+  echo "DOWN"
+fi
+
+printf "PowerSync  (:%s)  " "$POWERSYNC_PORT"
+if curl -sf "http://localhost:$POWERSYNC_PORT/probes/liveness" > /dev/null 2>&1; then
+  echo "OK"
+else
+  echo "DOWN"
+fi
