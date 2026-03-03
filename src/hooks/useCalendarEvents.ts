@@ -130,6 +130,10 @@ export function useEventMutations() {
       setClauses.push('end_time = ?');
       values.push(updates.end_time);
     }
+    if (updates.calendar_id !== undefined) {
+      setClauses.push('calendar_id = ?');
+      values.push(updates.calendar_id);
+    }
 
     if (setClauses.length === 0) return;
 

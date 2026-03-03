@@ -4,5 +4,6 @@ export { CalendarsScreen } from './CalendarsScreen';
 export { PeopleScreen } from './PeopleScreen';
 export { ProfileScreen } from './ProfileScreen';
 export { CreateEventScreen } from './CreateEventScreen';
+export { EventDetailScreen } from './EventDetailScreen';
 export { LoginScreen } from './auth/LoginScreen';
 export { RegisterScreen } from './auth/RegisterScreen';

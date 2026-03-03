@@ -16,6 +16,7 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<DrawerParamList>;
   Profile: undefined;
   CreateEvent: undefined;
+  EventDetail: { eventId: string };
 };
 
 export type MainTabParamList = {
