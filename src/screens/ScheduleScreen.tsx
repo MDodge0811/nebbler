@@ -12,6 +12,7 @@ import { useScheduleFeed } from '@hooks/useScheduleFeed';
 import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthBufferRange, monthKeyOf } from '@utils/dateRange';
+import type { FeedEvent } from '@hooks/useScheduleFeed';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const errorBannerStyle = tva({ base: 'bg-error-50 px-4 py-2' });
@@ -79,6 +80,13 @@ export function ScheduleScreen() {
   const handleNavigateToProfile = useCallback(() => {
     navigation.navigate('Profile');
   }, [navigation]);
+
+  const handleEventPress = useCallback(
+    (event: FeedEvent) => {
+      navigation.navigate('EventDetail', { eventId: event.id });
+    },
+    [navigation]
+  );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -160,6 +168,7 @@ export function ScheduleScreen() {
           sections={sections}
           refreshing={refreshing}
           onRefresh={handleRefresh}
+          onEventPress={handleEventPress}
           onViewableItemsChanged={handleViewableItemsChanged}
         />
       )}

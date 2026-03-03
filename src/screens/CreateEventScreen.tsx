@@ -17,11 +17,13 @@ import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
 import { Pressable } from '@/components/ui/pressable';
-import { useCalendars } from '@hooks/useCalendars';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useEventMutations } from '@hooks/useCalendarEvents';
+import { useWritableCalendars, type WritableCalendar } from '@hooks/useWritableCalendars';
+import { CalendarPickerSheet } from '@components/CalendarPickerSheet';
 import { CreateEventSchema } from '@database/schemas';
 import { formatDateShort, formatTime } from '@utils/formatTime';
+import { getCalendarColor } from '@utils/calendarColor';
 import { ZodError } from 'zod';
 
 // --- Styles ---
@@ -78,8 +80,8 @@ type PickerTarget = 'startDate' | 'startTime' | 'endDate' | 'endTime' | null;
 
 export function CreateEventScreen() {
   const navigation = useNavigation();
-  const { data: calendars } = useCalendars();
   const { authUser } = useCurrentUser();
+  const { data: writableCalendars = [] } = useWritableCalendars(authUser?.id);
   const { createEvent } = useEventMutations();
 
   const defaultStart = useMemo(() => getNextWholeHour(), []);
@@ -94,10 +96,25 @@ export function CreateEventScreen() {
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(null);
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
 
   const titleInputRef = useRef<TextInput>(null);
 
-  const calendar = calendars?.[0];
+  // Default to first writable calendar when available
+  const calendar =
+    writableCalendars.find((c) => c.id === selectedCalendarId) ?? writableCalendars[0];
+
+  useEffect(() => {
+    if (!selectedCalendarId && writableCalendars.length > 0) {
+      setSelectedCalendarId(writableCalendars[0].id);
+    }
+  }, [selectedCalendarId, writableCalendars]);
+
+  const handleCalendarSelect = useCallback((cal: WritableCalendar) => {
+    setSelectedCalendarId(cal.id);
+    setShowCalendarPicker(false);
+  }, []);
 
   // Derived state
   const isDirty =
@@ -277,9 +294,17 @@ export function CreateEventScreen() {
           <View className={dividerStyle({})} />
 
           {/* Calendar row */}
-          <Pressable className="py-4" onPress={() => {}}>
+          <Pressable className="py-4" onPress={() => setShowCalendarPicker(true)}>
             <HStack className="items-center">
-              <View style={[styles.calendarDot, { backgroundColor: '#00DB74', marginRight: 10 }]} />
+              <View
+                style={[
+                  styles.calendarDot,
+                  {
+                    backgroundColor: calendar ? getCalendarColor(calendar.id) : '#00DB74',
+                    marginRight: 10,
+                  },
+                ]}
+              />
               <Text className={calendarNameStyle({})}>{calendar?.name ?? 'Personal Calendar'}</Text>
               <Text className={chevronStyle({})}>&#x203A;</Text>
             </HStack>
@@ -373,6 +398,14 @@ export function CreateEventScreen() {
           )}
         </VStack>
       </ScrollView>
+
+      <CalendarPickerSheet
+        visible={showCalendarPicker}
+        calendars={writableCalendars}
+        selectedCalendarId={selectedCalendarId}
+        onSelect={handleCalendarSelect}
+        onClose={() => setShowCalendarPicker(false)}
+      />
     </KeyboardAvoidingView>
   );
 }
