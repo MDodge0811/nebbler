@@ -1,6 +1,6 @@
-# CLAUDE.md
+# CLAUDE.md — Nebbler Mobile App
 
-This file provides guidance for AI agents (Claude, Cursor, Copilot, etc.) working on the Nebbler codebase.
+Guidance for AI agents working on the Nebbler mobile app.
 
 ## Project Overview
 
@@ -21,9 +21,13 @@ npm run format:check   # Prettier check
 npm run typecheck      # TypeScript type checking
 npm run knip           # Detect unused code, exports, and dependencies
 npm run test:coverage  # Jest with coverage report
+./bin/start            # Start Expo (auto-detects worktree ports)
+./bin/health           # Check API + PowerSync health
 ```
 
 **Always run `npm run check` before committing** to catch issues early.
+
+**Worktree:** `bin/start` and `bin/health` auto-detect if running in a worktree by checking `../api/.env`. In the main repo they use default ports. See root `AGENTS.md` for full worktree workflow.
 
 **Coverage:** Per-glob Istanbul thresholds in `jest.config.js` — CI fails if covered directories drop below their minimums.
 
@@ -38,7 +42,7 @@ src/
 ├── context/        # React contexts (AuthContext)
 ├── services/       # API service layer (authService)
 ├── database/       # PowerSync database layer (schema, connector, sync)
-├── constants/      # App constants (config, colors)
+├── constants/      # App constants (config with dynamic port detection, colors)
 ├── types/          # TypeScript type declarations
 └── utils/          # Utility functions
 ```

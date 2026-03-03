@@ -6,6 +6,8 @@ Docs: [PowerSync Debugging](https://docs.powersync.com/usage/tools/debugging)
 
 ## Quick Diagnostic Checklist
 
+> **Worktree note:** Default ports below assume the main stack. In a worktree, ports are offset (e.g. slot 1: API=4100, PowerSync=8180). Check the worktree's `api/.env` for actual port values.
+
 1. Are Docker services running? `docker compose ps` (need: postgres, powersync, api)
 2. Is the API healthy? `curl http://localhost:4000/api/health`
 3. Is PowerSync alive? `curl http://localhost:8080/probes/liveness`
@@ -108,12 +110,14 @@ PowerSync matches the JWT `kid` against JWKS entries — without it, key lookup 
 
 ## Docker Services
 
-| Service     | Port  | Health Check                          |
-| ----------- | ----- | ------------------------------------- |
-| PostgreSQL  | 5432  | `pg_isready -U postgres`              |
-| PowerSync   | 8080  | `curl localhost:8080/probes/liveness` |
-| Phoenix API | 4000  | `curl localhost:4000/api/health`      |
-| MongoDB     | 27017 | (PowerSync internal bucket storage)   |
+Ports are defaults — in worktrees they're offset via `.env` (e.g. slot 1: +100).
+
+| Service     | Default Port | Health Check                          |
+| ----------- | ------------ | ------------------------------------- |
+| PostgreSQL  | 5432         | `pg_isready -U postgres`              |
+| PowerSync   | 8080         | `curl localhost:8080/probes/liveness` |
+| Phoenix API | 4000         | `curl localhost:4000/api/health`      |
+| MongoDB     | 27017        | (PowerSync internal bucket storage)   |
 
 **Restart everything:** `cd nebbler-api && docker compose down && docker compose up -d`
 **View logs:** `docker compose logs -f api powersync`

@@ -1,8 +1,17 @@
-const timeFormatter = new Intl.DateTimeFormat('en-US', {
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-});
+/**
+ * Formats a Date object into a local 12-hour time string.
+ * Uses Date.getHours()/getMinutes() which always return local time,
+ * avoiding Hermes Intl.DateTimeFormat timezone issues.
+ * e.g. "3:00 PM"
+ */
+function formatLocalTime(date: Date): string {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const displayMinutes = String(minutes).padStart(2, '0');
+  return `${displayHours}:${displayMinutes} ${period}`;
+}
 
 /**
  * Formats a start/end time pair into a human-readable range.
@@ -11,19 +20,87 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
 export function formatTimeRange(startTime: string, endTime: string): string {
   const start = new Date(startTime);
   const end = new Date(endTime);
-  return `${timeFormatter.format(start)} – ${timeFormatter.format(end)}`;
+  return `${formatLocalTime(start)} – ${formatLocalTime(end)}`;
 }
 
 /**
- * Formats a single timestamp into a short time string.
+ * Formats a single ISO timestamp into a short time string.
  * e.g. "2:00 PM"
  */
 export function formatTimeShort(isoString: string): string {
-  return timeFormatter.format(new Date(isoString));
+  return formatLocalTime(new Date(isoString));
 }
 
+const shortWeekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const fullMonths = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/**
+ * Formats a Date object into a short date string.
+ * e.g. "Fri, Feb 28"
+ */
+export function formatDateShort(date: Date): string {
+  return `${shortWeekdays[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+}
+
+/**
+ * Formats a Date object into a short time string.
+ * e.g. "3:00 PM"
+ */
+export function formatTime(date: Date): string {
+  return formatLocalTime(date);
+}
+
+/**
+ * Formats a start/end ISO timestamp pair into a long-form event date/time string.
+ * e.g. "Tuesday, March 3 · 2:00 – 3:30 PM"
+ *
+ * If start and end are on different dates:
+ * "Tuesday, March 3, 2:00 PM – Wednesday, March 4, 3:30 PM"
+ */
+export function formatEventDateTime(startTime: string, endTime: string): string {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  const startDay = `${weekdays[start.getDay()]}, ${fullMonths[start.getMonth()]} ${start.getDate()}`;
+  const endDay = `${weekdays[end.getDay()]}, ${fullMonths[end.getMonth()]} ${end.getDate()}`;
+
+  const startTimeStr = formatLocalTime(start);
+  const endTimeStr = formatLocalTime(end);
+
+  if (
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate()
+  ) {
+    // Same day — collapse AM/PM if both share the same period
+    const startPeriod = start.getHours() >= 12 ? 'PM' : 'AM';
+    const endPeriod = end.getHours() >= 12 ? 'PM' : 'AM';
+
+    if (startPeriod === endPeriod) {
+      const startNoSuffix = startTimeStr.replace(/ [AP]M$/, '');
+      return `${startDay} \u00B7 ${startNoSuffix} \u2013 ${endTimeStr}`;
+    }
+
+    return `${startDay} \u00B7 ${startTimeStr} \u2013 ${endTimeStr}`;
+  }
+
+  return `${startDay}, ${startTimeStr} \u2013 ${endDay}, ${endTimeStr}`;
+}
 
 /**
  * Formats a YYYY-MM-DD date string into a section header label.

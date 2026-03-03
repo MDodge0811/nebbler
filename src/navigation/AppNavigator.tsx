@@ -14,6 +14,7 @@ import { PeopleScreen } from '@screens/PeopleScreen';
 import { SettingsScreen } from '@screens/SettingsScreen';
 import { ProfileScreen } from '@screens/ProfileScreen';
 import { CreateEventScreen } from '@screens/CreateEventScreen';
+import { EventDetailScreen } from '@screens/EventDetailScreen';
 import { DrawerContent } from '@components/schedule/DrawerContent';
 import { CustomTabBar } from '@components/schedule/CustomTabBar';
 import { AuthNavigator } from './AuthNavigator';
@@ -84,11 +85,8 @@ function MainNavigator() {
     <Stack.Navigator>
       <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen
-        name="CreateEvent"
-        component={CreateEventScreen}
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
+      <Stack.Screen name="EventDetail" component={EventDetailScreen} />
     </Stack.Navigator>
   );
 }
