@@ -2,25 +2,26 @@
 set -euo pipefail
 
 # Start the Expo dev server, auto-detecting worktree port configuration.
+# Runs prebuild if ios/ doesn't exist, then launches with expo run:ios.
 #
 # In a worktree:  reads ports from ../api/.env, picks an offset Expo port
 # In main repo:   uses default ports (API=4000, PowerSync=8080, Expo=8081)
 #
 # Usage: ./bin/start [expo args...]
-#   ./bin/start              # start normally
-#   ./bin/start --ios        # start and open iOS simulator
-#   ./bin/start --android    # start and open Android emulator
+#   ./bin/start              # prebuild (if needed) + run:ios
+#   ./bin/start --android    # prebuild (if needed) + run:android
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(dirname "$SCRIPT_DIR")"
 API_ENV="$APP_DIR/../api/.env"
 
+cd "$APP_DIR"
+
+# Auto-detect worktree ports
 if [[ -f "$API_ENV" ]]; then
-  # Worktree layout: app/ and api/ are siblings
   API_PORT=$(grep -E '^API_PORT=' "$API_ENV" | cut -d= -f2)
   POWERSYNC_PORT=$(grep -E '^POWERSYNC_PORT=' "$API_ENV" | cut -d= -f2)
 
-  # Derive Expo port from the slot offset (API 4100 → slot 1 → Expo 8082)
   SLOT=$(( (API_PORT - 4000) / 100 ))
   EXPO_PORT=$(( 8081 + SLOT ))
 
@@ -32,7 +33,26 @@ if [[ -f "$API_ENV" ]]; then
   echo "  Expo:      localhost:$EXPO_PORT"
   echo ""
 
-  exec npx expo start --port "$EXPO_PORT" "$@"
+  PORT_ARGS=(--port "$EXPO_PORT")
 else
-  exec npx expo start "$@"
+  PORT_ARGS=()
 fi
+
+# Determine platform from args (default: ios)
+PLATFORM="ios"
+REMAINING_ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    --android) PLATFORM="android" ;;
+    *) REMAINING_ARGS+=("$arg") ;;
+  esac
+done
+
+# Prebuild if native directory doesn't exist
+if [[ ! -d "$PLATFORM" ]]; then
+  echo "Native $PLATFORM/ directory not found, running prebuild..."
+  npx expo prebuild --platform "$PLATFORM"
+  echo ""
+fi
+
+exec npx expo run:"$PLATFORM" "${PORT_ARGS[@]}" "${REMAINING_ARGS[@]}"
