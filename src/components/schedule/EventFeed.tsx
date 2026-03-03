@@ -1,6 +1,6 @@
 import { useCallback, useRef, forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { SectionList, RefreshControl, type ViewToken } from 'react-native';
-import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { DateSectionHeader } from '@components/schedule/DateSectionHeader';
 import { EventCard } from '@components/schedule/EventCard';
 import { EmptyDayCard } from '@components/schedule/EmptyDayCard';
@@ -167,7 +167,7 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
   const keyExtractor = useCallback((item: FeedEvent | EmptySentinel) => item.id, []);
 
   return (
-    <BottomSheetModalProvider>
+    <>
       <SectionList
         style={{ flex: 1 }}
         ref={sectionListRef}
@@ -189,6 +189,6 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
         onDelete={handleDismissSheet}
         onShare={handleDismissSheet}
       />
-    </BottomSheetModalProvider>
+    </>
   );
 });

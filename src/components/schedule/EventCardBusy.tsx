@@ -9,7 +9,9 @@ import { VStack } from '@/components/ui/vstack';
 import { getCalendarColor } from '@utils/calendarColor';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
 
-const cardStyle = tva({ base: 'mx-4 mb-3 overflow-hidden rounded-xl shadow-sm' });
+const cardStyle = tva({
+  base: 'mx-4 mb-3 overflow-hidden rounded-xl border-[0.5px] border-outline-200 shadow-sm',
+});
 const bodyStyle = tva({ base: 'items-center px-4 py-4' });
 const busyLabel = tva({ base: 'text-lg font-bold text-typography-400' });
 const calendarNameStyle = tva({ base: 'text-xs text-typography-400' });

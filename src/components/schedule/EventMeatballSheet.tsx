@@ -1,6 +1,7 @@
 import { memo, useCallback, useMemo, forwardRef } from 'react';
 import { StyleSheet } from 'react-native';
-import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
@@ -70,6 +71,18 @@ export const EventMeatballSheet = memo(
   ) {
     const snapPoints = useMemo(() => ['25%'], []);
 
+    const renderBackdrop = useCallback(
+      (props: BottomSheetBackdropProps) => (
+        <BottomSheetBackdrop
+          {...props}
+          appearsOnIndex={0}
+          disappearsOnIndex={-1}
+          pressBehavior="close"
+        />
+      ),
+      []
+    );
+
     const handleEdit = useCallback(() => {
       if (event) onEdit?.(event);
     }, [event, onEdit]);
@@ -83,7 +96,12 @@ export const EventMeatballSheet = memo(
     }, [event, onShare]);
 
     return (
-      <BottomSheetModal ref={ref} snapPoints={snapPoints} enableDynamicSizing={false}>
+      <BottomSheetModal
+        ref={ref}
+        snapPoints={snapPoints}
+        enableDynamicSizing={false}
+        backdropComponent={renderBackdrop}
+      >
         <BottomSheetView style={styles.container}>
           <VStack>
             <Pressable onPress={handleEdit} accessibilityRole="button" accessibilityLabel="Edit">

@@ -13,7 +13,9 @@ import { getCalendarColor } from '@utils/calendarColor';
 import { formatTimeRange } from '@utils/formatTime';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
 
-const cardStyle = tva({ base: 'mx-4 mb-3 overflow-hidden rounded-xl shadow-sm' });
+const cardStyle = tva({
+  base: 'mx-4 mb-3 overflow-hidden rounded-xl border-[0.5px] border-outline-200 shadow-sm',
+});
 const bodyStyle = tva({ base: 'px-4 py-3' });
 const titleStyle = tva({ base: 'text-base font-bold text-typography-900' });
 const timeStyle = tva({ base: 'mt-1 text-sm text-typography-500' });
@@ -99,7 +101,7 @@ function adjustAlpha(hex: string, alpha: number): string {
 
 const styles = StyleSheet.create({
   headerContainer: {
-    minHeight: 72,
+    minHeight: 36,
     position: 'relative',
   },
   gradient: {

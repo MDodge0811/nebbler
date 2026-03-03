@@ -10,7 +10,9 @@ import { getCalendarColor } from '@utils/calendarColor';
 import { formatTimeShort } from '@utils/formatTime';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
 
-const cardStyle = tva({ base: 'mx-4 mb-2 overflow-hidden rounded-lg shadow-sm' });
+const cardStyle = tva({
+  base: 'mx-4 mb-2 overflow-hidden rounded-lg border-[0.5px] border-outline-200 shadow-sm',
+});
 const rowStyle = tva({ base: 'flex-1 items-center justify-between px-3' });
 const titleStyle = tva({ base: 'flex-1 text-sm font-semibold text-typography-900' });
 const timeStyle = tva({ base: 'mx-2 text-xs text-typography-500' });
