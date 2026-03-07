@@ -6,6 +6,7 @@ import {
   type BottomTabNavigationProp,
 } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
 import { ScheduleScreen } from '@screens/ScheduleScreen';
@@ -82,12 +83,14 @@ function MainDrawer() {
 
 function MainNavigator() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
-      <Stack.Screen name="EventDetail" component={EventDetailScreen} />
-    </Stack.Navigator>
+    <BottomSheetModalProvider>
+      <Stack.Navigator>
+        <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
+        <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+      </Stack.Navigator>
+    </BottomSheetModalProvider>
   );
 }
 

@@ -1,57 +1,48 @@
-import { View } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
-import { Pressable } from '@/components/ui/pressable';
-import { getCalendarColor } from '@utils/calendarColor';
-import { formatTimeRange } from '@utils/formatTime';
-import type { FeedEvent } from '@hooks/useScheduleFeed';
 import { memo, type ReactNode } from 'react';
+import { EventCardFull } from '@components/schedule/EventCardFull';
+import { EventCardCompact } from '@components/schedule/EventCardCompact';
+import { EventCardBusy } from '@components/schedule/EventCardBusy';
+import type { Attendee } from '@components/schedule/AttendeeRow';
+import type { FeedEvent } from '@hooks/useScheduleFeed';
 
-const cardStyle = tva({ base: 'mx-4 mb-3 overflow-hidden rounded-xl shadow-sm' });
-const bodyStyle = tva({ base: 'px-4 py-3' });
-const titleStyle = tva({ base: 'text-base font-bold text-typography-900' });
-const timeStyle = tva({ base: 'mt-1 text-sm text-typography-500' });
-const calendarRowStyle = tva({ base: 'mt-2 items-center gap-2' });
-const calendarNameStyle = tva({ base: 'text-xs text-typography-400' });
+export type CardDisplayMode = 'full' | 'compact' | 'busy';
 
 interface EventCardProps {
   event: FeedEvent;
+  mode?: CardDisplayMode;
   onPress?: () => void;
+  onMeatballPress?: () => void;
+  attendees?: Attendee[];
   footer?: ReactNode;
 }
 
-export const EventCard = memo(function EventCard({ event, onPress, footer }: EventCardProps) {
+export const EventCard = memo(function EventCard({
+  event,
+  mode = 'full',
+  onPress,
+  onMeatballPress,
+  attendees = [],
+  footer,
+}: EventCardProps) {
   if (__DEV__ && !event.calendar_id) {
     console.warn('[EventCard] Event missing calendar_id:', event.id);
   }
-  const color = getCalendarColor(event.calendar_id ?? '');
-  const timeRange =
-    event.start_time && event.end_time ? formatTimeRange(event.start_time, event.end_time) : '';
 
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={event.title ?? undefined}
-    >
-      <Box className={cardStyle({})}>
-        <View style={{ backgroundColor: color, minHeight: 72 }} />
-        <VStack className={bodyStyle({})}>
-          <Text className={titleStyle({})}>{event.title}</Text>
-          {timeRange ? <Text className={timeStyle({})}>{timeRange}</Text> : null}
-          <HStack className={calendarRowStyle({})}>
-            <View
-              style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }}
-              accessibilityLabel="Calendar color"
-            />
-            <Text className={calendarNameStyle({})}>{event.calendar_name}</Text>
-          </HStack>
-        </VStack>
-        {footer ?? null}
-      </Box>
-    </Pressable>
-  );
+  switch (mode) {
+    case 'compact':
+      return <EventCardCompact event={event} onPress={onPress} attendees={attendees} />;
+    case 'busy':
+      return <EventCardBusy event={event} />;
+    case 'full':
+    default:
+      return (
+        <EventCardFull
+          event={event}
+          onPress={onPress}
+          onMeatballPress={onMeatballPress}
+          attendees={attendees}
+          footer={footer}
+        />
+      );
+  }
 });

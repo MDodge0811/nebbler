@@ -57,6 +57,7 @@ describe('buildSections', () => {
     const sections = buildSections([], '2026-02-24', '2026-02-24');
     expect(sections[0].data).toHaveLength(1);
     expect(isEmptySentinel(sections[0].data[0])).toBe(true);
+    expect(sections[0].eventCount).toBe(0);
   });
 
   it('groups events into their respective date sections', () => {
@@ -68,7 +69,9 @@ describe('buildSections', () => {
     const sections = buildSections(events, '2026-02-24', '2026-02-25');
 
     expect(sections[0].data).toHaveLength(2);
+    expect(sections[0].eventCount).toBe(2);
     expect(sections[1].data).toHaveLength(1);
+    expect(sections[1].eventCount).toBe(1);
     expect(isEmptySentinel(sections[0].data[0])).toBe(false);
   });
 
