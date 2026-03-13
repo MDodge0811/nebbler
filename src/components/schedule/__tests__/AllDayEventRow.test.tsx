@@ -16,7 +16,7 @@ function makeFeedEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
     inserted_at: '2026-02-01T00:00:00Z',
     updated_at: '2026-02-01T00:00:00Z',
     calendar_name: 'Work Calendar',
-    calendar_type: 'group',
+    calendar_type: 'social',
     ...overrides,
   } as FeedEvent;
 }

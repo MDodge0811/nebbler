@@ -1,16 +1,600 @@
+import React, { useCallback, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import Svg, { Path, Line } from 'react-native-svg';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { Box } from '@/components/ui/box';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
+import { Pressable } from '@/components/ui/pressable';
+import { GroupCard } from '@components/calendars/GroupCard';
+import { CalendarRow } from '@components/calendars/CalendarRow';
+import { EditGroupCard } from '@components/calendars/EditGroupCard';
+import { DraggableCalendarRow } from '@components/calendars/DraggableCalendarRow';
+import { DropZone } from '@components/calendars/DropZone';
+import { DragProvider, useDragContext } from '@components/calendars/DragContext';
+import { EditableGroupName } from '@components/calendars/EditableGroupName';
+import { PlusMenuPopover } from '@components/calendars/PlusMenuPopover';
+import { useCalendarsListData } from '@hooks/useCalendarsListData';
+import { useCalendarGroupMutations } from '@hooks/useCalendarGroups';
+import { useCalendarsDisplayStore } from '@stores/useCalendarsDisplayStore';
+import { useCurrentUser } from '@hooks/useCurrentUser';
+import type { RootStackParamList } from '@navigation/types';
 
-const containerStyle = tva({ base: 'flex-1 items-center justify-center bg-background-0' });
-const titleStyle = tva({ base: 'text-2xl font-bold text-typography-900' });
-const subtitleStyle = tva({ base: 'mt-2 text-base text-typography-500' });
+const COLORS = {
+  primary: '#00DB74',
+  primaryLight: '#E8FBF1',
+  primaryBorder: '#A8EDCB',
+  border: '#E8E8EC',
+  surface: '#FFFFFF',
+  background: '#F5F5F7',
+};
+
+const titleStyle = tva({ base: 'text-[28px] font-bold text-typography-900' });
+const ungroupedTitleStyle = tva({ base: 'text-[15px] font-semibold text-typography-600' });
+const emptyTextStyle = tva({ base: 'text-sm italic text-typography-400 text-center py-4' });
+const createGroupLabelStyle = tva({ base: 'text-[14px] font-semibold' });
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function CalendarsScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  const { user } = useCurrentUser();
+  const {
+    primaryGroupId,
+    sortedGroups,
+    groupCalendarsMap,
+    ungroupedCalendars,
+    memberCountMap,
+    calendarsById,
+    allMemberships,
+  } = useCalendarsListData();
+
+  const { createGroup, updateGroup, deleteGroup, addCalendarToGroup, removeCalendarFromGroup } =
+    useCalendarGroupMutations();
+  const { toggleCalendar, setGroupVisibility, isCalendarVisible } = useCalendarsDisplayStore();
+
+  const [editing, setEditing] = useState(false);
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [newGroupName, setNewGroupName] = useState('');
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+
+  // Default: all groups open
+  const isGroupOpen = useCallback((groupId: string) => openGroups[groupId] ?? true, [openGroups]);
+
+  const toggleGroup = useCallback((groupId: string) => {
+    setOpenGroups((prev) => ({ ...prev, [groupId]: !(prev[groupId] ?? true) }));
+  }, []);
+
+  const isGroupChecked = useCallback(
+    (groupId: string) => {
+      const calendarIds = groupCalendarsMap[groupId] ?? [];
+      if (calendarIds.length === 0) return false;
+      return calendarIds.every((id) => isCalendarVisible(id));
+    },
+    [groupCalendarsMap, isCalendarVisible]
+  );
+
+  const handleToggleGroupCheck = useCallback(
+    (groupId: string) => {
+      const calendarIds = groupCalendarsMap[groupId] ?? [];
+      if (calendarIds.length === 0) return;
+      const allVisible = calendarIds.every((id) => isCalendarVisible(id));
+      setGroupVisibility(calendarIds, !allVisible);
+    },
+    [groupCalendarsMap, isCalendarVisible, setGroupVisibility]
+  );
+
+  const handleCalendarPress = useCallback(
+    (calendarId: string) => {
+      navigation.navigate('CalendarDetail', { calendarId });
+    },
+    [navigation]
+  );
+
+  const handleNewCalendar = useCallback(() => {
+    setPlusMenuOpen(false);
+    navigation.navigate('CreateCalendar');
+  }, [navigation]);
+
+  const handleNewGroup = useCallback(() => {
+    setPlusMenuOpen(false);
+    setNewGroupName('');
+    setIsCreatingGroup(true);
+  }, []);
+
+  const handleSubmitNewGroup = useCallback(async () => {
+    const trimmed = newGroupName.trim();
+    if (!trimmed || !user) {
+      setIsCreatingGroup(false);
+      return;
+    }
+    await createGroup(user.id, trimmed);
+    setIsCreatingGroup(false);
+    setNewGroupName('');
+  }, [newGroupName, user, createGroup]);
+
+  const handleImportCalendar = useCallback(() => {
+    setPlusMenuOpen(false);
+  }, []);
+
+  // Pending group name edits tracked locally
+  const [editedNames, setEditedNames] = useState<Record<string, string>>({});
+
+  const getEditedName = useCallback(
+    (groupId: string, originalName: string) => editedNames[groupId] ?? originalName,
+    [editedNames]
+  );
+
+  const handleNameChange = useCallback((groupId: string, name: string) => {
+    setEditedNames((prev) => ({ ...prev, [groupId]: name }));
+  }, []);
+
+  const handleNameBlur = useCallback(
+    async (groupId: string, originalName: string) => {
+      const edited = editedNames[groupId];
+      if (edited !== undefined && edited.trim() !== originalName) {
+        await updateGroup(groupId, { name: edited.trim() });
+      }
+      setEditedNames((prev) => {
+        const next = { ...prev };
+        delete next[groupId];
+        return next;
+      });
+    },
+    [editedNames, updateGroup]
+  );
+
+  const handleDeleteGroup = useCallback(
+    async (groupId: string) => {
+      await deleteGroup(groupId);
+    },
+    [deleteGroup]
+  );
+
+  // Default mode content
+  const renderDefaultMode = useMemo(() => {
+    const sections: React.ReactNode[] = [];
+
+    for (const group of sortedGroups) {
+      const isPrimary = group.id === primaryGroupId;
+      const calendarIds = groupCalendarsMap[group.id] ?? [];
+
+      sections.push(
+        <GroupCard
+          key={group.id}
+          name={group.name ?? ''}
+          isPrimary={isPrimary}
+          isOpen={isGroupOpen(group.id)}
+          onToggleOpen={() => toggleGroup(group.id)}
+          checked={isGroupChecked(group.id)}
+          onToggleCheck={() => handleToggleGroupCheck(group.id)}
+        >
+          {calendarIds.map((cid) => {
+            const cal = calendarsById[cid];
+            if (!cal) return null;
+            return (
+              <CalendarRow
+                key={cid}
+                calendar={cal}
+                memberCount={memberCountMap[cid] ?? 0}
+                isChecked={isCalendarVisible(cid)}
+                onToggle={() => toggleCalendar(cid)}
+                onPress={() => handleCalendarPress(cid)}
+                isInPrimaryGroup={isPrimary}
+              />
+            );
+          })}
+        </GroupCard>
+      );
+    }
+
+    if (ungroupedCalendars.length > 0) {
+      sections.push(
+        <View key="ungrouped" style={styles.ungroupedSection}>
+          <Text className={ungroupedTitleStyle({})} style={styles.ungroupedTitle}>
+            Ungrouped
+          </Text>
+          {ungroupedCalendars.map((cal) => (
+            <CalendarRow
+              key={cal.id}
+              calendar={cal}
+              memberCount={memberCountMap[cal.id] ?? 0}
+              isChecked={isCalendarVisible(cal.id)}
+              onToggle={() => toggleCalendar(cal.id)}
+              onPress={() => handleCalendarPress(cal.id)}
+              isInPrimaryGroup={false}
+            />
+          ))}
+        </View>
+      );
+    }
+
+    return sections;
+  }, [
+    sortedGroups,
+    primaryGroupId,
+    groupCalendarsMap,
+    calendarsById,
+    memberCountMap,
+    ungroupedCalendars,
+    isGroupOpen,
+    toggleGroup,
+    isGroupChecked,
+    handleToggleGroupCheck,
+    isCalendarVisible,
+    toggleCalendar,
+    handleCalendarPress,
+  ]);
+
+  // Handle drop: move calendar to a new group (or ungroup)
+  const handleDrop = useCallback(
+    async (calendarId: string, sourceGroupId: string | null, targetGroupId: string | null) => {
+      if (sourceGroupId === targetGroupId) return;
+
+      // Remove from old group
+      if (sourceGroupId) {
+        const membership = allMemberships.find(
+          (m) => m.calendar_id === calendarId && m.calendar_group_id === sourceGroupId
+        );
+        if (membership) {
+          await removeCalendarFromGroup(membership.id);
+        }
+      }
+
+      // Add to new group
+      if (targetGroupId) {
+        await addCalendarToGroup(targetGroupId, calendarId);
+      }
+    },
+    [allMemberships, removeCalendarFromGroup, addCalendarToGroup]
+  );
+
+  // Edit mode content — rendered inside DragProvider by EditModeContent
+  const editModeProps = useMemo(
+    () => ({
+      sortedGroups,
+      primaryGroupId,
+      groupCalendarsMap,
+      calendarsById,
+      ungroupedCalendars,
+      getEditedName,
+      handleNameChange,
+      handleNameBlur,
+      handleDeleteGroup,
+      handleNewGroup,
+      handleDrop,
+    }),
+    [
+      sortedGroups,
+      primaryGroupId,
+      groupCalendarsMap,
+      calendarsById,
+      ungroupedCalendars,
+      getEditedName,
+      handleNameChange,
+      handleNameBlur,
+      handleDeleteGroup,
+      handleNewGroup,
+      handleDrop,
+    ]
+  );
+
   return (
-    <Box className={containerStyle({})}>
-      <Text className={titleStyle({})}>Calendars</Text>
-      <Text className={subtitleStyle({})}>Coming soon</Text>
-    </Box>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header */}
+      <HStack style={styles.header}>
+        <Text className={titleStyle({})}>Calendars</Text>
+        <HStack style={styles.headerActions}>
+          {editing ? (
+            <Pressable onPress={() => setEditing(false)} style={styles.doneButton}>
+              <Text style={styles.doneButtonText}>Done</Text>
+            </Pressable>
+          ) : (
+            <>
+              <Pressable onPress={() => setEditing(true)} style={styles.editButton}>
+                <Text style={styles.editButtonText}>Edit</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setPlusMenuOpen(true)}
+                style={[styles.plusButton, plusMenuOpen && styles.plusButtonActive]}
+              >
+                <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+                  <Line
+                    x1={10}
+                    y1={4}
+                    x2={10}
+                    y2={16}
+                    stroke={plusMenuOpen ? COLORS.primary : '#1A1A1F'}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                  />
+                  <Line
+                    x1={4}
+                    y1={10}
+                    x2={16}
+                    y2={10}
+                    stroke={plusMenuOpen ? COLORS.primary : '#1A1A1F'}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+              </Pressable>
+            </>
+          )}
+        </HStack>
+      </HStack>
+
+      {/* Content */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {editing ? (
+          <DragProvider>
+            <EditModeContent {...editModeProps} />
+          </DragProvider>
+        ) : (
+          renderDefaultMode
+        )}
+
+        {isCreatingGroup && (
+          <View style={styles.newGroupCard}>
+            <EditableGroupName
+              value={newGroupName}
+              onChangeText={setNewGroupName}
+              onSubmit={handleSubmitNewGroup}
+              autoFocus
+            />
+          </View>
+        )}
+      </ScrollView>
+
+      <PlusMenuPopover
+        visible={plusMenuOpen}
+        onClose={() => setPlusMenuOpen(false)}
+        onNewCalendar={handleNewCalendar}
+        onNewGroup={handleNewGroup}
+        onImportCalendar={handleImportCalendar}
+      />
+    </SafeAreaView>
   );
 }
+
+// Extracted to a separate component so it can use DragContext
+type CalendarsListDataReturn = ReturnType<typeof useCalendarsListData>;
+
+interface EditModeContentProps {
+  sortedGroups: CalendarsListDataReturn['sortedGroups'];
+  primaryGroupId: string | null;
+  groupCalendarsMap: CalendarsListDataReturn['groupCalendarsMap'];
+  calendarsById: CalendarsListDataReturn['calendarsById'];
+  ungroupedCalendars: CalendarsListDataReturn['ungroupedCalendars'];
+  getEditedName: (groupId: string, originalName: string) => string;
+  handleNameChange: (groupId: string, name: string) => void;
+  handleNameBlur: (groupId: string, originalName: string) => void;
+  handleDeleteGroup: (groupId: string) => void;
+  handleNewGroup: () => void;
+  handleDrop: (
+    calendarId: string,
+    sourceGroupId: string | null,
+    targetGroupId: string | null
+  ) => void;
+}
+
+function EditModeContent({
+  sortedGroups,
+  primaryGroupId,
+  groupCalendarsMap,
+  calendarsById,
+  ungroupedCalendars,
+  getEditedName,
+  handleNameChange,
+  handleNameBlur,
+  handleDeleteGroup,
+  handleNewGroup,
+  handleDrop,
+}: EditModeContentProps) {
+  const { activeDropZoneId, registerDropZone } = useDragContext();
+
+  const onDropZoneLayout = useCallback(
+    (groupId: string, layout: { y: number; height: number }) => {
+      registerDropZone(groupId, layout);
+    },
+    [registerDropZone]
+  );
+
+  return (
+    <>
+      {sortedGroups.map((group) => {
+        const isPrimary = group.id === primaryGroupId;
+        const calendarIds = groupCalendarsMap[group.id] ?? [];
+
+        return (
+          <EditGroupCard
+            key={group.id}
+            name={getEditedName(group.id, group.name ?? '')}
+            isPrimary={isPrimary}
+            onNameChange={(name) => handleNameChange(group.id, name)}
+            onNameBlur={() => handleNameBlur(group.id, group.name ?? '')}
+            onDelete={isPrimary ? undefined : () => handleDeleteGroup(group.id)}
+          >
+            {calendarIds.map((cid) => {
+              const cal = calendarsById[cid];
+              if (!cal) return null;
+              return (
+                <DraggableCalendarRow
+                  key={cid}
+                  calendar={cal}
+                  isInPrimaryGroup={isPrimary}
+                  sourceGroupId={group.id}
+                  onDrop={handleDrop}
+                />
+              );
+            })}
+            <DropZone
+              groupId={group.id}
+              isActive={activeDropZoneId === group.id}
+              onLayout={onDropZoneLayout}
+            />
+          </EditGroupCard>
+        );
+      })}
+
+      {/* Ungrouped section */}
+      <View style={styles.ungroupedSection}>
+        <Text className={ungroupedTitleStyle({})} style={styles.ungroupedTitle}>
+          Ungrouped
+        </Text>
+        {ungroupedCalendars.length > 0 ? (
+          ungroupedCalendars.map((cal) => (
+            <DraggableCalendarRow
+              key={cal.id}
+              calendar={cal}
+              isInPrimaryGroup={false}
+              sourceGroupId={null}
+              onDrop={handleDrop}
+            />
+          ))
+        ) : (
+          <Text className={emptyTextStyle({})}>Drag calendars here to ungroup them</Text>
+        )}
+        <DropZone
+          groupId="__ungrouped__"
+          isActive={activeDropZoneId === '__ungrouped__'}
+          onLayout={onDropZoneLayout}
+        />
+      </View>
+
+      {/* Create Group button */}
+      <Pressable onPress={handleNewGroup} style={styles.createGroupButton}>
+        <HStack style={styles.createGroupContent}>
+          <View style={styles.createGroupIcon}>
+            <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+              <Path
+                d="M8 3V13M3 8H13"
+                stroke={COLORS.primary}
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </View>
+          <Text className={createGroupLabelStyle({})} style={{ color: COLORS.primary }}>
+            Create Group
+          </Text>
+        </HStack>
+      </Pressable>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  header: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 14,
+  },
+  headerActions: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  editButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A1F',
+  },
+  doneButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: COLORS.primaryLight,
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
+  },
+  doneButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  plusButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusButtonActive: {
+    backgroundColor: COLORS.primaryLight,
+    borderColor: COLORS.primaryBorder,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  ungroupedSection: {
+    marginHorizontal: 12,
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  ungroupedTitle: {
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+  createGroupButton: {
+    marginHorizontal: 12,
+    marginTop: 4,
+    marginBottom: 20,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: COLORS.primaryBorder,
+    backgroundColor: COLORS.primaryLight,
+  },
+  createGroupContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+  },
+  createGroupIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: COLORS.primaryBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newGroupCard: {
+    marginHorizontal: 12,
+    marginBottom: 10,
+    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12,
+  },
+});

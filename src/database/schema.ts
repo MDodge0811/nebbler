@@ -35,6 +35,7 @@ const calendars = new Table({
   type: column.text,
   name: column.text,
   description: column.text,
+  color: column.text,
   rsvp_enabled: column.integer, // SQLite boolean 0/1
   discoverable: column.integer, // SQLite boolean 0/1
   default_view_mode: column.text,
