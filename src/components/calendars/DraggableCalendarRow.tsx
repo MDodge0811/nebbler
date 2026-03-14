@@ -3,7 +3,6 @@ import { StyleSheet, Vibration, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
@@ -81,7 +80,7 @@ export const DraggableCalendarRow = React.memo(function DraggableCalendarRow({
     .enabled(!isDragDisabled)
     .onStart(() => {
       'worklet';
-      scale.value = withSpring(1.03, { damping: 15, stiffness: 300 });
+      scale.value = withTiming(1.03, { duration: 100 });
       opacity.value = withTiming(0, { duration: 100 });
       zIndex.value = 100;
       runOnJS(handleDragStart)();
@@ -97,15 +96,15 @@ export const DraggableCalendarRow = React.memo(function DraggableCalendarRow({
     .onEnd((e) => {
       'worklet';
       runOnJS(handleDragEnd)(e.absoluteY);
-      translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      translateY.value = withTiming(0, { duration: 150 });
+      scale.value = withTiming(1, { duration: 150 });
       opacity.value = withTiming(1, { duration: 100 });
       zIndex.value = 0;
     })
     .onFinalize(() => {
       'worklet';
-      translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      translateY.value = withTiming(0, { duration: 150 });
+      scale.value = withTiming(1, { duration: 150 });
       opacity.value = withTiming(1, { duration: 100 });
       zIndex.value = 0;
     });
