@@ -96,7 +96,6 @@ const styles = StyleSheet.create({
     backgroundColor: calendarsUIColors.primaryLight,
     borderWidth: 1.5,
     borderColor: calendarsUIColors.primaryBorder,
-    overflow: 'hidden',
   },
   standardCard: {
     marginHorizontal: 12,
@@ -105,7 +104,6 @@ const styles = StyleSheet.create({
     backgroundColor: calendarsUIColors.surface,
     borderWidth: 1,
     borderColor: calendarsUIColors.border,
-    overflow: 'hidden',
   },
   header: {
     alignItems: 'center',

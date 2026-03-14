@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, Vibration, View } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -14,7 +14,7 @@ import { Text } from '@/components/ui/text';
 import { CalendarIcon } from './CalendarIcon';
 import { TypeBadge } from './TypeBadge';
 import { DragHandle } from './DragHandle';
-import { useDragContext } from './DragContext';
+import { useDragStore } from '@stores/useDragStore';
 import { getCalendarColor } from '@utils/calendarColor';
 import { UNGROUPED_DROP_ZONE_ID } from '@constants/calendarsUI';
 import type { Calendar } from '@database/schema';
@@ -29,7 +29,7 @@ interface DraggableCalendarRowProps {
   onDrop?: (calendarId: string, sourceGroupId: string | null, targetGroupId: string | null) => void;
 }
 
-export function DraggableCalendarRow({
+export const DraggableCalendarRow = React.memo(function DraggableCalendarRow({
   calendar,
   isInPrimaryGroup,
   sourceGroupId,
@@ -37,7 +37,11 @@ export function DraggableCalendarRow({
   onDrop,
 }: DraggableCalendarRowProps) {
   const color = calendar.color ?? getCalendarColor(calendar.id);
-  const { startDrag, endDrag, findDropZone, setActiveDropZone } = useDragContext();
+  const startDrag = useDragStore((s) => s.startDrag);
+  const endDrag = useDragStore((s) => s.endDrag);
+  const findDropZone = useDragStore((s) => s.findDropZone);
+  const setActiveDropZone = useDragStore((s) => s.setActiveDropZone);
+  const updateDragPosition = useDragStore((s) => s.updateDragPosition);
 
   const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
@@ -67,17 +71,18 @@ export function DraggableCalendarRow({
     (pageY: number) => {
       const zoneId = findDropZone(pageY);
       setActiveDropZone(zoneId);
+      updateDragPosition(pageY);
     },
-    [findDropZone, setActiveDropZone]
+    [findDropZone, setActiveDropZone, updateDragPosition]
   );
 
   const longPress = Gesture.LongPress()
-    .minDuration(300)
+    .minDuration(100)
     .enabled(!isDragDisabled)
     .onStart(() => {
       'worklet';
       scale.value = withSpring(1.03, { damping: 15, stiffness: 300 });
-      opacity.value = withTiming(0.9, { duration: 100 });
+      opacity.value = withTiming(0, { duration: 100 });
       zIndex.value = 100;
       runOnJS(handleDragStart)();
     });
@@ -136,7 +141,7 @@ export function DraggableCalendarRow({
       </Animated.View>
     </GestureDetector>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

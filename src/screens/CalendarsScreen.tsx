@@ -13,7 +13,8 @@ import { CalendarRow } from '@components/calendars/CalendarRow';
 import { EditGroupCard } from '@components/calendars/EditGroupCard';
 import { DraggableCalendarRow } from '@components/calendars/DraggableCalendarRow';
 import { DropZone } from '@components/calendars/DropZone';
-import { DragProvider, useDragContext } from '@components/calendars/DragContext';
+import { CalendarIcon } from '@components/calendars/CalendarIcon';
+import { useDragStore } from '@stores/useDragStore';
 import { EditableGroupName } from '@components/calendars/EditableGroupName';
 import { PlusMenuPopover } from '@components/calendars/PlusMenuPopover';
 import { useCalendarsListData } from '@hooks/useCalendarsListData';
@@ -21,6 +22,7 @@ import { useCalendarGroupMutations } from '@hooks/useCalendarGroups';
 import { useCalendarsDisplayStore } from '@stores/useCalendarsDisplayStore';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { calendarsUIColors, UNGROUPED_DROP_ZONE_ID } from '@constants/calendarsUI';
+import { getCalendarColor } from '@utils/calendarColor';
 import type { RootStackParamList } from '@navigation/types';
 
 const titleStyle = tva({ base: 'text-[28px] font-bold text-typography-900' });
@@ -260,7 +262,6 @@ export function CalendarsScreen() {
     [allMemberships, moveCalendarBetweenGroups]
   );
 
-  // Edit mode content — rendered inside DragProvider by EditModeContent
   const editModeProps = useMemo(
     () => ({
       sortedGroups,
@@ -341,13 +342,7 @@ export function CalendarsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {editing ? (
-          <DragProvider>
-            <EditModeContent {...editModeProps} />
-          </DragProvider>
-        ) : (
-          renderDefaultMode
-        )}
+        {editing ? <EditModeContent {...editModeProps} /> : renderDefaultMode}
 
         {isCreatingGroup && (
           <View style={styles.newGroupCard}>
@@ -361,6 +356,8 @@ export function CalendarsScreen() {
         )}
       </ScrollView>
 
+      {editing && <DragOverlay />}
+
       <PlusMenuPopover
         visible={plusMenuOpen}
         onClose={() => setPlusMenuOpen(false)}
@@ -372,7 +369,6 @@ export function CalendarsScreen() {
   );
 }
 
-// Extracted to a separate component so it can use DragContext
 type CalendarsListDataReturn = ReturnType<typeof useCalendarsListData>;
 
 interface EditModeContentProps {
@@ -406,7 +402,8 @@ function EditModeContent({
   handleNewGroup,
   handleDrop,
 }: EditModeContentProps) {
-  const { activeDropZoneId, registerDropZone } = useDragContext();
+  const activeDropZoneId = useDragStore((s) => s.activeDropZoneId);
+  const registerDropZone = useDragStore((s) => s.registerDropZone);
 
   const onDropZoneLayout = useCallback(
     (groupId: string, layout: { y: number; height: number }) => {
@@ -496,6 +493,31 @@ function EditModeContent({
         </HStack>
       </Pressable>
     </>
+  );
+}
+
+const dragOverlayNameStyle = tva({ base: 'text-[15px] font-medium text-typography-900' });
+
+function DragOverlay() {
+  const isDragging = useDragStore((s) => s.isDragging);
+  const draggedCalendar = useDragStore((s) => s.draggedCalendar);
+  const pageY = useDragStore((s) => s.dragPageY);
+
+  if (!isDragging || !draggedCalendar) return null;
+
+  const color = draggedCalendar.color ?? getCalendarColor(draggedCalendar.id);
+
+  return (
+    <View style={[styles.dragOverlay, { top: pageY - 24 }]} pointerEvents="none">
+      <HStack style={styles.dragOverlayContent}>
+        <CalendarIcon
+          calendarName={draggedCalendar.name ?? ''}
+          calendarId={draggedCalendar.id}
+          color={color}
+        />
+        <Text className={dragOverlayNameStyle({})}>{draggedCalendar.name}</Text>
+      </HStack>
+    </View>
   );
 }
 
@@ -595,6 +617,24 @@ const styles = StyleSheet.create({
     borderColor: calendarsUIColors.primaryBorder,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dragOverlay: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    borderRadius: 12,
+    backgroundColor: calendarsUIColors.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  dragOverlayContent: {
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   newGroupCard: {
     marginHorizontal: 12,
