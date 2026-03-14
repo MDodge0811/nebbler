@@ -503,7 +503,7 @@ function DragOverlay() {
   const draggedCalendar = useDragStore((s) => s.draggedCalendar);
   const pageY = useDragStore((s) => s.dragPageY);
 
-  if (!isDragging || !draggedCalendar) return null;
+  if (!isDragging || !draggedCalendar || pageY === 0) return null;
 
   const color = draggedCalendar.color ?? getCalendarColor(draggedCalendar.id);
 
