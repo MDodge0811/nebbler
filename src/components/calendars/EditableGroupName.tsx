@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput } from 'react-native';
-
-const COLORS = {
-  text: '#1A1A1F',
-  border: '#E8E8EC',
-  primary: '#00DB74',
-  surfaceHover: '#F5F5F5',
-};
+import { calendarsUIColors } from '@constants/calendarsUI';
 
 interface EditableGroupNameProps {
   value: string;
@@ -38,8 +32,8 @@ export function EditableGroupName({
       style={[
         styles.input,
         {
-          borderColor: isFocused ? COLORS.primary : COLORS.border,
-          backgroundColor: isFocused ? '#FFFFFF' : COLORS.surfaceHover,
+          borderColor: isFocused ? calendarsUIColors.primary : calendarsUIColors.border,
+          backgroundColor: isFocused ? '#FFFFFF' : calendarsUIColors.surfaceHover,
         },
       ]}
     />

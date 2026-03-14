@@ -11,18 +11,29 @@ import type { CalendarGroupMembership } from '@database/schema';
  */
 export function useCalendarsListData() {
   const { user } = useCurrentUser();
-  const { data: groups } = useCalendarGroups();
-  const { data: calendars } = useCalendars();
+  const { data: groups, isLoading: groupsLoading, error: groupsError } = useCalendarGroups();
+  const { data: calendars, isLoading: calendarsLoading, error: calendarsError } = useCalendars();
 
-  const { data: allMemberships } = useQuery<CalendarGroupMembership>(
+  const {
+    data: allMemberships,
+    isLoading: membershipsLoading,
+    error: membershipsError,
+  } = useQuery<CalendarGroupMembership>(
     'SELECT * FROM calendar_group_memberships WHERE deleted_at IS NULL'
   );
 
-  const { data: memberCounts } = useQuery<{ calendar_id: string; member_count: number }>(
+  const {
+    data: memberCounts,
+    isLoading: memberCountsLoading,
+    error: memberCountsError,
+  } = useQuery<{ calendar_id: string; member_count: number }>(
     `SELECT calendar_id, COUNT(*) as member_count
      FROM calendar_members WHERE deleted_at IS NULL
      GROUP BY calendar_id`
   );
+
+  const isLoading = groupsLoading || calendarsLoading || membershipsLoading || memberCountsLoading;
+  const error = groupsError || calendarsError || membershipsError || memberCountsError;
 
   const primaryGroupId = user?.primary_calendar_group_id ?? null;
 
@@ -78,5 +89,7 @@ export function useCalendarsListData() {
     memberCountMap,
     calendarsById,
     allMemberships: allMemberships ?? [],
+    isLoading,
+    error,
   };
 }

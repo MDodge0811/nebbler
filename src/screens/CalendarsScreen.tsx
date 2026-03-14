@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Path, Line } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,16 +20,8 @@ import { useCalendarsListData } from '@hooks/useCalendarsListData';
 import { useCalendarGroupMutations } from '@hooks/useCalendarGroups';
 import { useCalendarsDisplayStore } from '@stores/useCalendarsDisplayStore';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import { calendarsUIColors, UNGROUPED_DROP_ZONE_ID } from '@constants/calendarsUI';
 import type { RootStackParamList } from '@navigation/types';
-
-const COLORS = {
-  primary: '#00DB74',
-  primaryLight: '#E8FBF1',
-  primaryBorder: '#A8EDCB',
-  border: '#E8E8EC',
-  surface: '#FFFFFF',
-  background: '#F5F5F7',
-};
 
 const titleStyle = tva({ base: 'text-[28px] font-bold text-typography-900' });
 const ungroupedTitleStyle = tva({ base: 'text-[15px] font-semibold text-typography-600' });
@@ -51,9 +43,11 @@ export function CalendarsScreen() {
     allMemberships,
   } = useCalendarsListData();
 
-  const { createGroup, updateGroup, deleteGroup, addCalendarToGroup, removeCalendarFromGroup } =
+  const { createGroup, updateGroup, deleteGroup, moveCalendarBetweenGroups } =
     useCalendarGroupMutations();
-  const { toggleCalendar, setGroupVisibility, isCalendarVisible } = useCalendarsDisplayStore();
+  const toggleCalendar = useCalendarsDisplayStore((s) => s.toggleCalendar);
+  const setGroupVisibility = useCalendarsDisplayStore((s) => s.setGroupVisibility);
+  const isCalendarVisible = useCalendarsDisplayStore((s) => s.isCalendarVisible);
 
   const [editing, setEditing] = useState(false);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
@@ -111,9 +105,15 @@ export function CalendarsScreen() {
       setIsCreatingGroup(false);
       return;
     }
-    await createGroup(user.id, trimmed);
-    setIsCreatingGroup(false);
-    setNewGroupName('');
+    try {
+      await createGroup(user.id, trimmed);
+    } catch (e) {
+      console.error('Failed to create group:', e);
+      Alert.alert('Error', 'Failed to create group. Please try again.');
+    } finally {
+      setIsCreatingGroup(false);
+      setNewGroupName('');
+    }
   }, [newGroupName, user, createGroup]);
 
   const handleImportCalendar = useCallback(() => {
@@ -135,8 +135,13 @@ export function CalendarsScreen() {
   const handleNameBlur = useCallback(
     async (groupId: string, originalName: string) => {
       const edited = editedNames[groupId];
-      if (edited !== undefined && edited.trim() !== originalName) {
-        await updateGroup(groupId, { name: edited.trim() });
+      if (edited !== undefined && edited.trim() && edited.trim() !== originalName) {
+        try {
+          await updateGroup(groupId, { name: edited.trim() });
+        } catch (e) {
+          console.error('Failed to rename group:', e);
+          Alert.alert('Error', 'Failed to rename group. Please try again.');
+        }
       }
       setEditedNames((prev) => {
         const next = { ...prev };
@@ -149,7 +154,12 @@ export function CalendarsScreen() {
 
   const handleDeleteGroup = useCallback(
     async (groupId: string) => {
-      await deleteGroup(groupId);
+      try {
+        await deleteGroup(groupId);
+      } catch (e) {
+        console.error('Failed to delete group:', e);
+        Alert.alert('Error', 'Failed to delete group. Please try again.');
+      }
     },
     [deleteGroup]
   );
@@ -234,22 +244,20 @@ export function CalendarsScreen() {
     async (calendarId: string, sourceGroupId: string | null, targetGroupId: string | null) => {
       if (sourceGroupId === targetGroupId) return;
 
-      // Remove from old group
-      if (sourceGroupId) {
-        const membership = allMemberships.find(
-          (m) => m.calendar_id === calendarId && m.calendar_group_id === sourceGroupId
-        );
-        if (membership) {
-          await removeCalendarFromGroup(membership.id);
-        }
-      }
+      const membership = sourceGroupId
+        ? allMemberships.find(
+            (m) => m.calendar_id === calendarId && m.calendar_group_id === sourceGroupId
+          )
+        : null;
 
-      // Add to new group
-      if (targetGroupId) {
-        await addCalendarToGroup(targetGroupId, calendarId);
+      try {
+        await moveCalendarBetweenGroups(membership?.id ?? null, targetGroupId, calendarId);
+      } catch (e) {
+        console.error('Failed to move calendar:', e);
+        Alert.alert('Error', 'Failed to move calendar. Please try again.');
       }
     },
-    [allMemberships, removeCalendarFromGroup, addCalendarToGroup]
+    [allMemberships, moveCalendarBetweenGroups]
   );
 
   // Edit mode content — rendered inside DragProvider by EditModeContent
@@ -307,7 +315,7 @@ export function CalendarsScreen() {
                     y1={4}
                     x2={10}
                     y2={16}
-                    stroke={plusMenuOpen ? COLORS.primary : '#1A1A1F'}
+                    stroke={plusMenuOpen ? calendarsUIColors.primary : '#1A1A1F'}
                     strokeWidth={2}
                     strokeLinecap="round"
                   />
@@ -316,7 +324,7 @@ export function CalendarsScreen() {
                     y1={10}
                     x2={16}
                     y2={10}
-                    stroke={plusMenuOpen ? COLORS.primary : '#1A1A1F'}
+                    stroke={plusMenuOpen ? calendarsUIColors.primary : '#1A1A1F'}
                     strokeWidth={2}
                     strokeLinecap="round"
                   />
@@ -463,8 +471,8 @@ function EditModeContent({
           <Text className={emptyTextStyle({})}>Drag calendars here to ungroup them</Text>
         )}
         <DropZone
-          groupId="__ungrouped__"
-          isActive={activeDropZoneId === '__ungrouped__'}
+          groupId={UNGROUPED_DROP_ZONE_ID}
+          isActive={activeDropZoneId === UNGROUPED_DROP_ZONE_ID}
           onLayout={onDropZoneLayout}
         />
       </View>
@@ -476,13 +484,13 @@ function EditModeContent({
             <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
               <Path
                 d="M8 3V13M3 8H13"
-                stroke={COLORS.primary}
+                stroke={calendarsUIColors.primary}
                 strokeWidth={2}
                 strokeLinecap="round"
               />
             </Svg>
           </View>
-          <Text className={createGroupLabelStyle({})} style={{ color: COLORS.primary }}>
+          <Text className={createGroupLabelStyle({})} style={{ color: calendarsUIColors.primary }}>
             Create Group
           </Text>
         </HStack>
@@ -494,7 +502,7 @@ function EditModeContent({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: calendarsUIColors.background,
   },
   header: {
     alignItems: 'center',
@@ -511,9 +519,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 8,
-    backgroundColor: COLORS.surface,
+    backgroundColor: calendarsUIColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: calendarsUIColors.border,
   },
   editButtonText: {
     fontSize: 14,
@@ -524,28 +532,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 8,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: calendarsUIColors.primaryLight,
     borderWidth: 1,
-    borderColor: COLORS.primaryBorder,
+    borderColor: calendarsUIColors.primaryBorder,
   },
   doneButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: calendarsUIColors.primary,
   },
   plusButton: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: COLORS.surface,
+    backgroundColor: calendarsUIColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: calendarsUIColors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   plusButtonActive: {
-    backgroundColor: COLORS.primaryLight,
-    borderColor: COLORS.primaryBorder,
+    backgroundColor: calendarsUIColors.primaryLight,
+    borderColor: calendarsUIColors.primaryBorder,
   },
   scrollView: {
     flex: 1,
@@ -569,8 +577,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: COLORS.primaryBorder,
-    backgroundColor: COLORS.primaryLight,
+    borderColor: calendarsUIColors.primaryBorder,
+    backgroundColor: calendarsUIColors.primaryLight,
   },
   createGroupContent: {
     alignItems: 'center',
@@ -584,7 +592,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: COLORS.primaryBorder,
+    borderColor: calendarsUIColors.primaryBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -592,9 +600,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginBottom: 10,
     borderRadius: 14,
-    backgroundColor: COLORS.surface,
+    backgroundColor: calendarsUIColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: calendarsUIColors.border,
     padding: 12,
   },
 });

@@ -40,6 +40,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
   });
 
   const dropZonesRef = useRef<DropZoneRect[]>([]);
+  const activeDropZoneRef = useRef<string | null>(null);
 
   const startDrag = useCallback((calendar: Calendar, sourceGroupId: string | null) => {
     setState({
@@ -48,18 +49,20 @@ export function DragProvider({ children }: { children: ReactNode }) {
       sourceGroupId,
       activeDropZoneId: null,
     });
+    activeDropZoneRef.current = null;
   }, []);
 
   const endDrag = useCallback(() => {
-    const activeId = state.activeDropZoneId;
+    const activeId = activeDropZoneRef.current;
     setState({
       isDragging: false,
       draggedCalendar: null,
       sourceGroupId: null,
       activeDropZoneId: null,
     });
+    activeDropZoneRef.current = null;
     return activeId;
-  }, [state.activeDropZoneId]);
+  }, []);
 
   const cancelDrag = useCallback(() => {
     setState({
@@ -68,9 +71,11 @@ export function DragProvider({ children }: { children: ReactNode }) {
       sourceGroupId: null,
       activeDropZoneId: null,
     });
+    activeDropZoneRef.current = null;
   }, []);
 
   const setActiveDropZone = useCallback((groupId: string | null) => {
+    activeDropZoneRef.current = groupId;
     setState((prev) => ({ ...prev, activeDropZoneId: groupId }));
   }, []);
 

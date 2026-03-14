@@ -16,6 +16,7 @@ import { TypeBadge } from './TypeBadge';
 import { DragHandle } from './DragHandle';
 import { useDragContext } from './DragContext';
 import { getCalendarColor } from '@utils/calendarColor';
+import { UNGROUPED_DROP_ZONE_ID } from '@constants/calendarsUI';
 import type { Calendar } from '@database/schema';
 
 const nameStyle = tva({ base: 'text-[15px] font-medium text-typography-900' });
@@ -53,7 +54,7 @@ export function DraggableCalendarRow({
       const targetGroupId = findDropZone(pageY);
       endDrag();
       if (targetGroupId && onDrop) {
-        const resolvedTarget = targetGroupId === '__ungrouped__' ? null : targetGroupId;
+        const resolvedTarget = targetGroupId === UNGROUPED_DROP_ZONE_ID ? null : targetGroupId;
         if (resolvedTarget !== sourceGroupId) {
           onDrop(calendar.id, sourceGroupId, resolvedTarget);
         }

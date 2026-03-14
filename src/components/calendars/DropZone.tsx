@@ -1,12 +1,8 @@
+import { useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { Text } from '@/components/ui/text';
-
-const COLORS = {
-  border: '#E8E8EC',
-  primaryBorder: '#A8EDCB',
-  primaryLight: '#E8FBF1',
-};
+import { calendarsUIColors } from '@constants/calendarsUI';
 
 const hintStyle = tva({ base: 'text-xs italic text-typography-400 text-center' });
 
@@ -17,13 +13,17 @@ interface DropZoneProps {
 }
 
 export function DropZone({ groupId, isActive, onLayout }: DropZoneProps) {
+  const viewRef = useRef<View>(null);
+
   return (
     <View
+      ref={viewRef}
       style={[styles.container, isActive && styles.activeContainer]}
-      onLayout={(e) => {
+      onLayout={() => {
         if (onLayout) {
-          const { y, height } = e.nativeEvent.layout;
-          onLayout(groupId, { y, height });
+          viewRef.current?.measureInWindow((_x, y, _w, h) => {
+            onLayout(groupId, { y, height: h });
+          });
         }
       }}
     >
@@ -41,12 +41,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: COLORS.border,
+    borderColor: calendarsUIColors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   activeContainer: {
-    borderColor: COLORS.primaryBorder,
-    backgroundColor: COLORS.primaryLight,
+    borderColor: calendarsUIColors.primaryBorder,
+    backgroundColor: calendarsUIColors.primaryLight,
   },
 });

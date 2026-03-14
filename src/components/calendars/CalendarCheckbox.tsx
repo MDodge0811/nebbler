@@ -15,7 +15,7 @@ export function CalendarCheckbox({ checked, color, onToggle }: CalendarCheckboxP
   const animatedStyle = useAnimatedStyle(() => ({
     backgroundColor: withTiming(checked ? color : 'transparent', { duration: 150 }),
     borderColor: withTiming(checked ? color : '#E8E8EC', { duration: 150 }),
-    transform: [{ scale: withTiming(checked ? 1 : 1, { duration: 100 }) }],
+    transform: [{ scale: withTiming(checked ? 1 : 0.95, { duration: 100 }) }],
   }));
 
   return (
