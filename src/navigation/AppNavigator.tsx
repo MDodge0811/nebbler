@@ -16,6 +16,8 @@ import { SettingsScreen } from '@screens/SettingsScreen';
 import { ProfileScreen } from '@screens/ProfileScreen';
 import { CreateEventScreen } from '@screens/CreateEventScreen';
 import { EventDetailScreen } from '@screens/EventDetailScreen';
+import { CalendarDetailScreen } from '@screens/CalendarDetailScreen';
+import { CreateCalendarScreen } from '@screens/CreateCalendarScreen';
 import { DrawerContent } from '@components/schedule/DrawerContent';
 import { CustomTabBar } from '@components/schedule/CustomTabBar';
 import { AuthNavigator } from './AuthNavigator';
@@ -89,6 +91,8 @@ function MainNavigator() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
         <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+        <Stack.Screen name="CalendarDetail" component={CalendarDetailScreen} />
+        <Stack.Screen name="CreateCalendar" component={CreateCalendarScreen} />
       </Stack.Navigator>
     </BottomSheetModalProvider>
   );

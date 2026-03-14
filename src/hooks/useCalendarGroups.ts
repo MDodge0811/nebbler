@@ -101,12 +101,35 @@ export function useCalendarGroupMutations() {
     await powerSync.execute('DELETE FROM calendar_group_memberships WHERE id = ?', [id]);
   };
 
+  const moveCalendarBetweenGroups = async (
+    membershipId: string | null,
+    targetGroupId: string | null,
+    calendarId: string
+  ) => {
+    const now = new Date().toISOString();
+
+    await powerSync.writeTransaction(async (tx) => {
+      if (membershipId) {
+        await tx.execute('DELETE FROM calendar_group_memberships WHERE id = ?', [membershipId]);
+      }
+      if (targetGroupId) {
+        await tx.execute(
+          `INSERT INTO calendar_group_memberships
+             (id, calendar_group_id, calendar_id, view_mode, inserted_at, updated_at)
+           VALUES (uuid(), ?, ?, ?, ?, ?)`,
+          [targetGroupId, calendarId, null, now, now]
+        );
+      }
+    });
+  };
+
   return {
     createGroup,
     updateGroup,
     deleteGroup,
     addCalendarToGroup,
     removeCalendarFromGroup,
+    moveCalendarBetweenGroups,
   };
 }
 

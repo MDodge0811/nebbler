@@ -27,8 +27,8 @@ function getTypeBadge(type: string | null): string {
   switch (type) {
     case 'private':
       return 'Private';
-    case 'shared':
-      return 'Shared';
+    case 'social':
+      return 'Social';
     case 'public':
       return 'Group';
     default:

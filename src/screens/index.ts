@@ -1,6 +1,8 @@
 export { ScheduleScreen } from './ScheduleScreen';
 export { SettingsScreen } from './SettingsScreen';
 export { CalendarsScreen } from './CalendarsScreen';
+export { CalendarDetailScreen } from './CalendarDetailScreen';
+export { CreateCalendarScreen } from './CreateCalendarScreen';
 export { PeopleScreen } from './PeopleScreen';
 export { ProfileScreen } from './ProfileScreen';
 export { CreateEventScreen } from './CreateEventScreen';
