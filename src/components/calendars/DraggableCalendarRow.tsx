@@ -47,13 +47,18 @@ export const DraggableCalendarRow = React.memo(function DraggableCalendarRow({
   const opacity = useSharedValue(1);
   const zIndex = useSharedValue(0);
 
-  const handleDragStart = useCallback(() => {
-    Vibration.vibrate(10);
-    startDrag(calendar, sourceGroupId);
-  }, [calendar, sourceGroupId, startDrag]);
+  const handleDragStart = useCallback(
+    (pageY: number) => {
+      Vibration.vibrate(10);
+      startDrag(calendar, sourceGroupId);
+      updateDragPosition(pageY);
+    },
+    [calendar, sourceGroupId, startDrag, updateDragPosition]
+  );
 
   const handleDragEnd = useCallback(
     (pageY: number) => {
+      if (!useDragStore.getState().isDragging) return;
       const targetGroupId = findDropZone(pageY);
       endDrag();
       if (targetGroupId && onDrop) {
@@ -78,12 +83,12 @@ export const DraggableCalendarRow = React.memo(function DraggableCalendarRow({
   const longPress = Gesture.LongPress()
     .minDuration(100)
     .enabled(!isDragDisabled)
-    .onStart(() => {
+    .onStart((e) => {
       'worklet';
       scale.value = withTiming(1.03, { duration: 100 });
       opacity.value = withTiming(0, { duration: 100 });
       zIndex.value = 100;
-      runOnJS(handleDragStart)();
+      runOnJS(handleDragStart)(e.absoluteY);
     });
 
   const pan = Gesture.Pan()
