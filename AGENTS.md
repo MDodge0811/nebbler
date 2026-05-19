@@ -36,16 +36,16 @@ npm run test:coverage  # Jest with coverage report
 ```
 src/
 ├── components/     # Reusable UI components
-├── screens/        # Screen components (ScheduleScreen, HomeScreen, ProfileScreen, SettingsScreen, auth/)
+├── screens/        # Screen components (ScheduleScreen, HomeScreen, ProfileScreen, SettingsScreen, auth/{Login,SignUp,VerifyCode})
 ├── navigation/     # React Navigation config (stack + drawer + bottom tabs + auth)
-├── hooks/          # Custom React hooks (useCurrentUser, useTestItems, useAuth, useAuthMutations)
-├── context/        # React contexts (AuthContext)
-├── services/       # API service layer (authService)
-├── database/       # PowerSync database layer (schema, connector, sync)
-├── constants/      # App constants (config with dynamic port detection, colors)
+├── hooks/          # Custom React hooks (useAuth adapter, useCurrentUser, useTestItems, …)
+├── database/       # PowerSync database layer (schema, connector, sync) + Clerk token wiring
+├── constants/      # App constants (config with dynamic port detection, clerkPublishableKey, colors)
 ├── types/          # TypeScript type declarations
-└── utils/          # Utility functions
+└── utils/          # Utility functions (secureStorage — generic K/V, not Clerk tokens)
 ```
+
+Auth is provided by **Clerk** (`@clerk/clerk-expo`). There is no `src/context/AuthContext` or `src/services/authService` — `App.tsx` wraps everything in `<ClerkProvider>` and a `ClerkPowerSyncBridge` coordinates connect/disconnect against PowerSync.
 
 ## Path Aliases
 
@@ -62,8 +62,6 @@ Always use path aliases instead of relative imports. These are configured in `ts
 | `@constants/*`  | `src/constants/*`  |
 | `@types/*`      | `src/types/*`      |
 | `@database/*`   | `src/database/*`   |
-| `@context/*`    | `src/context/*`    |
-| `@services/*`   | `src/services/*`   |
 | `@stores/*`     | `src/stores/*`     |
 
 **If you add a new path alias**, you must update all three files: `tsconfig.json`, `babel.config.js`, and `jest.config.js` (`moduleNameMapper`).
@@ -106,14 +104,14 @@ chore: update dependencies
 
 Detailed patterns are in `.claude/rules/` — auto-loaded when you work on matching files:
 
-| Domain        | Files scoped to                                      | What it covers                                                      |
-| ------------- | ---------------------------------------------------- | ------------------------------------------------------------------- |
-| PowerSync     | `src/database/`, `src/hooks/`                        | Schema, connector, sync, offline-first patterns                     |
-| Auth          | `src/context/`, `src/services/`, `src/screens/auth/` | Auth flow, TanStack mutations, secure storage, two-layer user model |
-| Testing       | `__tests__/`, `jest.setup.js`                        | Jest config, mocking patterns, gotchas                              |
-| Navigation    | `src/navigation/`, `src/screens/`                    | Nav hierarchy, routing, adding screens                              |
-| UI Components | `src/components/`                                    | Icons, Gluestack UI, calendars, colors                              |
-| State Mgmt    | `src/stores/`, `src/context/`                        | Zustand stores, React Context, choosing between them                |
-| Code Quality  | config files, `src/database/schemas/`                | ESLint, Prettier, TS, Knip, Zod, CI/CD                              |
+| Domain        | Files scoped to                                        | What it covers                                                                             |
+| ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| PowerSync     | `src/database/`, `src/hooks/`                          | Schema, connector, sync, offline-first patterns                                            |
+| Auth          | `src/screens/auth/`, `src/hooks/useAuth.ts`, `App.tsx` | Clerk integration, sign-up / sign-in / OAuth flows, two-layer user model, PowerSync bridge |
+| Testing       | `__tests__/`, `jest.setup.js`                          | Jest config, mocking patterns, gotchas                                                     |
+| Navigation    | `src/navigation/`, `src/screens/`                      | Nav hierarchy, routing, adding screens                                                     |
+| UI Components | `src/components/`                                      | Icons, Gluestack UI, calendars, colors                                                     |
+| State Mgmt    | `src/stores/`                                          | Zustand stores                                                                             |
+| Code Quality  | config files, `src/database/schemas/`                  | ESLint, Prettier, TS, Knip, Zod, CI/CD                                                     |
 
 See `.claude/rules/rules.md` for the full index.

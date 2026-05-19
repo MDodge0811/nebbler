@@ -18,9 +18,12 @@ Docs: [PowerSync Debugging](https://docs.powersync.com/usage/tools/debugging)
 
 ### "Signature verification failed"
 
-**Cause:** PowerSync cached stale JWKS (keys regenerate when API restarts)
-**Fix:** `docker compose restart powersync`
-**Why:** PowerSync fetches JWKS from `/api/auth/keys` on startup and caches them. If the API regenerates keys, PowerSync still has the old ones.
+**Cause:** PowerSync's `PS_JWKS_URL` is not pointed at Clerk, or Clerk rotated keys faster than the PowerSync container could refresh.
+**Fix:**
+
+1. Confirm `PS_JWKS_URL` in `docker-compose.yml` resolves to `https://${CLERK_FRONTEND_API}/.well-known/jwks.json` and that `CLERK_FRONTEND_API` is set in `.env`.
+2. `docker compose restart powersync` to force a fresh JWKS fetch.
+3. If still failing, decode the token at [jwt.io](https://jwt.io) — the `kid` header must match a key currently published in Clerk's JWKS, and `aud` must be `powersync` (matching the audience in `powersync.yaml`).
 
 ### "Cannot read property 'blobId' of undefined"
 
@@ -80,17 +83,20 @@ SELECT * FROM pg_publication_tables WHERE pubname = 'powersync';
 ALTER PUBLICATION powersync ADD TABLE missing_table;
 ```
 
-### JWT Missing `kid` Header
+### Missing `user_id` claim / sync rules return zero rows
 
-**Cause:** Guardian doesn't add `kid` to JWT header by default
-**Fix:** Use JOSE directly with explicit `kid`:
+**Cause:** The Clerk JWT template for PowerSync doesn't embed `user_id`, or the user's `publicMetadata.internal_user_id` isn't set yet.
+**Check:**
 
-```elixir
-jws_header = %{"alg" => "RS256", "kid" => "nebbler-key-1"}
-signed = JOSE.JWT.sign(jwk, jws_header, claims)
-```
+1. Decode the token PowerSync received (server logs show it on auth). Confirm `user_id` is present and is a UUID.
+2. In the Clerk dashboard → JWT Templates → `powersync`, confirm the claim is `"user_id": "{{user.public_metadata.internal_user_id}}"`.
+3. Hit `https://api.clerk.com/v1/users/<clerk_user_id>` (with `CLERK_SECRET_KEY`) and verify `public_metadata.internal_user_id` is set.
+   **Fix:** If metadata is missing, the `/api/webhooks/clerk` handler hasn't run successfully. Re-trigger by resending the `user.created` event from the Clerk dashboard, or call `NebblerApi.Clerk.set_internal_user_id/2` manually from an IEx session.
 
-PowerSync matches the JWT `kid` against JWKS entries — without it, key lookup fails.
+### "No Clerk session — cannot fetch PowerSync token"
+
+**Cause:** `fetchCredentials` ran before `ClerkPowerSyncBridge` installed the token getter.
+**Fix:** Should self-heal on the next sign-in. If it persists, check that `App.tsx` wraps `<PowerSyncContext.Provider>` **inside** `<ClerkProvider>` and that `<ClerkPowerSyncBridge />` is rendered before `<AppNavigator />`.
 
 ### web-streams-polyfill Path Error
 

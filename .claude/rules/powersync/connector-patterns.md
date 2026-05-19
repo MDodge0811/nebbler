@@ -1,7 +1,6 @@
 ---
 paths:
   - 'src/database/connector.ts'
-  - 'src/services/**'
   - 'src/database/schemas/apiSchemas.ts'
   - 'src/database/schemas/configSchema.ts'
   - 'src/utils/secureStorage.ts'
@@ -32,21 +31,20 @@ Two required methods:
 
 ## fetchCredentials()
 
-Gets a JWT from the backend for PowerSync authentication.
+Gets a Clerk-signed JWT for the `powersync` template and hands it directly to PowerSync — **no backend hop**.
 
 **Pattern:**
 
-1. Read stored auth token from `secureStorage.getToken()`
-2. POST to `/api/powersync/auth` with Bearer token
-3. Validate response with `FetchCredentialsResponseSchema.parse(data)`
-4. Return `{ endpoint, token, expiresAt }`
+1. Call `clerkGetToken({ template: 'powersync' })` (the getter is set at module level by `ClerkPowerSyncBridge` in `App.tsx`).
+2. Validate the token shape with `FetchCredentialsResponseSchema.parse({ token })`.
+3. Return `{ endpoint: powersyncConfig.powersyncUrl, token }`.
 
 **Key details:**
 
-- `endpoint` is the PowerSync URL (from `powersyncConfig.powersyncUrl`), not the backend URL
-- `token` is the JWT string from the response
-- `expiresAt` is optional — if provided, PowerSync auto-refreshes before expiry
-- If auth fails, throw — PowerSync will retry with backoff
+- `endpoint` is the PowerSync URL (from `powersyncConfig.powersyncUrl`), not the backend URL.
+- `token` is a Clerk-issued JWT whose `aud = 'powersync'` and `user_id` claim equals our internal UUID (sourced from `clerkUser.publicMetadata.internal_user_id`).
+- If `clerkGetToken` returns `null`, the user isn't signed in — throw. PowerSync retries with backoff and the `ClerkPowerSyncBridge` will only call `connect` once a session exists.
+- We don't pass `expiresAt`; Clerk's SDK caches tokens and refreshes them automatically. PowerSync calls `fetchCredentials` again when it needs a new one.
 
 **Zod validation** (`src/database/schemas/apiSchemas.ts`):
 
@@ -102,13 +100,27 @@ if (!response.ok) {
 
 ## Auth Token Management
 
-Tokens are stored via `secureStorage` (`src/utils/secureStorage.ts`):
+The connector pulls tokens from Clerk through a module-level getter — it has no direct dependency on the SDK and no notion of token storage. `App.tsx`'s `ClerkPowerSyncBridge` installs the getter when a session exists and clears it on sign-out:
 
-- `secureStorage.getToken()` — Read stored JWT
-- `secureStorage.setToken(token)` — Store JWT after login
-- `secureStorage.clearToken()` — Remove on logout
+```typescript
+// Inside ClerkPowerSyncBridge in App.tsx
+if (isSignedIn) {
+  setClerkTokenGetter(getToken);
+  connectDatabase();
+} else {
+  clearClerkTokenGetter();
+  disconnectDatabase();
+}
+```
 
-Both `fetchCredentials()` and `uploadCrudEntry()` include the auth token as a Bearer header.
+Two consumers use the getter:
+
+| Caller               | Template invocation                        | Audience          |
+| -------------------- | ------------------------------------------ | ----------------- |
+| `fetchCredentials()` | `clerkGetToken({ template: 'powersync' })` | PowerSync service |
+| `uploadCrudEntry()`  | `clerkGetToken()` (default session token)  | Phoenix API       |
+
+Clerk's SDK handles caching and refresh internally — do not memoize tokens in the connector.
 
 ## Config Validation
 
@@ -137,15 +149,17 @@ Location: `src/database/database.ts`
 **Two-phase initialization:**
 
 1. `initializeDatabase()` — Creates local SQLite DB with `OPSqliteOpenFactory`, initializes schema. Called on app start (`App.tsx`). Does NOT connect to backend.
-2. `connectDatabase()` — Creates `PowerSyncConnector`, calls `powerSyncInstance.connect(connector)`. Called after auth (`AuthContext`). Starts the sync cycle.
+2. `connectDatabase()` — Creates `PowerSyncConnector`, calls `powerSyncInstance.connect(connector)`. Called by `ClerkPowerSyncBridge` whenever Clerk's `isSignedIn` flips to `true`. Starts the sync cycle.
 
 **Singleton pattern:** Only one `PowerSyncDatabase` instance exists. `getDatabase()` returns it or throws.
 
-**Disconnect:** `disconnectDatabase()` on logout/shutdown.
+**Disconnect:** `disconnectDatabase()` called by `ClerkPowerSyncBridge` on sign-out.
 
 ## Common Mistakes
 
-- Forgetting to include the auth token header in `uploadCrudEntry()` — causes 401 on all uploads
-- Calling `transaction.complete()` inside a catch block — discards failed operations
-- Using the backend URL instead of the PowerSync URL for the `endpoint` in `fetchCredentials()`
-- Not handling 4xx errors separately — causes infinite retry loops on validation errors
+- Forgetting to install the Clerk token getter — `fetchCredentials` returns null and PowerSync can never authenticate. Only `ClerkPowerSyncBridge` should call `setClerkTokenGetter`.
+- Calling `connectDatabase()` / `disconnectDatabase()` outside the bridge — causes double-connects or premature disconnects.
+- Calling `transaction.complete()` inside a catch block — discards failed operations.
+- Using the backend URL instead of the PowerSync URL for the `endpoint` in `fetchCredentials()`.
+- Not handling 4xx errors separately in `uploadCrudEntry()` — causes infinite retry loops on validation errors.
+- Caching the result of `clerkGetToken()` in the connector — the SDK already does it correctly. A stale token survives token rotation and breaks sync.

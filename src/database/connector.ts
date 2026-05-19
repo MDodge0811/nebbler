@@ -6,10 +6,9 @@ import {
 } from '@powersync/react-native';
 import { powersyncConfig } from '@constants/config';
 import { FetchCredentialsResponseSchema } from '@database/schemas';
-import { secureStorage } from '@utils/secureStorage';
 
 /**
- * Credentials returned from the backend authentication endpoint
+ * Credentials returned from Clerk's JWT template endpoint.
  */
 export interface PowerSyncCredentials {
   endpoint: string;
@@ -18,116 +17,107 @@ export interface PowerSyncCredentials {
 }
 
 /**
- * PowerSyncConnector implements the backend communication layer
+ * Returns a Clerk-signed JWT. Two templates are used:
+ *   - `'powersync'` (template name in Clerk) for PowerSync auth
+ *   - `undefined` / default template for our backend API
  *
- * Two main responsibilities:
- * 1. fetchCredentials(): Get JWT token for PowerSync authentication
- * 2. uploadData(): Send local changes to the backend for processing
+ * Pulled from `useAuth().getToken` (`@clerk/clerk-expo`) and set at module
+ * level by the `ClerkPowerSyncBridge` mounted under `<ClerkProvider>`.
+ */
+export type ClerkTokenGetter = (opts?: { template?: string }) => Promise<string | null>;
+
+let clerkGetToken: ClerkTokenGetter | null = null;
+
+export function setClerkTokenGetter(getter: ClerkTokenGetter): void {
+  clerkGetToken = getter;
+}
+
+export function clearClerkTokenGetter(): void {
+  clerkGetToken = null;
+}
+
+async function getApiToken(): Promise<string | null> {
+  if (!clerkGetToken) return null;
+  return clerkGetToken();
+}
+
+async function getPowerSyncToken(): Promise<string | null> {
+  if (!clerkGetToken) return null;
+  return clerkGetToken({ template: 'powersync' });
+}
+
+/**
+ * PowerSyncConnector implements the backend communication layer.
+ *
+ * Two responsibilities:
+ * 1. `fetchCredentials()` — return a Clerk-issued PowerSync JWT (no backend hop).
+ * 2. `uploadData()` — POST local changes to our Phoenix API with a Clerk session JWT.
  */
 export class PowerSyncConnector implements PowerSyncBackendConnector {
   /**
-   * Fetch authentication credentials from your backend
+   * Mint a PowerSync JWT directly from Clerk using the `powersync` template.
    *
-   * The backend should:
-   * 1. Authenticate the user (using your auth system)
-   * 2. Generate a JWT token with PowerSync claims
-   * 3. Return the token and PowerSync endpoint URL
-   *
-   * JWT must include:
-   * - sub: user ID
-   * - iat: issued at timestamp
-   * - exp: expiration timestamp
-   * - Signed with your PowerSync instance's private key
+   * The template embeds our internal user UUID as a custom `user_id` claim
+   * (sourced from `user.publicMetadata.internal_user_id`, written by the
+   * Clerk webhook handler on user.created). Sync rules read this claim.
    */
   async fetchCredentials(): Promise<PowerSyncCredentials> {
-    const authUrl = `${powersyncConfig.backendUrl}/api/powersync/auth`;
-    console.log('[PowerSync] Fetching credentials from:', authUrl);
+    const token = await getPowerSyncToken();
 
-    try {
-      const authToken = await secureStorage.getToken();
-      const response = await fetch(authUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
-        },
-      });
-
-      console.log('[PowerSync] Auth response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[PowerSync] Auth failed:', errorText);
-        throw new Error(`Authentication failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const parsed = FetchCredentialsResponseSchema.parse(data);
-      console.log('[PowerSync] Got token, connecting to:', powersyncConfig.powersyncUrl);
-
-      return {
-        endpoint: powersyncConfig.powersyncUrl,
-        token: parsed.token,
-        expiresAt: parsed.expiresAt ? new Date(parsed.expiresAt) : undefined,
-      };
-    } catch (error) {
-      console.error('[PowerSync] fetchCredentials error:', error);
-      throw error;
+    if (!token) {
+      throw new Error('[PowerSync] No Clerk session — cannot fetch PowerSync token');
     }
+
+    // Pre-flight validation: confirm token shape matches expectations.
+    const parsed = FetchCredentialsResponseSchema.parse({ token });
+
+    return {
+      endpoint: powersyncConfig.powersyncUrl,
+      token: parsed.token,
+    };
   }
 
   /**
-   * Upload local changes to the backend
+   * Upload local changes to the backend.
    *
-   * Called automatically when there are pending local changes
-   * The backend should:
-   * 1. Validate the changes
-   * 2. Apply them to Postgres
-   * 3. Return success (changes will sync back via PowerSync)
-   *
-   * @param database - PowerSync database instance for reading pending changes
+   * Called automatically when there are pending local changes. The backend
+   * validates and persists; PowerSync replicates the change back to all
+   * other clients via logical replication.
    */
   async uploadData(database: AbstractPowerSyncDatabase): Promise<void> {
-    // Get the next batch of changes to upload
     const transaction = await database.getNextCrudTransaction();
 
     if (!transaction) {
-      return; // No changes to upload
+      return;
     }
 
     try {
-      // Process each change in the transaction
       for (const operation of transaction.crud) {
         await this.uploadCrudEntry(operation);
       }
 
-      // Mark transaction as complete (removes from upload queue)
       await transaction.complete();
     } catch (error) {
-      // Transaction will be retried on next sync
       console.error('Upload failed:', error);
       throw error;
     }
   }
 
   /**
-   * Upload a single CRUD operation to the backend
-   *
-   * Error classification:
-   * - 4xx errors are permanent (validation, not found, conflict) — skip to avoid infinite retry
-   * - 5xx errors are transient (server issues) — throw to trigger PowerSync retry
+   * Upload a single CRUD operation. Error classification:
+   * - 4xx → permanent (validation, not found, conflict) — skip
+   * - 5xx → transient — throw so PowerSync retries
    */
   private async uploadCrudEntry(entry: CrudEntry): Promise<void> {
     const { op, table, id, opData } = entry;
 
-    // Map PowerSync operation types to HTTP methods
     const methodMap: Record<UpdateType, string> = {
       [UpdateType.PUT]: 'PUT',
       [UpdateType.PATCH]: 'PATCH',
       [UpdateType.DELETE]: 'DELETE',
     };
 
-    const authToken = await secureStorage.getToken();
+    const authToken = await getApiToken();
     const response = await fetch(`${powersyncConfig.backendUrl}/api/data/${table}/${id}`, {
       method: methodMap[op],
       headers: {
@@ -139,14 +129,11 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
 
     if (!response.ok) {
       if (response.status >= 400 && response.status < 500) {
-        // Permanent failure — log and skip to prevent infinite retry loop.
-        // The server rejected this operation (e.g., validation error, not found).
         console.error(
           `[PowerSync] Permanent upload failure for ${table}/${id}: ${response.status} — skipping`
         );
         return;
       }
-      // Transient failure (5xx) — throw so PowerSync retries the transaction
       throw new Error(`Upload failed for ${table}/${id}: ${response.status}`);
     }
   }
