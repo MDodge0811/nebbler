@@ -40,6 +40,7 @@ const calendars = new Table({
   discoverable: column.integer, // SQLite boolean 0/1
   default_view_mode: column.text,
   household_sharing: column.integer, // SQLite boolean 0/1
+  affects_availability: column.integer, // SQLite boolean 0/1
   deleted_at: column.text,
   inserted_at: column.text,
   updated_at: column.text,

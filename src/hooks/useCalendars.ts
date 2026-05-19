@@ -31,7 +31,14 @@ export function useCalendarMutations() {
   const powerSync = usePowerSync();
 
   const createCalendar = async (
-    attrs: { ownerId: string; type: string; name: string; description?: string },
+    attrs: {
+      ownerId: string;
+      type: string;
+      name: string;
+      description?: string;
+      color?: string;
+      affectsAvailability?: boolean;
+    },
     ownerRoleId: string
   ) => {
     const now = new Date().toISOString();
@@ -41,22 +48,25 @@ export function useCalendarMutations() {
     const discoverable = attrs.type === 'public' ? 1 : 0;
     const defaultViewMode = 'full';
     const householdSharing = 1;
+    const affectsAvailability = attrs.affectsAvailability !== false ? 1 : 0;
 
     const calendarId = await powerSync.writeTransaction(async (tx) => {
       const result = await tx.execute(
         `INSERT INTO calendars
-           (id, owner_id, type, name, description, rsvp_enabled, discoverable,
-            default_view_mode, household_sharing, inserted_at, updated_at)
-         VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+           (id, owner_id, type, name, description, color, rsvp_enabled, discoverable,
+            default_view_mode, household_sharing, affects_availability, inserted_at, updated_at)
+         VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         [
           attrs.ownerId,
           attrs.type,
           attrs.name,
           attrs.description ?? null,
+          attrs.color ?? null,
           rsvpEnabled,
           discoverable,
           defaultViewMode,
           householdSharing,
+          affectsAvailability,
           now,
           now,
         ]
@@ -103,6 +113,14 @@ export function useCalendarMutations() {
     if (updates.household_sharing !== undefined) {
       setClauses.push('household_sharing = ?');
       values.push(updates.household_sharing);
+    }
+    if (updates.color !== undefined) {
+      setClauses.push('color = ?');
+      values.push(updates.color);
+    }
+    if (updates.affects_availability !== undefined) {
+      setClauses.push('affects_availability = ?');
+      values.push(updates.affects_availability);
     }
 
     if (setClauses.length === 0) return;
