@@ -15,8 +15,6 @@ module.exports = {
     '^@constants/(.*)$': '<rootDir>/src/constants/$1',
     '^@types/(.*)$': '<rootDir>/src/types/$1',
     '^@database/(.*)$': '<rootDir>/src/database/$1',
-    '^@context/(.*)$': '<rootDir>/src/context/$1',
-    '^@services/(.*)$': '<rootDir>/src/services/$1',
     '^@stores/(.*)$': '<rootDir>/src/stores/$1',
   },
   transformIgnorePatterns: [
@@ -31,12 +29,6 @@ module.exports = {
       functions: 90,
       lines: 90,
       statements: 90,
-    },
-    'src/services/**': {
-      branches: 80,
-      functions: 60,
-      lines: 80,
-      statements: 80,
     },
   },
   testMatch: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],

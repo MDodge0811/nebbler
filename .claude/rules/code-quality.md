@@ -55,9 +55,10 @@ Current thresholds:
 | Glob                      | Branches | Functions | Lines | Statements |
 | ------------------------- | -------- | --------- | ----- | ---------- |
 | `src/database/schemas/**` | 90%      | 90%       | 90%   | 90%        |
-| `src/services/**`         | 80%      | 60%       | 80%   | 80%        |
 
 **Adding new thresholds:** When a directory reaches good coverage, add it to `coverageThreshold`. Set thresholds slightly below current coverage to allow minor fluctuations.
+
+> The pre-Clerk `src/services/**` threshold was removed when `authService` moved to Clerk's SDK. If you add new modules under `src/services/`, re-add a corresponding row and pin `jest.config.js` to match.
 
 ### Branch Protection
 
