@@ -118,6 +118,10 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
     };
 
     const authToken = await getApiToken();
+    if (!authToken) {
+      // User signed out mid-upload; ClerkPowerSyncBridge will disconnect shortly.
+      return;
+    }
     const response = await fetch(`${powersyncConfig.backendUrl}/api/data/${table}/${id}`, {
       method: methodMap[op],
       headers: {

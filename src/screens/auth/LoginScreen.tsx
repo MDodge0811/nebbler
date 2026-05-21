@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-na
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useSignIn, useSSO } from '@clerk/clerk-expo';
 import * as WebBrowser from 'expo-web-browser';
+import { extractClerkError } from '@utils/clerkError';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -267,15 +268,5 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
         </Box>
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-}
-
-function extractClerkError(err: unknown): string {
-  const maybe = err as { errors?: { message?: string; longMessage?: string }[]; message?: string };
-  return (
-    maybe?.errors?.[0]?.longMessage ??
-    maybe?.errors?.[0]?.message ??
-    maybe?.message ??
-    'Something went wrong. Try again.'
   );
 }

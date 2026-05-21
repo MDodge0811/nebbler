@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useSignUp } from '@clerk/clerk-expo';
+import { extractClerkError } from '@utils/clerkError';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -53,7 +54,7 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
   const [genericError, setGenericError] = useState<string | undefined>();
 
   const submit = useCallback(async () => {
-    if (!isLoaded || !signUp) return;
+    if (!isLoaded || !signUp || submitting) return;
 
     const fieldErrors: FormErrors = {};
     if (!firstName.trim()) fieldErrors.firstName = 'First name is required';
@@ -81,7 +82,7 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       navigation.navigate('VerifyCode', { email: email.trim(), mode: 'sign-up' });
     } catch (err) {
-      setGenericError(extractClerkError(err));
+      setGenericError(extractClerkError(err, 'Could not create your account. Try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -208,15 +209,5 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
         </Box>
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-}
-
-function extractClerkError(err: unknown): string {
-  const maybe = err as { errors?: { message?: string; longMessage?: string }[]; message?: string };
-  return (
-    maybe?.errors?.[0]?.longMessage ??
-    maybe?.errors?.[0]?.message ??
-    maybe?.message ??
-    'Could not create your account. Try again.'
   );
 }

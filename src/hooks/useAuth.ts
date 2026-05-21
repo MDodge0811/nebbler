@@ -35,5 +35,3 @@ export function useAuth() {
     clerkUser,
   };
 }
-
-export type AuthContextValue = ReturnType<typeof useAuth>;

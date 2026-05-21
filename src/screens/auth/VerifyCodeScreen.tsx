@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useSignIn, useSignUp } from '@clerk/clerk-expo';
+import { extractClerkError } from '@utils/clerkError';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -50,22 +51,21 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
       setCodeError('Verification code is required');
       return;
     }
+    if (isSignUp ? !signUpLoaded || !signUp : !signInLoaded || !signIn) return;
+    if (submitting) return;
+
     setCodeError(undefined);
     setGenericError(undefined);
     setSubmitting(true);
 
     try {
       if (isSignUp) {
-        if (!signUpLoaded || !signUp) return;
-
-        const result = await signUp.attemptEmailAddressVerification({ code: trimmed });
+        const result = await signUp!.attemptEmailAddressVerification({ code: trimmed });
         if (result.status === 'complete' && setActiveSignUp) {
           await setActiveSignUp({ session: result.createdSessionId });
         }
       } else {
-        if (!signInLoaded || !signIn) return;
-
-        const result = await signIn.attemptFirstFactor({
+        const result = await signIn!.attemptFirstFactor({
           strategy: 'email_code',
           code: trimmed,
         });
@@ -74,7 +74,7 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
         }
       }
     } catch (err) {
-      setGenericError(extractClerkError(err));
+      setGenericError(extractClerkError(err, 'Could not verify the code. Try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -147,15 +147,5 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
         </Box>
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-}
-
-function extractClerkError(err: unknown): string {
-  const maybe = err as { errors?: { message?: string; longMessage?: string }[]; message?: string };
-  return (
-    maybe?.errors?.[0]?.longMessage ??
-    maybe?.errors?.[0]?.message ??
-    maybe?.message ??
-    'Could not verify the code. Try again.'
   );
 }

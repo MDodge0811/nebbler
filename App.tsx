@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
@@ -35,18 +35,22 @@ const errorTextStyle = tva({ base: 'p-5 text-center text-base text-error-500' })
  */
 function ClerkPowerSyncBridge() {
   const { isSignedIn, isLoaded, getToken } = useClerkAuth();
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
 
   useEffect(() => {
     if (!isLoaded) return;
 
     if (isSignedIn) {
-      setClerkTokenGetter(getToken);
+      setClerkTokenGetter((...args) => getTokenRef.current(...args));
       connectDatabase().catch((err) => console.error('[App] connectDatabase failed:', err));
     } else {
       clearClerkTokenGetter();
       disconnectDatabase().catch((err) => console.error('[App] disconnectDatabase failed:', err));
     }
-  }, [isSignedIn, isLoaded, getToken]);
+    // getToken intentionally omitted — Clerk does not stabilize the reference; connect/disconnect
+    // should only trigger on auth state changes, not token function identity changes.
+  }, [isSignedIn, isLoaded]);
 
   return null;
 }
