@@ -15,7 +15,8 @@ Docs: [Clerk Expo](https://clerk.com/docs/expo/getting-started/quickstart), [Cle
 
 ```
 App.tsx
-  └─ ClerkProvider (publishableKey, tokenCache = @clerk/clerk-expo/token-cache)
+  └─ ClerkProvider (tokenCache = @clerk/clerk-expo/token-cache; reads
+                    EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY from process.env)
        └─ PowerSyncContext.Provider
             ├─ ClerkPowerSyncBridge (effect — calls connect/disconnect on isSignedIn)
             └─ AppNavigator (gates on Clerk's isSignedIn / isLoaded)
@@ -35,7 +36,7 @@ Identity lives in Clerk. The app does not maintain its own auth context, mutatio
 | `src/screens/auth/VerifyCodeScreen.tsx` | 6-digit code entry; branches on `mode: 'sign-in' \| 'sign-up'`                                                         |
 | `src/navigation/AuthNavigator.tsx`      | Auth-stack screens (Login, SignUp, VerifyCode)                                                                         |
 | `src/database/connector.ts`             | PowerSync connector + `setClerkTokenGetter`/`clearClerkTokenGetter`                                                    |
-| `src/constants/config.ts`               | Exports `clerkPublishableKey` from `expo-constants`                                                                    |
+| `src/constants/config.ts`               | PowerSync + backend URLs (worktree port detection). Clerk's key is read directly from `process.env`, not from here.    |
 | `src/types/auth.ts`                     | Tiny adapter `User` type used by `useAuth`                                                                             |
 | `src/utils/secureStorage.ts`            | Generic `get/set/delete` wrapper — **not** for Clerk tokens (Clerk has its own cache)                                  |
 
@@ -176,12 +177,14 @@ Keys to **not** create here:
 
 ## Environment
 
-| Variable                     | Where it's read                                | Notes                                 |
-| ---------------------------- | ---------------------------------------------- | ------------------------------------- |
-| `CLERK_PUBLISHABLE_KEY`      | `app.config.ts` → `Constants.expoConfig.extra` | Required at boot. Starts with `pk_…`. |
-| `API_PORT`, `POWERSYNC_PORT` | `app.config.ts` (worktree port overrides)      | Optional. Defaults to 4000 / 8080.    |
+| Variable                            | Where it's read                           | Notes                                                                                                                |
+| ----------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | `process.env` (auto-exposed by Expo)      | Required at boot. Starts with `pk_test_` or `pk_live_`. Clerk's SDK reads it directly — no `app.config.ts` plumbing. |
+| `API_PORT`, `POWERSYNC_PORT`        | `app.config.ts` (worktree port overrides) | Optional. Defaults to 4000 / 8080.                                                                                   |
 
-If `CLERK_PUBLISHABLE_KEY` is empty at runtime, `App.tsx` renders an error screen instead of mounting `ClerkProvider` — the SDK won't initialize without it.
+If `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` is empty at runtime, `App.tsx` renders an error screen instead of mounting `ClerkProvider` — the SDK won't initialize without it.
+
+> The `EXPO_PUBLIC_` prefix is required: Expo only inlines env vars with that prefix into the client bundle. Naming it `CLERK_PUBLISHABLE_KEY` would leave it `undefined` at runtime.
 
 ## Navigation Auth Gating
 

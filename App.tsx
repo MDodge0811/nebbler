@@ -17,7 +17,11 @@ import {
   setClerkTokenGetter,
   clearClerkTokenGetter,
 } from '@database/index';
-import { clerkPublishableKey } from '@constants/config';
+
+// Clerk's Expo SDK auto-reads this env var. Expo exposes any var prefixed
+// with `EXPO_PUBLIC_` to the client bundle at build time.
+// https://clerk.com/docs/expo/getting-started/quickstart
+const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '@/global.css';
@@ -90,7 +94,7 @@ export default function App() {
       <GluestackUIProvider mode="light">
         <Box className={loadingContainerStyle({})}>
           <Text className={errorTextStyle({})}>
-            CLERK_PUBLISHABLE_KEY is not set. See .env.example.
+            EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is not set. See .env.example.
           </Text>
         </Box>
       </GluestackUIProvider>
@@ -100,7 +104,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GluestackUIProvider mode="light">
-        <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
+        <ClerkProvider tokenCache={tokenCache}>
           <PowerSyncContext.Provider value={database}>
             <ClerkPowerSyncBridge />
             <StatusBar style="auto" />

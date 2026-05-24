@@ -40,16 +40,16 @@ Key reference pages:
 
 ## File Map
 
-| File                         | Role                                                                                             |
-| ---------------------------- | ------------------------------------------------------------------------------------------------ |
-| `src/database/schema.ts`     | PowerSync table definitions (must match backend Postgres + sync rules)                           |
-| `src/database/database.ts`   | Singleton init + connect lifecycle                                                               |
-| `src/database/connector.ts`  | `PowerSyncBackendConnector` — pulls Clerk JWTs via the module-level getter, handles CRUD uploads |
-| `src/database/schemas/`      | Zod validation for config URLs and API responses                                                 |
-| `src/constants/config.ts`    | PowerSync + backend URLs (dev/prod), `clerkPublishableKey`                                       |
-| `src/hooks/use*.ts`          | Query hooks (`useQuery`) and mutation hooks (`usePowerSync`)                                     |
-| `src/utils/secureStorage.ts` | Generic K/V wrapper (Clerk owns its own auth token cache — don't reuse this for tokens)          |
-| `App.tsx`                    | `<ClerkProvider>` + `<PowerSyncContext.Provider>` + `ClerkPowerSyncBridge` (connect/disconnect)  |
+| File                         | Role                                                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/database/schema.ts`     | PowerSync table definitions (must match backend Postgres + sync rules)                                                               |
+| `src/database/database.ts`   | Singleton init + connect lifecycle                                                                                                   |
+| `src/database/connector.ts`  | `PowerSyncBackendConnector` — pulls Clerk JWTs via the module-level getter, handles CRUD uploads                                     |
+| `src/database/schemas/`      | Zod validation for config URLs and API responses                                                                                     |
+| `src/constants/config.ts`    | PowerSync + backend URLs (dev/prod). Clerk's key is read from `process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` directly in `App.tsx`. |
+| `src/hooks/use*.ts`          | Query hooks (`useQuery`) and mutation hooks (`usePowerSync`)                                                                         |
+| `src/utils/secureStorage.ts` | Generic K/V wrapper (Clerk owns its own auth token cache — don't reuse this for tokens)                                              |
+| `App.tsx`                    | `<ClerkProvider>` + `<PowerSyncContext.Provider>` + `ClerkPowerSyncBridge` (connect/disconnect)                                      |
 
 ## Packages
 

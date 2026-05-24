@@ -40,7 +40,7 @@ src/
 ├── navigation/     # React Navigation config (stack + drawer + bottom tabs + auth)
 ├── hooks/          # Custom React hooks (useAuth adapter, useCurrentUser, useTestItems, …)
 ├── database/       # PowerSync database layer (schema, connector, sync) + Clerk token wiring
-├── constants/      # App constants (config with dynamic port detection, clerkPublishableKey, colors)
+├── constants/      # App constants (config with dynamic port detection, colors)
 ├── types/          # TypeScript type declarations
 └── utils/          # Utility functions (secureStorage — generic K/V, not Clerk tokens)
 ```

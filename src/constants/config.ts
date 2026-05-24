@@ -14,14 +14,6 @@ export const powersyncConfig = PowerSyncConfigSchema.parse({
 });
 
 /**
- * Clerk Publishable Key. Set via `CLERK_PUBLISHABLE_KEY` env var; surfaced
- * through `expo-constants` via `app.config.ts`.
- *
- * In dev: comes from `.env` (or your shell). In prod: bake into the build.
- */
-export const clerkPublishableKey: string = Constants.expoConfig?.extra?.clerkPublishableKey ?? '';
-
-/**
  * Sync status polling interval in milliseconds
  */
 export const SYNC_STATUS_POLL_INTERVAL = 1000;
