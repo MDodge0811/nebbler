@@ -6,3 +6,4 @@ export {
   type ApiErrorResponse,
 } from './apiSchemas';
 export { CreateEventSchema, type CreateEventFormData } from './eventSchemas';
+export { CreateCalendarSchema, type CreateCalendarFormData } from './calendarSchemas';
