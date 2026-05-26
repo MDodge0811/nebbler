@@ -14,3 +14,4 @@ export {
   type AuthResponseData,
 } from './authSchemas';
 export { CreateEventSchema, type CreateEventFormData } from './eventSchemas';
+export { CreateCalendarSchema, type CreateCalendarFormData } from './calendarSchemas';
