@@ -47,6 +47,44 @@ async function getPowerSyncToken(): Promise<string | null> {
 }
 
 /**
+ * fetchCredentials() runs on a PowerSync retry loop, so naively logging on
+ * every failure floods the console. Track the last surfaced error so we
+ * only emit the loud message when something *new* breaks.
+ */
+let lastFetchCredentialsError: string | null = null;
+
+/**
+ * Loudly surface configuration mistakes that otherwise present as a silent
+ * "Connected: No" with no other evidence. The most common cause by far is
+ * a missing `powersync` JWT template in the Clerk dashboard — Clerk throws
+ * an opaque "Template not found" which PowerSync's SDK then catches and
+ * retries forever, so the user sees nothing.
+ */
+function logPowerSyncCredentialFailure(short: string, err: unknown): void {
+  const detail = err instanceof Error ? err.message : err == null ? '' : String(err);
+  const key = `${short}::${detail}`;
+  if (lastFetchCredentialsError === key) return;
+  lastFetchCredentialsError = key;
+
+  console.error(
+    [
+      `[PowerSync] fetchCredentials failed: ${short}`,
+      detail ? `  Underlying error: ${detail}` : null,
+      `  Most likely cause: the 'powersync' JWT template is missing from Clerk.`,
+      `  Fix in the Clerk dashboard:`,
+      `    1. Configure → Sessions → JWT templates → New template`,
+      `    2. Name (exact, lowercase): powersync`,
+      `    3. Custom claims:`,
+      `       { "aud": "powersync", "user_id": "{{user.public_metadata.internal_user_id}}" }`,
+      `    4. Save, then sign out + sign in in the app.`,
+      `  Docs: https://clerk.com/docs/guides/sessions/jwt-templates`,
+    ]
+      .filter((line): line is string => line !== null)
+      .join('\n')
+  );
+}
+
+/**
  * PowerSyncConnector implements the backend communication layer.
  *
  * Two responsibilities:
@@ -62,11 +100,38 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
    * Clerk webhook handler on user.created). Sync rules read this claim.
    */
   async fetchCredentials(): Promise<PowerSyncCredentials> {
-    const token = await getPowerSyncToken();
+    let token: string | null;
+
+    try {
+      token = await getPowerSyncToken();
+    } catch (err) {
+      // Most likely culprit when getToken throws here: the `powersync` JWT
+      // template does not exist in the Clerk dashboard.
+      logPowerSyncCredentialFailure("Clerk getToken({ template: 'powersync' }) threw", err);
+      throw err;
+    }
 
     if (!token) {
-      throw new Error('[PowerSync] No Clerk session — cannot fetch PowerSync token');
+      // `clerkGetToken === null` means there's no session yet — quiet path,
+      // ClerkPowerSyncBridge hasn't installed the getter. This is expected
+      // pre-sign-in and shouldn't spam the console.
+      if (!clerkGetToken) {
+        throw new Error('[PowerSync] No Clerk session — cannot fetch PowerSync token');
+      }
+
+      // Getter exists but returned null. That usually means the template
+      // exists but has no claims / can't be issued for this user — surface
+      // it loudly.
+      logPowerSyncCredentialFailure(
+        "Clerk getToken({ template: 'powersync' }) returned null",
+        null
+      );
+      throw new Error('[PowerSync] Clerk returned a null PowerSync token');
     }
+
+    // Reset the dedupe key on a successful credential fetch so a *new* failure
+    // after a streak of healthy fetches will print, not be silently swallowed.
+    lastFetchCredentialsError = null;
 
     // Pre-flight validation: confirm token shape matches expectations.
     const parsed = FetchCredentialsResponseSchema.parse({ token });
