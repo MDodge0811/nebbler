@@ -8,4 +8,5 @@ export { ProfileScreen } from './ProfileScreen';
 export { CreateEventScreen } from './CreateEventScreen';
 export { EventDetailScreen } from './EventDetailScreen';
 export { LoginScreen } from './auth/LoginScreen';
-export { RegisterScreen } from './auth/RegisterScreen';
+export { SignUpScreen } from './auth/SignUpScreen';
+export { VerifyCodeScreen } from './auth/VerifyCodeScreen';

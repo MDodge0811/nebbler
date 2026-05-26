@@ -6,5 +6,5 @@ export { AppSchema } from './schema';
 export type { Database } from './schema';
 
 // Connector
-export { PowerSyncConnector } from './connector';
-export type { PowerSyncCredentials } from './connector';
+export { PowerSyncConnector, setClerkTokenGetter, clearClerkTokenGetter } from './connector';
+export type { PowerSyncCredentials, ClerkTokenGetter } from './connector';

@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useSignIn, useSSO } from '@clerk/clerk-expo';
+import * as WebBrowser from 'expo-web-browser';
+import { extractClerkError } from '@utils/clerkError';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -12,11 +15,10 @@ import {
   FormControlLabelText,
   FormControlError,
   FormControlErrorText,
+  FormControlHelper,
+  FormControlHelperText,
 } from '@/components/ui/form-control';
-import { useLogin } from '@hooks/useAuthMutations';
-import { LoginSchema } from '@database/schemas';
 import type { AuthStackScreenProps } from '@navigation/types';
-import { ZodError } from 'zod';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const scrollContentStyle = tva({ base: 'flex-grow justify-center p-6' });
@@ -24,8 +26,13 @@ const headerStyle = tva({ base: 'mb-8 items-center' });
 const titleStyle = tva({ base: 'text-3xl font-bold text-typography-900' });
 const subtitleStyle = tva({ base: 'mt-2 text-center text-typography-600' });
 const formStyle = tva({ base: 'gap-4' });
+const buttonRowStyle = tva({ base: 'gap-2' });
 const errorBannerStyle = tva({ base: 'mb-4 rounded-lg bg-error-50 p-3' });
 const errorBannerTextStyle = tva({ base: 'text-center text-error-600' });
+const dividerStyle = tva({ base: 'my-6 flex-row items-center' });
+const dividerLineStyle = tva({ base: 'flex-1 border-t border-typography-200' });
+const dividerTextStyle = tva({ base: 'mx-3 text-typography-500' });
+const socialStyle = tva({ base: 'gap-3' });
 const footerStyle = tva({ base: 'mt-6 flex-row items-center justify-center' });
 const footerTextStyle = tva({ base: 'text-typography-600' });
 const linkTextStyle = tva({ base: 'ml-1 font-semibold text-primary-500' });
@@ -34,45 +41,104 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1 },
 });
 
+// Required so OAuth redirects complete on iOS.
+WebBrowser.maybeCompleteAuthSession();
+
+type OAuthStrategy = 'oauth_google' | 'oauth_apple' | 'oauth_facebook';
+
 interface FormErrors {
   email?: string;
   password?: string;
 }
 
 export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
-  const loginMutation = useLogin();
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const { startSSOFlow } = useSSO();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [submitting, setSubmitting] = useState<null | 'password' | 'code'>(null);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const [genericError, setGenericError] = useState<string | undefined>();
+  const [oauthInFlight, setOauthInFlight] = useState<OAuthStrategy | null>(null);
 
-  const validateAndLogin = async () => {
-    try {
-      LoginSchema.parse({ email, password });
-      setFormErrors({});
-    } catch (err) {
-      if (err instanceof ZodError) {
-        const errors: FormErrors = {};
-        err.issues.forEach((issue) => {
-          const field = issue.path[0] as keyof FormErrors;
-          if (!errors[field]) {
-            errors[field] = issue.message;
-          }
-        });
-        setFormErrors(errors);
-      }
+  const passwordSignIn = useCallback(async () => {
+    if (!isLoaded || !signIn || submitting) return;
+
+    const trimmed = email.trim();
+    const errors: FormErrors = {};
+    if (!trimmed) errors.email = 'Email is required';
+    if (!password) errors.password = 'Password is required';
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
-    loginMutation.mutate({ email, password });
-  };
+    setFieldErrors({});
+    setGenericError(undefined);
+    setSubmitting('password');
 
-  const handleNavigateToRegister = () => {
-    loginMutation.reset();
-    navigation.navigate('Register');
-  };
+    try {
+      const result = await signIn.create({ identifier: trimmed, password });
 
-  const mutationError = loginMutation.error instanceof Error ? loginMutation.error.message : null;
+      if (result.status === 'complete' && setActive) {
+        await setActive({ session: result.createdSessionId });
+        // ClerkPowerSyncBridge will pick up the new session.
+        return;
+      }
+
+      // Multi-factor or other intermediate states — surface a message and
+      // let the user choose the code path.
+      setGenericError('Additional verification is required. Try the email code option.');
+    } catch (err) {
+      setGenericError(extractClerkError(err));
+    } finally {
+      setSubmitting(null);
+    }
+  }, [email, isLoaded, password, setActive, signIn, submitting]);
+
+  const sendCode = useCallback(async () => {
+    if (!isLoaded || !signIn || submitting) return;
+
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setFieldErrors({ email: 'Email is required' });
+      return;
+    }
+
+    setFieldErrors({});
+    setGenericError(undefined);
+    setSubmitting('code');
+
+    try {
+      await signIn.create({ strategy: 'email_code', identifier: trimmed });
+      navigation.navigate('VerifyCode', { email: trimmed, mode: 'sign-in' });
+    } catch (err) {
+      setGenericError(extractClerkError(err));
+    } finally {
+      setSubmitting(null);
+    }
+  }, [email, isLoaded, navigation, signIn, submitting]);
+
+  const oauth = useCallback(
+    async (strategy: OAuthStrategy) => {
+      if (oauthInFlight) return;
+      setOauthInFlight(strategy);
+      setGenericError(undefined);
+
+      try {
+        const { createdSessionId, setActive: ssoSetActive } = await startSSOFlow({ strategy });
+        if (createdSessionId && ssoSetActive) {
+          await ssoSetActive({ session: createdSessionId });
+        }
+      } catch (err) {
+        setGenericError(extractClerkError(err));
+      } finally {
+        setOauthInFlight(null);
+      }
+    },
+    [oauthInFlight, startSSOFlow]
+  );
 
   return (
     <KeyboardAvoidingView
@@ -82,68 +148,121 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Box className={scrollContentStyle({})}>
           <Box className={headerStyle({})}>
-            <Text className={titleStyle({})}>Welcome Back</Text>
-            <Text className={subtitleStyle({})}>Sign in to continue to Nebbler</Text>
+            <Text className={titleStyle({})}>Welcome to Nebbler</Text>
+            <Text className={subtitleStyle({})}>Sign in to continue</Text>
           </Box>
 
-          {mutationError && (
+          {genericError && (
             <Box className={errorBannerStyle({})}>
-              <Text className={errorBannerTextStyle({})}>{mutationError}</Text>
+              <Text className={errorBannerTextStyle({})}>{genericError}</Text>
             </Box>
           )}
 
           <VStack className={formStyle({})}>
-            <FormControl isInvalid={!!formErrors.email}>
+            <FormControl isInvalid={!!fieldErrors.email}>
               <FormControlLabel>
                 <FormControlLabelText>Email</FormControlLabelText>
               </FormControlLabel>
-              <Input isInvalid={!!formErrors.email}>
+              <Input isInvalid={!!fieldErrors.email}>
                 <InputField
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="Enter your email"
+                  placeholder="you@example.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
                 />
               </Input>
-              {formErrors.email && (
+              {fieldErrors.email && (
                 <FormControlError>
-                  <FormControlErrorText>{formErrors.email}</FormControlErrorText>
+                  <FormControlErrorText>{fieldErrors.email}</FormControlErrorText>
                 </FormControlError>
               )}
             </FormControl>
 
-            <FormControl isInvalid={!!formErrors.password}>
+            <FormControl isInvalid={!!fieldErrors.password}>
               <FormControlLabel>
                 <FormControlLabelText>Password</FormControlLabelText>
               </FormControlLabel>
-              <Input isInvalid={!!formErrors.password}>
+              <Input isInvalid={!!fieldErrors.password}>
                 <InputField
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="Enter your password"
+                  placeholder="Your password"
                   secureTextEntry
-                  autoComplete="password"
+                  autoComplete="current-password"
                 />
               </Input>
-              {formErrors.password && (
+              {fieldErrors.password ? (
                 <FormControlError>
-                  <FormControlErrorText>{formErrors.password}</FormControlErrorText>
+                  <FormControlErrorText>{fieldErrors.password}</FormControlErrorText>
                 </FormControlError>
+              ) : (
+                <FormControlHelper>
+                  <FormControlHelperText>
+                    Leave blank to receive a one-time code by email.
+                  </FormControlHelperText>
+                </FormControlHelper>
               )}
             </FormControl>
 
-            <Button onPress={validateAndLogin} isDisabled={loginMutation.isPending}>
-              {loginMutation.isPending && <ButtonSpinner />}
-              <ButtonText>{loginMutation.isPending ? 'Signing In...' : 'Sign In'}</ButtonText>
+            <VStack className={buttonRowStyle({})}>
+              <Button onPress={passwordSignIn} isDisabled={!isLoaded || submitting !== null}>
+                {submitting === 'password' && <ButtonSpinner />}
+                <ButtonText>
+                  {submitting === 'password' ? 'Signing in…' : 'Sign in with password'}
+                </ButtonText>
+              </Button>
+              <Button
+                variant="outline"
+                onPress={sendCode}
+                isDisabled={!isLoaded || submitting !== null}
+              >
+                {submitting === 'code' && <ButtonSpinner />}
+                <ButtonText>
+                  {submitting === 'code' ? 'Sending code…' : 'Email me a code instead'}
+                </ButtonText>
+              </Button>
+            </VStack>
+          </VStack>
+
+          <Box className={dividerStyle({})}>
+            <Box className={dividerLineStyle({})} />
+            <Text className={dividerTextStyle({})}>or continue with</Text>
+            <Box className={dividerLineStyle({})} />
+          </Box>
+
+          <VStack className={socialStyle({})}>
+            <Button
+              variant="outline"
+              onPress={() => oauth('oauth_google')}
+              isDisabled={!!oauthInFlight}
+            >
+              {oauthInFlight === 'oauth_google' && <ButtonSpinner />}
+              <ButtonText>Continue with Google</ButtonText>
+            </Button>
+            <Button
+              variant="outline"
+              onPress={() => oauth('oauth_apple')}
+              isDisabled={!!oauthInFlight}
+            >
+              {oauthInFlight === 'oauth_apple' && <ButtonSpinner />}
+              <ButtonText>Continue with Apple</ButtonText>
+            </Button>
+            <Button
+              variant="outline"
+              onPress={() => oauth('oauth_facebook')}
+              isDisabled={!!oauthInFlight}
+            >
+              {oauthInFlight === 'oauth_facebook' && <ButtonSpinner />}
+              <ButtonText>Continue with Facebook</ButtonText>
             </Button>
           </VStack>
 
           <Box className={footerStyle({})}>
-            <Text className={footerTextStyle({})}>Don&apos;t have an account?</Text>
-            <Text className={linkTextStyle({})} onPress={handleNavigateToRegister}>
-              Sign Up
+            <Text className={footerTextStyle({})}>New to Nebbler?</Text>
+            <Text className={linkTextStyle({})} onPress={() => navigation.navigate('SignUp')}>
+              Create an account
             </Text>
           </Box>
         </Box>

@@ -2,9 +2,9 @@
 export { useSyncStatus, useHasPendingChanges } from './useSyncStatus';
 export type { SyncState, SyncStatusInfo } from './useSyncStatus';
 
-// Auth hooks
+// Auth hooks — for sign-in/sign-up flows use Clerk's hooks directly:
+//   useSignIn, useSignUp, useSSO, useUser (from `@clerk/clerk-expo`).
 export { useAuth } from './useAuth';
-export { useLogin, useRegister, useLogout } from './useAuthMutations';
 
 // User hooks
 export { useCurrentUser } from './useCurrentUser';

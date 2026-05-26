@@ -1,151 +1,190 @@
 ---
 paths:
-  - 'src/context/AuthContext.tsx'
   - 'src/hooks/useAuth.ts'
-  - 'src/hooks/useAuthMutations.ts'
   - 'src/hooks/useCurrentUser.ts'
-  - 'src/services/**'
-  - 'src/types/auth.ts'
-  - 'src/utils/secureStorage.ts'
-  - 'src/database/schemas/authSchemas.ts'
   - 'src/screens/auth/**'
+  - 'src/navigation/AuthNavigator.tsx'
+  - 'App.tsx'
 ---
 
 # Auth System Rules
 
-Docs: [TanStack Query Mutations](https://tanstack.com/query/latest/docs/framework/react/guides/mutations), [expo-secure-store](https://docs.expo.dev/versions/latest/sdk/securestore/)
+Docs: [Clerk Expo](https://clerk.com/docs/expo/getting-started/quickstart), [Clerk JWT Templates](https://clerk.com/docs/guides/sessions/jwt-templates), [PowerSync Custom Auth](https://docs.powersync.com/installation/authentication-setup/custom)
 
 ## Architecture Overview
 
 ```
 App.tsx
-  └─ QueryClientProvider (TanStack Query — mutations only)
-       └─ AuthProvider (context: user, token, isAuthenticated, isLoading)
-            └─ PowerSyncContext.Provider
-                 └─ AppNavigator (gates auth vs. main nav based on isAuthenticated)
+  └─ ClerkProvider (tokenCache = @clerk/clerk-expo/token-cache; reads
+                    EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY from process.env)
+       └─ PowerSyncContext.Provider
+            ├─ ClerkPowerSyncBridge (effect — calls connect/disconnect on isSignedIn)
+            └─ AppNavigator (gates on Clerk's isSignedIn / isLoaded)
 ```
+
+Identity lives in Clerk. The app does not maintain its own auth context, mutation hooks, or token store — Clerk's SDK owns session state and token caching.
 
 **Key files:**
 
-| File                                  | Responsibility                                                    |
-| ------------------------------------- | ----------------------------------------------------------------- |
-| `App.tsx`                             | Provider tree root — `QueryClientProvider` wraps everything       |
-| `src/context/AuthContext.tsx`         | `AuthProvider`, `AuthContext`, `setAuth`/`clearAuth`              |
-| `src/hooks/useAuth.ts`                | `useAuth()` — typed context access with throw-guard               |
-| `src/hooks/useAuthMutations.ts`       | `useLogin()`, `useRegister()`, `useLogout()` — TanStack mutations |
-| `src/hooks/useCurrentUser.ts`         | Bridges auth context + PowerSync `users` table                    |
-| `src/services/authService.ts`         | `ApiAuthService` implementing `IAuthService`                      |
-| `src/utils/secureStorage.ts`          | `expo-secure-store` wrapper — only access point                   |
-| `src/types/auth.ts`                   | `User`, `AuthState`, `IAuthService`, credential types             |
-| `src/database/schemas/authSchemas.ts` | Zod schemas for login/register forms + API response               |
+| File                                    | Responsibility                                                                                                         |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `App.tsx`                               | Provider tree root — `ClerkProvider` + `PowerSyncContext.Provider` + `ClerkPowerSyncBridge`                            |
+| `src/hooks/useAuth.ts`                  | Adapter over `useClerkAuth` + `useUser` — returns `{ user, isAuthenticated, isLoading, signOut, getToken, clerkUser }` |
+| `src/hooks/useCurrentUser.ts`           | Bridges Clerk auth + PowerSync `users` table by our internal UUID                                                      |
+| `src/screens/auth/LoginScreen.tsx`      | Email + password sign-in, email-OTP sign-in, OAuth (Google/Apple/Facebook), link to sign-up                            |
+| `src/screens/auth/SignUpScreen.tsx`     | Email + password + first/last name → `signUp.create` → email verification                                              |
+| `src/screens/auth/VerifyCodeScreen.tsx` | 6-digit code entry; branches on `mode: 'sign-in' \| 'sign-up'`                                                         |
+| `src/navigation/AuthNavigator.tsx`      | Auth-stack screens (Login, SignUp, VerifyCode)                                                                         |
+| `src/database/connector.ts`             | PowerSync connector + `setClerkTokenGetter`/`clearClerkTokenGetter`                                                    |
+| `src/constants/config.ts`               | PowerSync + backend URLs (worktree port detection). Clerk's key is read directly from `process.env`, not from here.    |
+| `src/types/auth.ts`                     | Tiny adapter `User` type used by `useAuth`                                                                             |
+| `src/utils/secureStorage.ts`            | Generic `get/set/delete` wrapper — **not** for Clerk tokens (Clerk has its own cache)                                  |
 
 ## Two-Layer User Model
 
 There are **two different "user" objects** — this is the most common source of confusion:
 
-| Layer     | Type                                                      | Source                  | Available when             |
-| --------- | --------------------------------------------------------- | ----------------------- | -------------------------- |
-| Auth user | `User { id, email }`                                      | `useAuth()`             | Immediately on login       |
-| DB user   | `DbUser { id, first_name, last_name, display_name, ... }` | PowerSync `users` table | After first sync completes |
+| Layer     | Type                                                      | Source                                                                                          | Available when                                                 |
+| --------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Auth user | `User { id, email }`                                      | `useAuth()` — `id` is our **internal UUID** read from Clerk's `publicMetadata.internal_user_id` | After the Clerk webhook completes (a beat after first sign-up) |
+| DB user   | `DbUser { id, first_name, last_name, display_name, ... }` | PowerSync `users` table                                                                         | After first sync completes                                     |
 
 `useCurrentUser()` bridges both: returns `{ user: DbUser | null, authUser: AuthUser | null }`.
 
-**Rule:** Components must fall back to `authUser.email` when `user` is null (sync not yet complete). Never assume the DB user is available immediately after login.
+**Rules:**
 
-## useAuth() Throw-Guard
+1. Components must fall back to `authUser.email` (or `clerkUser.primaryEmailAddress`) when `user` is null — sync may not have caught up.
+2. `authUser.id` is `null` for a brief window after first sign-up if the backend webhook hasn't yet written `internal_user_id` into Clerk's `publicMetadata`. Anything that requires a UUID (queries, navigation guards) must handle that case.
 
-`useAuth()` throws if called outside `AuthProvider`. Always use the hook — never call `useContext(AuthContext)` directly:
+## useAuth() Adapter
 
-```typescript
-// GOOD
-const { user, isAuthenticated } = useAuth();
-
-// BAD — no type safety, no throw-guard
-const context = useContext(AuthContext);
-```
-
-## TanStack Query: Mutations Only
-
-TanStack Query is used **exclusively for auth mutations** (login, register, logout). All data reads go through PowerSync's `useQuery`.
-
-**Never use** `useQuery` from `@tanstack/react-query` — that would bypass PowerSync's offline-first data layer.
+`useAuth()` is a thin wrapper over `@clerk/clerk-expo`'s `useAuth` + `useUser`. It exists so call sites don't need to know about Clerk internals.
 
 ```typescript
-// GOOD — auth action via TanStack mutation
-import { useMutation } from '@tanstack/react-query';
+// GOOD — adapter shape used across the app
+const { user, isAuthenticated, isLoading, signOut, getToken, clerkUser } = useAuth();
 
-// GOOD — data read via PowerSync
-import { useQuery } from '@powersync/react';
-
-// BAD — data read via TanStack (bypasses offline-first)
-import { useQuery } from '@tanstack/react-query';
+// Use clerkUser only when you need fields beyond { id, email } (image URL, full
+// metadata, etc.). Anything stable should be backed by the DbUser table.
 ```
 
-`QueryClientProvider` lives in `App.tsx` with `retry: false` for mutations — auth failures should not auto-retry.
+For Clerk-specific flows (sign-in, sign-up, OAuth, SSO), import the dedicated hooks directly from `@clerk/clerk-expo`:
+
+```typescript
+import { useSignIn, useSignUp, useSSO } from '@clerk/clerk-expo';
+```
+
+These hooks expose `create`, `attemptFirstFactor`, `attemptEmailAddressVerification`, `setActive`, etc. The auth screens (`LoginScreen`, `SignUpScreen`, `VerifyCodeScreen`) own those calls; nothing else in the app should.
+
+## Auth Flows
+
+### Sign up (email + password)
+
+```
+SignUpScreen
+  → signUp.create({ emailAddress, password, firstName, lastName })
+  → signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+  → navigate('VerifyCode', { email, mode: 'sign-up' })
+
+VerifyCodeScreen (mode === 'sign-up')
+  → signUp.attemptEmailAddressVerification({ code })
+  → setActiveSignUp({ session: createdSessionId })
+```
+
+### Sign in (password)
+
+```
+LoginScreen (email + password filled)
+  → signIn.create({ identifier: email, password })
+  → if status === 'complete': setActive({ session: createdSessionId })
+```
+
+### Sign in (email OTP — passwordless)
+
+```
+LoginScreen (only email filled)
+  → signIn.create({ strategy: 'email_code', identifier: email })
+  → navigate('VerifyCode', { email, mode: 'sign-in' })
+
+VerifyCodeScreen (mode === 'sign-in')
+  → signIn.attemptFirstFactor({ strategy: 'email_code', code })
+  → setActiveSignIn({ session: createdSessionId })
+```
+
+### Sign in (OAuth — Google / Apple / Facebook)
+
+```
+LoginScreen
+  → useSSO().startSSOFlow({ strategy: 'oauth_google' | 'oauth_apple' | 'oauth_facebook' })
+  → setActive({ session: createdSessionId })
+```
+
+OAuth requires a dev build (Expo Go can't load the native modules). `WebBrowser.maybeCompleteAuthSession()` is called at module load in `LoginScreen.tsx` so iOS redirects complete cleanly.
+
+### Sign out
+
+```
+useAuth().signOut()
+  → ClerkPowerSyncBridge effect picks up isSignedIn === false
+  → clearClerkTokenGetter()
+  → disconnectDatabase()
+```
+
+There's no logout mutation. Anywhere you'd previously call `useLogout().mutate()`, call `signOut()` directly.
 
 ## Auth ↔ PowerSync Lifecycle
 
-Login and logout coordinate PowerSync connection state:
+`ClerkPowerSyncBridge` (inside `App.tsx`) is the only component that coordinates connection state:
 
 ```
-Login/Register success:
-  1. secureStorage.setToken(token) + secureStorage.setUser(user)
-  2. setAuth(user, token)          — updates AuthContext
-  3. connectDatabase()             — starts PowerSync sync
+When isSignedIn flips to true:
+  1. setClerkTokenGetter(getToken)   — connector now has access to Clerk tokens
+  2. connectDatabase()               — PowerSync starts syncing
 
-Logout (success OR error):
-  1. disconnectDatabase()          — stops PowerSync sync
-  2. secureStorage.clear()         — removes token + user from device
-  3. clearAuth()                   — resets AuthContext
-
-App startup (AuthProvider mount):
-  1. Read token + user from secureStorage
-  2. If both exist → setState(authenticated) + connectDatabase()
-  3. If missing → setState(not authenticated, not loading)
+When isSignedIn flips to false:
+  1. clearClerkTokenGetter()
+  2. disconnectDatabase()
 ```
 
-**Critical:** Logout clears locally even if the server call fails — the `onError` handler in `useLogout` mirrors the `onSuccess` handler exactly.
+**Critical:** never call `connectDatabase()` / `disconnectDatabase()` from anywhere else. The bridge is the single source of truth so we don't double-connect or leak tokens.
+
+## Two Token Templates
+
+| Template              | Audience    | Custom claims             | Used for                                             |
+| --------------------- | ----------- | ------------------------- | ---------------------------------------------------- |
+| Default (no template) | n/a         | `sub` = Clerk user id     | Our Phoenix API (`Authorization` on `/api/data/...`) |
+| `powersync`           | `powersync` | `user_id` = internal UUID | PowerSync service — direct, no backend hop           |
+
+Connector code reads them via:
+
+```typescript
+// API requests
+await clerkGetToken();
+// PowerSync auth
+await clerkGetToken({ template: 'powersync' });
+```
+
+The PowerSync template's `user_id` claim is sourced from `user.publicMetadata.internal_user_id`, written by the Phoenix webhook handler on `user.created`. If you change the template name or the claim name in the Clerk dashboard, update **both** `src/database/connector.ts` (`getPowerSyncToken`) and `docker/powersync/sync_rules.yaml` (`request.jwt() ->> 'user_id'`).
 
 ## Secure Storage
 
-`secureStorage` in `src/utils/secureStorage.ts` is the **only** module that imports `expo-secure-store`. Never import `SecureStore` directly elsewhere.
+`secureStorage` in `src/utils/secureStorage.ts` is a generic key/value wrapper. It's **not** the place to put auth tokens — `@clerk/clerk-expo/token-cache` already handles that under the hood with `expo-secure-store`.
 
-Two keys persisted:
+Keys to **not** create here:
 
-- `auth_token` — JWT string
-- `auth_user` — JSON-serialized `{ id, email }`
+- `auth_token`, `auth_user`, `clerk_*` — Clerk owns these
+- Anything that duplicates what `useAuth().getToken()` already provides
 
-All get methods return `null` on error (never throw). Set/delete methods propagate errors.
+## Environment
 
-## Auth Service (IAuthService)
+| Variable                            | Where it's read                           | Notes                                                                                                                |
+| ----------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | `process.env` (auto-exposed by Expo)      | Required at boot. Starts with `pk_test_` or `pk_live_`. Clerk's SDK reads it directly — no `app.config.ts` plumbing. |
+| `API_PORT`, `POWERSYNC_PORT`        | `app.config.ts` (worktree port overrides) | Optional. Defaults to 4000 / 8080.                                                                                   |
 
-`src/services/authService.ts` exports a singleton `authService: IAuthService`.
+If `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` is empty at runtime, `App.tsx` renders an error screen instead of mounting `ClerkProvider` — the SDK won't initialize without it.
 
-**Endpoints:**
-
-- `POST /api/auth/login` — sends `{ email, password, device }`, returns `{ user, access_token, device_id }`
-- `POST /api/auth/register` — sends `{ email, password, first_name, last_name, device }`, same response
-- `POST /api/auth/logout` — sends `Authorization: Bearer <token>`
-
-**Patterns:**
-
-- All responses validated with `AuthResponseSchema.parse()` (Zod)
-- API maps `access_token` → `token` before validation
-- Device fingerprint sent on every login/register: `{ fingerprint: "ios-18.0", type: "ios", ... }`
-- `refreshToken()` and `getCurrentUser()` are stubs — throw "not yet implemented"
-- `apiRequest<T>()` is the private fetch helper — normalizes errors from `data.errors.detail` or `data.error`
-
-**Extending auth:** Implement the `IAuthService` interface and swap the export in `authService.ts`.
-
-## Zod Schemas
-
-Auth schemas in `src/database/schemas/authSchemas.ts`:
-
-| Schema               | Purpose                                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------------------- |
-| `LoginSchema`        | Form validation: email (required, valid format) + password (required, 8+ chars)                |
-| `RegisterSchema`     | Form validation: name fields + password strength (uppercase, lowercase, digit) + confirm match |
-| `AuthResponseSchema` | API response validation: `{ user: { id, email }, token, expiresAt? }`                          |
+> The `EXPO_PUBLIC_` prefix is required: Expo only inlines env vars with that prefix into the client bundle. Naming it `CLERK_PUBLISHABLE_KEY` would leave it `undefined` at runtime.
 
 ## Navigation Auth Gating
 
@@ -154,52 +193,54 @@ Auth schemas in `src/database/schemas/authSchemas.ts`:
 ```typescript
 const { isAuthenticated, isLoading } = useAuth();
 // isLoading → loading spinner
-// isAuthenticated → MainNavigator (tabs + drawer + stack)
-// !isAuthenticated → AuthNavigator (login + register screens)
+// isAuthenticated → MainNavigator
+// !isAuthenticated → AuthNavigator (Login → SignUp → VerifyCode)
 ```
 
-No manual navigation on login/logout — the conditional render switches the entire navigator tree automatically.
+No manual navigation on auth state change — the conditional render switches the whole tree when `isSignedIn` flips.
 
 ## Testing Auth Code
 
-### Testing authService
+### Tests mock `@hooks/useAuth`, not `@clerk/clerk-expo`
 
-Mock `globalThis.fetch` directly (authService uses raw fetch, not a library):
-
-```typescript
-function mockFetchResponse(status: number, body: unknown) {
-  (globalThis.fetch as jest.Mock).mockResolvedValueOnce({
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-  });
-}
-
-beforeEach(() => {
-  globalThis.fetch = jest.fn();
-});
-afterEach(() => {
-  jest.restoreAllMocks();
-});
-```
-
-### Testing components that use useAuth
-
-Mock the hook to control auth state:
+Existing tests already pass `{ user: { id, email } }` to a mocked `useAuth`. Keep that pattern — the adapter shape didn't change.
 
 ```typescript
 jest.mock('@hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { id: 'user-1', email: 'test@example.com' },
-    token: 'mock-token',
+    user: { id: 'user-uuid-123', email: 'test@example.com' },
     isAuthenticated: true,
     isLoading: false,
-    setAuth: jest.fn(),
-    clearAuth: jest.fn(),
+    signOut: jest.fn(),
+    getToken: jest.fn().mockResolvedValue('fake.jwt.token'),
+    clerkUser: null,
   }),
 }));
 ```
 
-### Testing useAuthMutations
+### Don't render `<ClerkProvider>` in component tests
 
-Requires mocking both TanStack Query's `useMutation` and the auth dependencies (`authService`, `secureStorage`, `connectDatabase`, `disconnectDatabase`).
+Tests should mock `useAuth` (or `useSignIn`/`useSignUp` for auth-screen tests). Spinning up `ClerkProvider` in Jest pulls in native modules and a publishable key — neither is appropriate at the unit level.
+
+### Auth screens
+
+For LoginScreen / SignUpScreen / VerifyCodeScreen, mock the specific Clerk hook used:
+
+```typescript
+jest.mock('@clerk/clerk-expo', () => ({
+  useSignIn: () => ({
+    isLoaded: true,
+    signIn: { create: jest.fn().mockResolvedValue({ status: 'complete', createdSessionId: 's' }) },
+    setActive: jest.fn(),
+  }),
+  useSSO: () => ({ startSSOFlow: jest.fn() }),
+}));
+```
+
+## Common Mistakes
+
+- **Calling `signOut`, `signIn.create`, etc. from outside the auth screens.** Auth flow code is concentrated in three screens by design; sprinkling it elsewhere makes flows hard to follow.
+- **Reading `clerkUser.id` and treating it as our user UUID.** That's Clerk's `user_xxx`. For FK queries use `useAuth().user.id` (our UUID) or `useCurrentUser().user.id`.
+- **Forgetting that `useAuth().user` can be `null` even when `isAuthenticated === true`.** It will be null until Clerk's `publicMetadata.internal_user_id` is populated — handle that case in screens that need the UUID.
+- **Calling `connectDatabase()` outside `ClerkPowerSyncBridge`.** The bridge handles connect/disconnect from the auth-state effect. Manual calls cause double-connects.
+- **Storing auth tokens in `secureStorage`.** Clerk has its own token cache; duplicating it leads to drift and stale-token bugs.

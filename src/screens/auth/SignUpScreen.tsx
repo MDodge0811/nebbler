@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useSignUp } from '@clerk/clerk-expo';
+import { extractClerkError } from '@utils/clerkError';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -15,10 +17,7 @@ import {
   FormControlHelper,
   FormControlHelperText,
 } from '@/components/ui/form-control';
-import { useRegister } from '@hooks/useAuthMutations';
-import { RegisterSchema } from '@database/schemas';
 import type { AuthStackScreenProps } from '@navigation/types';
-import { ZodError } from 'zod';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const scrollContentStyle = tva({ base: 'flex-grow justify-center p-6' });
@@ -41,47 +40,53 @@ interface FormErrors {
   lastName?: string;
   email?: string;
   password?: string;
-  confirmPassword?: string;
 }
 
-export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>) {
-  const registerMutation = useRegister();
+export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
+  const { signUp, isLoaded } = useSignUp();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [genericError, setGenericError] = useState<string | undefined>();
 
-  const validateAndRegister = async () => {
-    try {
-      RegisterSchema.parse({ firstName, lastName, email, password, confirmPassword });
-      setFormErrors({});
-    } catch (err) {
-      if (err instanceof ZodError) {
-        const errors: FormErrors = {};
-        err.issues.forEach((issue) => {
-          const field = issue.path[0] as keyof FormErrors;
-          if (!errors[field]) {
-            errors[field] = issue.message;
-          }
-        });
-        setFormErrors(errors);
-      }
+  const submit = useCallback(async () => {
+    if (!isLoaded || !signUp || submitting) return;
+
+    const fieldErrors: FormErrors = {};
+    if (!firstName.trim()) fieldErrors.firstName = 'First name is required';
+    if (!lastName.trim()) fieldErrors.lastName = 'Last name is required';
+    if (!email.trim()) fieldErrors.email = 'Email is required';
+    if (password.length < 8) {
+      fieldErrors.password = 'Password must be at least 8 characters';
+    }
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
       return;
     }
 
-    registerMutation.mutate({ firstName, lastName, email, password });
-  };
+    setErrors({});
+    setGenericError(undefined);
+    setSubmitting(true);
 
-  const handleNavigateToLogin = () => {
-    registerMutation.reset();
-    navigation.navigate('Login');
-  };
-
-  const mutationError =
-    registerMutation.error instanceof Error ? registerMutation.error.message : null;
+    try {
+      await signUp.create({
+        emailAddress: email.trim(),
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      });
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      navigation.navigate('VerifyCode', { email: email.trim(), mode: 'sign-up' });
+    } catch (err) {
+      setGenericError(extractClerkError(err, 'Could not create your account. Try again.'));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [email, firstName, isLoaded, lastName, navigation, password, signUp]);
 
   return (
     <KeyboardAvoidingView
@@ -91,22 +96,22 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Box className={scrollContentStyle({})}>
           <Box className={headerStyle({})}>
-            <Text className={titleStyle({})}>Create Account</Text>
-            <Text className={subtitleStyle({})}>Sign up to get started with Nebbler</Text>
+            <Text className={titleStyle({})}>Create your account</Text>
+            <Text className={subtitleStyle({})}>Sign up with email and password</Text>
           </Box>
 
-          {mutationError && (
+          {genericError && (
             <Box className={errorBannerStyle({})}>
-              <Text className={errorBannerTextStyle({})}>{mutationError}</Text>
+              <Text className={errorBannerTextStyle({})}>{genericError}</Text>
             </Box>
           )}
 
           <VStack className={formStyle({})}>
-            <FormControl isInvalid={!!formErrors.firstName} isRequired>
+            <FormControl isInvalid={!!errors.firstName} isRequired>
               <FormControlLabel>
-                <FormControlLabelText>First Name</FormControlLabelText>
+                <FormControlLabelText>First name</FormControlLabelText>
               </FormControlLabel>
-              <Input isInvalid={!!formErrors.firstName}>
+              <Input isInvalid={!!errors.firstName}>
                 <InputField
                   value={firstName}
                   onChangeText={setFirstName}
@@ -115,18 +120,18 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
                   autoComplete="given-name"
                 />
               </Input>
-              {formErrors.firstName && (
+              {errors.firstName && (
                 <FormControlError>
-                  <FormControlErrorText>{formErrors.firstName}</FormControlErrorText>
+                  <FormControlErrorText>{errors.firstName}</FormControlErrorText>
                 </FormControlError>
               )}
             </FormControl>
 
-            <FormControl isInvalid={!!formErrors.lastName} isRequired>
+            <FormControl isInvalid={!!errors.lastName} isRequired>
               <FormControlLabel>
-                <FormControlLabelText>Last Name</FormControlLabelText>
+                <FormControlLabelText>Last name</FormControlLabelText>
               </FormControlLabel>
-              <Input isInvalid={!!formErrors.lastName}>
+              <Input isInvalid={!!errors.lastName}>
                 <InputField
                   value={lastName}
                   onChangeText={setLastName}
@@ -135,92 +140,70 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
                   autoComplete="family-name"
                 />
               </Input>
-              {formErrors.lastName && (
+              {errors.lastName && (
                 <FormControlError>
-                  <FormControlErrorText>{formErrors.lastName}</FormControlErrorText>
+                  <FormControlErrorText>{errors.lastName}</FormControlErrorText>
                 </FormControlError>
               )}
             </FormControl>
 
-            <FormControl isInvalid={!!formErrors.email} isRequired>
+            <FormControl isInvalid={!!errors.email} isRequired>
               <FormControlLabel>
                 <FormControlLabelText>Email</FormControlLabelText>
               </FormControlLabel>
-              <Input isInvalid={!!formErrors.email}>
+              <Input isInvalid={!!errors.email}>
                 <InputField
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="Enter your email"
+                  placeholder="you@example.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
                 />
               </Input>
-              {formErrors.email && (
+              {errors.email && (
                 <FormControlError>
-                  <FormControlErrorText>{formErrors.email}</FormControlErrorText>
+                  <FormControlErrorText>{errors.email}</FormControlErrorText>
                 </FormControlError>
               )}
             </FormControl>
 
-            <FormControl isInvalid={!!formErrors.password} isRequired>
+            <FormControl isInvalid={!!errors.password} isRequired>
               <FormControlLabel>
                 <FormControlLabelText>Password</FormControlLabelText>
               </FormControlLabel>
-              <Input isInvalid={!!formErrors.password}>
+              <Input isInvalid={!!errors.password}>
                 <InputField
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="Create a password"
+                  placeholder="At least 8 characters"
                   secureTextEntry
                   autoComplete="new-password"
                 />
               </Input>
-              {formErrors.password ? (
+              {errors.password ? (
                 <FormControlError>
-                  <FormControlErrorText>{formErrors.password}</FormControlErrorText>
+                  <FormControlErrorText>{errors.password}</FormControlErrorText>
                 </FormControlError>
               ) : (
                 <FormControlHelper>
                   <FormControlHelperText>
-                    At least 8 characters with uppercase, lowercase, and a number
+                    Clerk enforces a minimum of 8 characters by default.
                   </FormControlHelperText>
                 </FormControlHelper>
               )}
             </FormControl>
 
-            <FormControl isInvalid={!!formErrors.confirmPassword} isRequired>
-              <FormControlLabel>
-                <FormControlLabelText>Confirm Password</FormControlLabelText>
-              </FormControlLabel>
-              <Input isInvalid={!!formErrors.confirmPassword}>
-                <InputField
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Confirm your password"
-                  secureTextEntry
-                  autoComplete="new-password"
-                />
-              </Input>
-              {formErrors.confirmPassword && (
-                <FormControlError>
-                  <FormControlErrorText>{formErrors.confirmPassword}</FormControlErrorText>
-                </FormControlError>
-              )}
-            </FormControl>
-
-            <Button onPress={validateAndRegister} isDisabled={registerMutation.isPending}>
-              {registerMutation.isPending && <ButtonSpinner />}
-              <ButtonText>
-                {registerMutation.isPending ? 'Creating Account...' : 'Create Account'}
-              </ButtonText>
+            <Button onPress={submit} isDisabled={submitting || !isLoaded}>
+              {submitting && <ButtonSpinner />}
+              <ButtonText>{submitting ? 'Creating account…' : 'Create account'}</ButtonText>
             </Button>
           </VStack>
 
           <Box className={footerStyle({})}>
             <Text className={footerTextStyle({})}>Already have an account?</Text>
-            <Text className={linkTextStyle({})} onPress={handleNavigateToLogin}>
-              Sign In
+            <Text className={linkTextStyle({})} onPress={() => navigation.navigate('Login')}>
+              Sign in
             </Text>
           </Box>
         </Box>

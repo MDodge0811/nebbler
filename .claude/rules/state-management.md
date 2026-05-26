@@ -1,17 +1,16 @@
 ---
 paths:
   - 'src/stores/**'
-  - 'src/context/**'
 ---
 
 ## Context vs. Zustand
 
 **Use Context when:**
 
-- State changes infrequently (auth status, theme, locale, feature flags)
+- State changes infrequently (theme, locale, feature flags)
 - The number of consumers is small or they all need the full value anyway
-- You're providing a dependency (like a PowerSync instance or navigation ref) rather than frequently-changing state
-- `AuthContext` is the canonical example — it changes on login/logout, not 60 times a second
+- You're providing a dependency (like the PowerSync instance via `PowerSyncContext`) rather than frequently-changing state
+- A third-party SDK owns the state and exposes a provider — e.g. `<ClerkProvider>` from `@clerk/clerk-expo`. The app no longer rolls its own `AuthContext`; sign-in state comes from `useAuth()` (a thin adapter over Clerk's hook).
 
 **Use Zustand when:**
 
@@ -27,12 +26,13 @@ paths:
 
 | Store/Context      | File                             | Purpose                                                                             |
 | ------------------ | -------------------------------- | ----------------------------------------------------------------------------------- |
-| `AuthContext`      | `src/context/AuthContext.tsx`    | Auth user, token, isAuthenticated — gates navigation                                |
+| `ClerkProvider`    | (from `@clerk/clerk-expo`)       | Auth/session state. Consumed via `useAuth()` adapter in `src/hooks/useAuth.ts`.     |
+| `PowerSyncContext` | (from `@powersync/react`)        | The PowerSync database singleton. Mounted in `App.tsx` after `initializeDatabase`.  |
 | `useScheduleStore` | `src/stores/useScheduleStore.ts` | Schedule screen date state, view state, sync coordination, card display preferences |
 
 ## Deep-Dive References
 
-| Topic            | File                             | When to Read                           |
-| ---------------- | -------------------------------- | -------------------------------------- |
-| Zustand patterns | `.claude/rules/state/zustand.md` | Creating or modifying Zustand stores   |
-| Auth context     | `.claude/rules/auth.md`          | Working with AuthContext, login/logout |
+| Topic            | File                             | When to Read                                                 |
+| ---------------- | -------------------------------- | ------------------------------------------------------------ |
+| Zustand patterns | `.claude/rules/state/zustand.md` | Creating or modifying Zustand stores                         |
+| Auth integration | `.claude/rules/auth.md`          | Working with Clerk flows, `useAuth`, `useSignIn`/`useSignUp` |

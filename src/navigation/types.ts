@@ -5,7 +5,8 @@ import type { CompositeScreenProps, NavigatorScreenParams } from '@react-navigat
 
 export type AuthStackParamList = {
   Login: undefined;
-  Register: undefined;
+  SignUp: undefined;
+  VerifyCode: { email: string; mode: 'sign-in' | 'sign-up' };
 };
 
 export type DrawerParamList = {

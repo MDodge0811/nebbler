@@ -2,7 +2,6 @@
 paths:
   - 'src/database/**'
   - 'src/hooks/**'
-  - 'src/context/**'
   - 'App.tsx'
 ---
 
@@ -41,17 +40,16 @@ Key reference pages:
 
 ## File Map
 
-| File                         | Role                                                                   |
-| ---------------------------- | ---------------------------------------------------------------------- |
-| `src/database/schema.ts`     | PowerSync table definitions (must match backend Postgres + sync rules) |
-| `src/database/database.ts`   | Singleton init + connect lifecycle                                     |
-| `src/database/connector.ts`  | `PowerSyncBackendConnector` — auth + CRUD upload                       |
-| `src/database/schemas/`      | Zod validation for config URLs and API responses                       |
-| `src/constants/config.ts`    | PowerSync + backend URLs (dev/prod), validated with Zod                |
-| `src/hooks/use*.ts`          | Query hooks (`useQuery`) and mutation hooks (`usePowerSync`)           |
-| ~~`src/utils/uuid.ts`~~      | Removed — UUIDs now generated via PowerSync's built-in `uuid()` in SQL |
-| `src/utils/secureStorage.ts` | Token persistence for auth                                             |
-| `App.tsx`                    | `<PowerSyncContext.Provider>` wrapping the app                         |
+| File                         | Role                                                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/database/schema.ts`     | PowerSync table definitions (must match backend Postgres + sync rules)                                                               |
+| `src/database/database.ts`   | Singleton init + connect lifecycle                                                                                                   |
+| `src/database/connector.ts`  | `PowerSyncBackendConnector` — pulls Clerk JWTs via the module-level getter, handles CRUD uploads                                     |
+| `src/database/schemas/`      | Zod validation for config URLs and API responses                                                                                     |
+| `src/constants/config.ts`    | PowerSync + backend URLs (dev/prod). Clerk's key is read from `process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` directly in `App.tsx`. |
+| `src/hooks/use*.ts`          | Query hooks (`useQuery`) and mutation hooks (`usePowerSync`)                                                                         |
+| `src/utils/secureStorage.ts` | Generic K/V wrapper (Clerk owns its own auth token cache — don't reuse this for tokens)                                              |
+| `App.tsx`                    | `<ClerkProvider>` + `<PowerSyncContext.Provider>` + `ClerkPowerSyncBridge` (connect/disconnect)                                      |
 
 ## Packages
 
@@ -72,7 +70,7 @@ Import from `@powersync/react` for: `useQuery`, `usePowerSync`, `useStatus`, `Po
 - **Timestamps:** Set `inserted_at`/`updated_at` locally (ISO 8601 string) for immediate UI; server overwrites on sync
 - **Column types:** Only `column.text`, `column.integer`, `column.real` — no booleans (use integer 0/1), no dates (use text)
 - **Offline-first:** All reads from local SQLite. Writes go to local queue, sync automatically. App works fully offline
-- **Two-phase init:** `initializeDatabase()` on app start (creates local DB), `connectDatabase()` after auth (starts sync)
+- **Two-phase init:** `initializeDatabase()` on app start (creates local DB); `connectDatabase()` from `ClerkPowerSyncBridge` once Clerk reports a signed-in session
 
 ## Adding a New Synced Table
 

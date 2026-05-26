@@ -5,13 +5,5 @@ export {
   ApiErrorResponseSchema,
   type ApiErrorResponse,
 } from './apiSchemas';
-export {
-  LoginSchema,
-  type LoginFormData,
-  RegisterSchema,
-  type RegisterFormData,
-  AuthResponseSchema,
-  type AuthResponseData,
-} from './authSchemas';
 export { CreateEventSchema, type CreateEventFormData } from './eventSchemas';
 export { CreateCalendarSchema, type CreateCalendarFormData } from './calendarSchemas';

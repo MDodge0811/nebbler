@@ -111,7 +111,7 @@ bucket_definitions:
 **Rules:**
 
 - Column names in SELECT must match the PowerSync `Table` definition exactly
-- Use explicit column lists (not `SELECT *`) when excluding sensitive fields (e.g., `password_hash`)
+- Use explicit column lists (not `SELECT *`) when excluding sensitive fields (e.g., `clerk_user_id` on `users`)
 - `WHERE deleted_at IS NULL` for soft-delete filtering — prevents deleted records from syncing
 - For user-scoped data: `WHERE user_id = token_parameters.user_id`
 - After changing sync rules: restart the PowerSync container (`docker compose restart powersync`)
@@ -136,4 +136,4 @@ If a table is not in the publication, PowerSync will not detect changes via CDC 
 - Using `column.integer` for a UUID foreign key (must be `column.text`)
 - Timestamp column name mismatch between Ecto (`inserted_at`) and Postgres (ensure Ecto `timestamps()` is not remapped)
 - Forgetting to add a new table to the Postgres publication
-- Using `SELECT *` in sync rules when the table has columns that should not sync (e.g., `password_hash`)
+- Using `SELECT *` in sync rules when the table has columns that should not sync (e.g., `clerk_user_id` on `users`)
