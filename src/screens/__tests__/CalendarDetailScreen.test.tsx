@@ -144,21 +144,21 @@ describe('CalendarDetailScreen — edit mode', () => {
     // an in-body edit entry for tests when needed. For now, simulate by re-rendering
     // with mode=edit via the screen's state — see implementation note: edit entry
     // is also exposed via testID 'enter-edit-btn-inline' for testability.
-    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
     expect(getByText('Edit Calendar')).toBeTruthy();
   });
 
   it('hides Discoverable toggle for social calendars', () => {
     mockDetail = detail({ calendar: { ...baseCalendar, type: 'social' } });
     const { getByTestId, queryByText } = render(<CalendarDetailScreen />);
-    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
     expect(queryByText('Discoverable')).toBeNull();
   });
 
   it('shows Discoverable toggle for public calendars', () => {
     mockDetail = detail({ calendar: { ...baseCalendar, type: 'public' } });
     const { getByTestId, getByText } = render(<CalendarDetailScreen />);
-    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
     expect(getByText('Discoverable')).toBeTruthy();
   });
 
@@ -174,16 +174,16 @@ describe('CalendarDetailScreen — edit mode', () => {
       },
     });
     const { getByTestId, queryByText } = render(<CalendarDetailScreen />);
-    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
     expect(queryByText('Delete Calendar')).toBeNull();
   });
 
   it('returns to view mode on X press', () => {
     mockDetail = detail();
     const { getByTestId, queryByText, getByText } = render(<CalendarDetailScreen />);
-    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
     expect(getByText('Edit Calendar')).toBeTruthy();
-    fireEvent.press(getByTestId('close-edit-btn'));
+    fireEvent.press(getByTestId('close-edit-btn', { includeHiddenElements: true }));
     expect(queryByText('Edit Calendar')).toBeNull();
   });
 });

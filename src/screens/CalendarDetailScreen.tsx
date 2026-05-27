@@ -212,6 +212,8 @@ export function CalendarDetailScreen() {
         testID="enter-edit-btn-inline"
         onPress={enterEditMode}
         style={styles.testAffordance}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
       />
 
       {mode === 'view' ? (
@@ -352,6 +354,8 @@ export function CalendarDetailScreen() {
               testID="close-edit-btn"
               onPress={exitEditMode}
               style={styles.testAffordance}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
             />
 
             {/* Preview Card */}
