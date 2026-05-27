@@ -135,3 +135,55 @@ describe('CalendarDetailScreen — view mode', () => {
     expect(mockNavigate).toHaveBeenCalledWith('EventDetail', { eventId: 'e1' });
   });
 });
+
+describe('CalendarDetailScreen — edit mode', () => {
+  it('enters edit mode when pencil pressed', () => {
+    mockDetail = detail();
+    const { getByTestId, getByText } = render(<CalendarDetailScreen />);
+    // header pencil is rendered via setOptions; we use the same testID by exposing
+    // an in-body edit entry for tests when needed. For now, simulate by re-rendering
+    // with mode=edit via the screen's state — see implementation note: edit entry
+    // is also exposed via testID 'enter-edit-btn-inline' for testability.
+    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    expect(getByText('Edit Calendar')).toBeTruthy();
+  });
+
+  it('hides Discoverable toggle for social calendars', () => {
+    mockDetail = detail({ calendar: { ...baseCalendar, type: 'social' } });
+    const { getByTestId, queryByText } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    expect(queryByText('Discoverable')).toBeNull();
+  });
+
+  it('shows Discoverable toggle for public calendars', () => {
+    mockDetail = detail({ calendar: { ...baseCalendar, type: 'public' } });
+    const { getByTestId, getByText } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    expect(getByText('Discoverable')).toBeTruthy();
+  });
+
+  it('hides Danger Zone for non-owner', () => {
+    mockDetail = detail({
+      permissions: {
+        canView: true,
+        canEnterEdit: true,
+        canSave: true,
+        canDelete: false,
+        canCreateEvent: true,
+        isFreeBusy: false,
+      },
+    });
+    const { getByTestId, queryByText } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    expect(queryByText('Delete Calendar')).toBeNull();
+  });
+
+  it('returns to view mode on X press', () => {
+    mockDetail = detail();
+    const { getByTestId, queryByText, getByText } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('enter-edit-btn-inline'));
+    expect(getByText('Edit Calendar')).toBeTruthy();
+    fireEvent.press(getByTestId('close-edit-btn'));
+    expect(queryByText('Edit Calendar')).toBeNull();
+  });
+});

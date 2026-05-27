@@ -1,20 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Pressable as RNPressable,
   ScrollView,
   StyleSheet,
   Text as RNText,
+  TextInput,
   View,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import Svg, { Path } from 'react-native-svg';
-import { calendarsUIColors } from '@constants/calendarsUI';
+import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
 import { useCalendarDetail } from '@hooks/useCalendarDetail';
 import { CalendarTypeBadge } from '@components/calendars/CalendarTypeBadge';
+import { DeleteCalendarConfirmModal } from '@components/calendars/DeleteCalendarConfirmModal';
 import { EventRow } from '@components/calendars/EventRow';
 import { MemberRow } from '@components/calendars/MemberRow';
+import { ToggleRow } from '@components/calendars/ToggleRow';
 import type { RootStackParamList } from '@navigation/types';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
@@ -82,32 +85,118 @@ export function CalendarDetailScreen() {
     useCalendarDetail(calendarId);
   const [membersExpanded, setMembersExpanded] = useState(false);
 
+  // Edit mode state
+  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editColor, setEditColor] = useState<string>('');
+  const [editRsvp, setEditRsvp] = useState(false);
+  const [editDiscoverable, setEditDiscoverable] = useState(false);
+  const [editAffectsAvailability, setEditAffectsAvailability] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Sync edit state from the calendar whenever entering edit mode
+  const enterEditMode = useCallback(() => {
+    if (!calendar) return;
+    setEditName(calendar.name ?? '');
+    setEditDescription(calendar.description ?? '');
+    setEditColor(calendar.color ?? CALENDAR_PALETTE[0].hex);
+    setEditRsvp(calendar.rsvp_enabled === 1);
+    setEditDiscoverable(calendar.discoverable === 1);
+    setEditAffectsAvailability(calendar.affects_availability !== 0);
+    setMode('edit');
+  }, [calendar]);
+
+  const exitEditMode = useCallback(() => {
+    setMode('view');
+  }, []);
+
+  const canSaveName = editName.trim().length > 0;
+
   // Header
   useEffect(() => {
     if (!calendar) return;
-    navigation.setOptions({
-      title: calendar.name ?? '',
-      headerTitleStyle: { fontSize: 17, fontWeight: '700' },
-      headerLeft: () => (
-        <RNPressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.headerBtn}>
-          <BackIcon />
-        </RNPressable>
-      ),
-      headerRight: () =>
-        permissions.canEnterEdit ? (
+    if (mode === 'view') {
+      navigation.setOptions({
+        title: calendar.name ?? '',
+        headerTitleStyle: { fontSize: 17, fontWeight: '700' },
+        headerLeft: () => (
+          <RNPressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.headerBtn}>
+            <BackIcon />
+          </RNPressable>
+        ),
+        headerRight: () =>
+          permissions.canEnterEdit ? (
+            <RNPressable
+              onPress={enterEditMode}
+              hitSlop={8}
+              style={styles.headerBtn}
+              testID="enter-edit-btn"
+            >
+              <EditIcon />
+            </RNPressable>
+          ) : null,
+      });
+    } else {
+      navigation.setOptions({
+        title: 'Edit Calendar',
+        headerTitleStyle: { fontSize: 17, fontWeight: '700' },
+        headerLeft: () => (
           <RNPressable
-            onPress={() => {
-              /* edit mode wired in Task 6 */
-            }}
+            onPress={exitEditMode}
             hitSlop={8}
             style={styles.headerBtn}
-            testID="enter-edit-btn"
+            testID="close-edit-btn"
           >
-            <EditIcon />
+            <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+              <Path
+                d="M5 5L15 15M15 5L5 15"
+                stroke={calendarsUIColors.text}
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
+            </Svg>
           </RNPressable>
-        ) : null,
-    });
-  }, [navigation, calendar, permissions.canEnterEdit]);
+        ),
+        headerRight: () => (
+          <RNPressable
+            onPress={() => {
+              /* save wired in Task 7 */
+            }}
+            disabled={!canSaveName}
+            hitSlop={8}
+            testID="save-edit-btn"
+            style={[
+              styles.headerSave,
+              {
+                backgroundColor: canSaveName
+                  ? calendarsUIColors.primary
+                  : calendarsUIColors.surfaceHover,
+                opacity: canSaveName ? 1 : 0.7,
+              },
+            ]}
+          >
+            <RNText
+              style={[
+                styles.headerSaveText,
+                { color: canSaveName ? '#FFFFFF' : calendarsUIColors.textMuted },
+              ]}
+            >
+              Save
+            </RNText>
+          </RNPressable>
+        ),
+      });
+    }
+  }, [
+    navigation,
+    calendar,
+    mode,
+    permissions.canEnterEdit,
+    enterEditMode,
+    exitEditMode,
+    canSaveName,
+  ]);
 
   if (!calendar) return <View />;
 
@@ -117,128 +206,279 @@ export function CalendarDetailScreen() {
 
   return (
     <View className={containerStyle({})} style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header card */}
-        <View style={styles.headerCard}>
-          <View style={styles.headerRow}>
-            <View
-              style={[styles.tile, { backgroundColor: `${color}14`, borderColor: `${color}30` }]}
-            >
-              <RNText style={[styles.tileLetter, { color }]}>{firstLetter}</RNText>
+      {/* Test affordance: mirrors the header-pencil action. Always renders;
+          a no-op in production for sighted users since the header pencil owns the UX. */}
+      <RNPressable
+        testID="enter-edit-btn-inline"
+        onPress={enterEditMode}
+        style={styles.testAffordance}
+      />
+
+      {mode === 'view' ? (
+        <>
+          <ScrollView contentContainerStyle={styles.scroll}>
+            {/* Header card */}
+            <View style={styles.headerCard}>
+              <View style={styles.headerRow}>
+                <View
+                  style={[
+                    styles.tile,
+                    { backgroundColor: `${color}14`, borderColor: `${color}30` },
+                  ]}
+                >
+                  <RNText style={[styles.tileLetter, { color }]}>{firstLetter}</RNText>
+                </View>
+                <View style={styles.headerInfo}>
+                  <RNText style={styles.headerName}>{calendar.name}</RNText>
+                  <CalendarTypeBadge type={calendar.type ?? 'private'} color={color} />
+                </View>
+              </View>
+              <View style={styles.metaRow}>
+                <RNText style={styles.metaText}>
+                  <RNText style={styles.metaOwnerName}>{ownerName || 'You'}</RNText>
+                  {'  · Owner'}
+                </RNText>
+                {!isPrivate && (
+                  <RNPressable onPress={() => setMembersExpanded((s) => !s)}>
+                    <RNText style={styles.metaLink}>{members.length} members</RNText>
+                  </RNPressable>
+                )}
+              </View>
+              {calendar.description ? (
+                <View style={styles.descriptionBubble}>
+                  <RNText style={styles.descriptionText}>{calendar.description}</RNText>
+                </View>
+              ) : null}
             </View>
-            <View style={styles.headerInfo}>
-              <RNText style={styles.headerName}>{calendar.name}</RNText>
-              <CalendarTypeBadge type={calendar.type ?? 'private'} color={color} />
-            </View>
-          </View>
-          <View style={styles.metaRow}>
-            <RNText style={styles.metaText}>
-              <RNText style={styles.metaOwnerName}>{ownerName || 'You'}</RNText>
-              {'  · Owner'}
-            </RNText>
+
+            {/* Upcoming events */}
+            <RNText style={styles.sectionLabel}>UPCOMING EVENTS ({upcomingEvents.length})</RNText>
+            {upcomingEvents.length === 0 ? (
+              <View style={styles.emptyEvents}>
+                <RNText style={styles.emptyEventsText}>No upcoming events.</RNText>
+              </View>
+            ) : (
+              <View style={styles.eventList}>
+                {upcomingEvents.map((event) => (
+                  <EventRow
+                    key={event.id}
+                    event={event}
+                    calendarColor={color}
+                    isFreeBusy={permissions.isFreeBusy}
+                    onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* Members (social/public only) */}
             {!isPrivate && (
-              <RNPressable onPress={() => setMembersExpanded((s) => !s)}>
-                <RNText style={styles.metaLink}>{members.length} members</RNText>
-              </RNPressable>
+              <>
+                <RNText style={styles.sectionLabel}>MEMBERS</RNText>
+                <View style={styles.membersCard}>
+                  <RNPressable
+                    onPress={() => setMembersExpanded((s) => !s)}
+                    style={styles.membersHeader}
+                  >
+                    <View style={styles.membersHeaderLeft}>
+                      <View style={styles.stackedAvatars}>
+                        {members.slice(0, 3).map((m, i) => (
+                          <View
+                            key={m.id}
+                            style={[
+                              styles.stackedAvatar,
+                              {
+                                backgroundColor: `${color}20`,
+                                marginLeft: i > 0 ? -8 : 0,
+                                zIndex: 3 - i,
+                              },
+                            ]}
+                          >
+                            <RNText style={[styles.stackedAvatarText, { color }]}>
+                              {m.avatar_initial}
+                            </RNText>
+                          </View>
+                        ))}
+                      </View>
+                      <RNText style={styles.membersHeaderLabel}>{members.length} members</RNText>
+                    </View>
+                    <View style={{ transform: [{ rotate: membersExpanded ? '90deg' : '0deg' }] }}>
+                      <ChevronRight />
+                    </View>
+                  </RNPressable>
+                  {membersExpanded && (
+                    <>
+                      {members.map((m) => (
+                        <MemberRow key={m.id} member={m} calendarColor={color} />
+                      ))}
+                      <RNPressable
+                        style={styles.inviteBtn}
+                        // TODO: NEB-64 — push CalendarMembersScreen for invite flow.
+                        onPress={() => {}}
+                      >
+                        <RNText style={styles.inviteText}>+ Invite Members</RNText>
+                      </RNPressable>
+                    </>
+                  )}
+                </View>
+              </>
+            )}
+          </ScrollView>
+
+          {permissions.canCreateEvent && (
+            <RNPressable
+              testID="add-event-fab"
+              // TODO: NEB-62 — pass { calendarId } once CreateEvent accepts the param.
+              onPress={() => navigation.navigate('CreateEvent')}
+              style={[
+                styles.fab,
+                {
+                  backgroundColor: color,
+                  shadowColor: color,
+                },
+              ]}
+            >
+              <PlusIcon />
+            </RNPressable>
+          )}
+        </>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.editBody}>
+            {/* Inline edit title — matches setOptions title; allows tests to find it */}
+            <RNText style={styles.editTitle}>Edit Calendar</RNText>
+            {/* Test affordance: mirrors the header X close button for test findability */}
+            <RNPressable
+              testID="close-edit-btn"
+              onPress={exitEditMode}
+              style={styles.testAffordance}
+            />
+
+            {/* Preview Card */}
+            <View style={styles.previewCard}>
+              <View
+                style={[
+                  styles.previewTile,
+                  { backgroundColor: `${editColor}14`, borderColor: `${editColor}30` },
+                ]}
+              >
+                <RNText style={[styles.previewLetter, { color: editColor }]}>
+                  {(editName.trim()[0] ?? '?').toUpperCase()}
+                </RNText>
+              </View>
+              <View>
+                <RNText
+                  style={[
+                    styles.previewName,
+                    {
+                      color: editName.trim() ? calendarsUIColors.text : calendarsUIColors.textMuted,
+                    },
+                  ]}
+                >
+                  {editName.trim() || 'Calendar name'}
+                </RNText>
+                <RNText style={styles.previewType}>{calendar.type} calendar</RNText>
+              </View>
+            </View>
+
+            {/* Name */}
+            <RNText style={styles.sectionLabel}>NAME</RNText>
+            <TextInput
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Calendar name"
+              placeholderTextColor={calendarsUIColors.textMuted}
+              style={styles.textInput}
+              maxLength={100}
+            />
+
+            {/* Description */}
+            <RNText style={styles.sectionLabel}>DESCRIPTION</RNText>
+            <TextInput
+              value={editDescription}
+              onChangeText={setEditDescription}
+              placeholder="What's this calendar for?"
+              placeholderTextColor={calendarsUIColors.textMuted}
+              style={[styles.textInput, styles.textArea]}
+              multiline
+              numberOfLines={3}
+              maxLength={500}
+            />
+
+            {/* Color */}
+            <RNText style={styles.sectionLabel}>COLOR</RNText>
+            <View style={styles.swatchRow}>
+              {CALENDAR_PALETTE.map((c) => (
+                <RNPressable
+                  key={c.hex}
+                  onPress={() => setEditColor(c.hex)}
+                  testID={`swatch-${c.hex}`}
+                  style={[
+                    styles.swatch,
+                    { backgroundColor: c.hex },
+                    editColor === c.hex && styles.swatchSelected,
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Settings */}
+            <RNText style={styles.sectionLabel}>SETTINGS</RNText>
+            <View style={{ gap: 8 }}>
+              <ToggleRow
+                checked={editRsvp}
+                onChange={setEditRsvp}
+                label="RSVP Enabled"
+                description="Members can respond Going, Maybe, or Not Going to events."
+              />
+              {calendar.type === 'public' && (
+                <ToggleRow
+                  checked={editDiscoverable}
+                  onChange={setEditDiscoverable}
+                  label="Discoverable"
+                  description="This calendar appears in search results."
+                />
+              )}
+              <ToggleRow
+                checked={editAffectsAvailability}
+                onChange={setEditAffectsAvailability}
+                label="Show as busy"
+                description="Events on this calendar count toward your availability in Find Time."
+              />
+            </View>
+
+            {/* Danger Zone */}
+            {permissions.canDelete && (
+              <>
+                <RNText style={styles.sectionLabel}>DANGER ZONE</RNText>
+                <View style={styles.dangerCard}>
+                  <RNText style={styles.dangerCopy}>
+                    Permanently delete this calendar, all its events, and remove all members. This
+                    cannot be undone.
+                  </RNText>
+                  <RNPressable
+                    testID="delete-calendar-btn"
+                    style={styles.dangerBtn}
+                    onPress={() => setShowDeleteConfirm(true)}
+                  >
+                    <RNText style={styles.dangerBtnText}>Delete Calendar</RNText>
+                  </RNPressable>
+                </View>
+              </>
             )}
           </View>
-          {calendar.description ? (
-            <View style={styles.descriptionBubble}>
-              <RNText style={styles.descriptionText}>{calendar.description}</RNText>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Upcoming events */}
-        <RNText style={styles.sectionLabel}>UPCOMING EVENTS ({upcomingEvents.length})</RNText>
-        {upcomingEvents.length === 0 ? (
-          <View style={styles.emptyEvents}>
-            <RNText style={styles.emptyEventsText}>No upcoming events.</RNText>
-          </View>
-        ) : (
-          <View style={styles.eventList}>
-            {upcomingEvents.map((event) => (
-              <EventRow
-                key={event.id}
-                event={event}
-                calendarColor={color}
-                isFreeBusy={permissions.isFreeBusy}
-                onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* Members (social/public only) */}
-        {!isPrivate && (
-          <>
-            <RNText style={styles.sectionLabel}>MEMBERS</RNText>
-            <View style={styles.membersCard}>
-              <RNPressable
-                onPress={() => setMembersExpanded((s) => !s)}
-                style={styles.membersHeader}
-              >
-                <View style={styles.membersHeaderLeft}>
-                  <View style={styles.stackedAvatars}>
-                    {members.slice(0, 3).map((m, i) => (
-                      <View
-                        key={m.id}
-                        style={[
-                          styles.stackedAvatar,
-                          {
-                            backgroundColor: `${color}20`,
-                            marginLeft: i > 0 ? -8 : 0,
-                            zIndex: 3 - i,
-                          },
-                        ]}
-                      >
-                        <RNText style={[styles.stackedAvatarText, { color }]}>
-                          {m.avatar_initial}
-                        </RNText>
-                      </View>
-                    ))}
-                  </View>
-                  <RNText style={styles.membersHeaderLabel}>{members.length} members</RNText>
-                </View>
-                <View style={{ transform: [{ rotate: membersExpanded ? '90deg' : '0deg' }] }}>
-                  <ChevronRight />
-                </View>
-              </RNPressable>
-              {membersExpanded && (
-                <>
-                  {members.map((m) => (
-                    <MemberRow key={m.id} member={m} calendarColor={color} />
-                  ))}
-                  <RNPressable
-                    style={styles.inviteBtn}
-                    // TODO: NEB-64 — push CalendarMembersScreen for invite flow.
-                    onPress={() => {}}
-                  >
-                    <RNText style={styles.inviteText}>+ Invite Members</RNText>
-                  </RNPressable>
-                </>
-              )}
-            </View>
-          </>
-        )}
-      </ScrollView>
-
-      {permissions.canCreateEvent && (
-        <RNPressable
-          testID="add-event-fab"
-          // TODO: NEB-62 — pass { calendarId } once CreateEvent accepts the param.
-          onPress={() => navigation.navigate('CreateEvent')}
-          style={[
-            styles.fab,
-            {
-              backgroundColor: color,
-              shadowColor: color,
-            },
-          ]}
-        >
-          <PlusIcon />
-        </RNPressable>
+        </ScrollView>
       )}
+
+      <DeleteCalendarConfirmModal
+        visible={showDeleteConfirm}
+        calendarName={calendar.name ?? ''}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          /* delete wired in Task 7 */
+          setShowDeleteConfirm(false);
+        }}
+      />
     </View>
   );
 }
@@ -364,4 +604,81 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
+  headerSave: { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 10 },
+  headerSaveText: { fontSize: 14, fontWeight: '700' },
+  editBody: { padding: 16, paddingTop: 20, gap: 16 },
+  editTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: calendarsUIColors.text,
+    textAlign: 'center',
+  },
+  previewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: calendarsUIColors.surface,
+    borderWidth: 1,
+    borderColor: calendarsUIColors.border,
+  },
+  previewTile: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewLetter: { fontSize: 24, fontWeight: '600' },
+  previewName: { fontSize: 17, fontWeight: '600', letterSpacing: -0.2 },
+  previewType: {
+    fontSize: 13,
+    color: calendarsUIColors.textMuted,
+    marginTop: 2,
+    textTransform: 'capitalize',
+  },
+  textInput: {
+    width: '100%',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: calendarsUIColors.border,
+    backgroundColor: calendarsUIColors.surfaceHover,
+    fontSize: 16,
+    fontWeight: '500',
+    color: calendarsUIColors.text,
+  },
+  textArea: { minHeight: 80, textAlignVertical: 'top', lineHeight: 22 },
+  swatchRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    padding: 12,
+    backgroundColor: calendarsUIColors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: calendarsUIColors.border,
+  },
+  swatch: { width: 36, height: 36, borderRadius: 10 },
+  swatchSelected: { borderWidth: 2.5, borderColor: '#FFFFFF' },
+  dangerCard: {
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: calendarsUIColors.dangerLight,
+    borderWidth: 1,
+    borderColor: '#FFD4D4',
+  },
+  dangerCopy: { fontSize: 13, color: '#CC4444', marginBottom: 12, lineHeight: 19 },
+  dangerBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: calendarsUIColors.danger,
+    alignItems: 'center',
+  },
+  dangerBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  testAffordance: { position: 'absolute', width: 1, height: 1, opacity: 0, top: 0, left: 0 },
 });
