@@ -259,8 +259,10 @@ describe('CalendarDetailScreen — save & delete', () => {
     const { getByTestId, getByText } = render(<CalendarDetailScreen />);
     fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
     fireEvent.press(getByTestId('delete-calendar-btn'));
-    fireEvent.press(getByText('Delete'));
-    await new Promise((r) => setTimeout(r, 0));
+    await act(async () => {
+      fireEvent.press(getByText('Delete'));
+      await Promise.resolve();
+    });
     expect(mockDeleteCalendar).toHaveBeenCalledWith('cal-1');
     expect(mockGoBack).toHaveBeenCalled();
   });
