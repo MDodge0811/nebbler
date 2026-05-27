@@ -9,7 +9,6 @@ interface MembershipJoinRow {
   user_id: string;
   role_id: string;
   view_mode: string | null;
-  can_delete_events: number;
   role_level: number;
   role_name: string;
 }
@@ -43,6 +42,17 @@ export interface CalendarDetailPermissions {
   isFreeBusy: boolean;
 }
 
+/**
+ * Composite hook for the Calendar Detail screen.
+ *
+ * Returns the calendar, its owner's display name, the current user's
+ * membership (with joined role level/name), the full member roster sorted
+ * by role then name, upcoming events (start_time >= now), the effective
+ * view mode (membership override falling back to calendar default), and
+ * computed permissions.
+ *
+ * All queries are reactive PowerSync queries and respect deleted_at.
+ */
 export function useCalendarDetail(calendarId: string | undefined) {
   const { authUser } = useCurrentUser();
   const userId = authUser?.id;
@@ -66,7 +76,8 @@ export function useCalendarDetail(calendarId: string | undefined) {
   // 3. Current user's membership (joined with roles)
   const { data: memberships = [] } = useQuery<MembershipJoinRow>(
     calendarId && userId
-      ? `SELECT cm.*, r.level AS role_level, r.name AS role_name
+      ? `SELECT cm.id, cm.calendar_id, cm.user_id, cm.role_id, cm.view_mode,
+                r.level AS role_level, r.name AS role_name
          FROM calendar_members cm
          JOIN roles r ON cm.role_id = r.id
          WHERE cm.calendar_id = ? AND cm.user_id = ? AND cm.deleted_at IS NULL`
@@ -109,8 +120,12 @@ export function useCalendarDetail(calendarId: string | undefined) {
       });
   }, [memberRows]);
 
-  // 5. Upcoming events
-  const nowIso = useMemo(() => new Date().toISOString(), [calendarId]);
+  // 5. Upcoming events — nowIso re-buckets once per minute so the list stays fresh
+
+  const nowIso = useMemo(
+    () => new Date().toISOString(),
+    [calendarId, Math.floor(Date.now() / 60_000)]
+  );
   const { data: upcomingEvents = [] } = useQuery<Event>(
     calendarId
       ? `SELECT * FROM events
@@ -123,6 +138,16 @@ export function useCalendarDetail(calendarId: string | undefined) {
   const effectiveViewMode = currentMembership?.view_mode ?? calendar?.default_view_mode ?? 'full';
 
   const permissions = useMemo<CalendarDetailPermissions>(() => {
+    if (!userId) {
+      return {
+        canView: false,
+        canEnterEdit: false,
+        canSave: false,
+        canDelete: false,
+        canCreateEvent: false,
+        isFreeBusy: false,
+      };
+    }
     const lvl = currentMembership?.role_level ?? 0;
     const isFreeBusy = effectiveViewMode === 'free_busy';
     return {
@@ -133,7 +158,7 @@ export function useCalendarDetail(calendarId: string | undefined) {
       canCreateEvent: lvl >= 20 && !isFreeBusy,
       isFreeBusy,
     };
-  }, [currentMembership, effectiveViewMode]);
+  }, [userId, currentMembership, effectiveViewMode]);
 
   return {
     calendar,
