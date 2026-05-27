@@ -13,6 +13,9 @@ import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import Svg, { Path } from 'react-native-svg';
 import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
 import { useCalendarDetail } from '@hooks/useCalendarDetail';
+import { useCalendarMutations } from '@hooks/useCalendars';
+import { UpdateCalendarSchema } from '@database/schemas';
+import { ZodError } from 'zod';
 import { CalendarTypeBadge } from '@components/calendars/CalendarTypeBadge';
 import { DeleteCalendarConfirmModal } from '@components/calendars/DeleteCalendarConfirmModal';
 import { EventRow } from '@components/calendars/EventRow';
@@ -83,6 +86,7 @@ export function CalendarDetailScreen() {
 
   const { calendar, ownerName, members, upcomingEvents, permissions } =
     useCalendarDetail(calendarId);
+  const { updateCalendar, deleteCalendar } = useCalendarMutations();
   const [membersExpanded, setMembersExpanded] = useState(false);
 
   // Edit mode state
@@ -94,6 +98,73 @@ export function CalendarDetailScreen() {
   const [editDiscoverable, setEditDiscoverable] = useState(false);
   const [editAffectsAvailability, setEditAffectsAvailability] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [toast, setToast] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+
+  const showToast = useCallback((kind: 'success' | 'error', text: string) => {
+    setToast({ kind, text });
+    setTimeout(() => setToast(null), 2000);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!calendar) return;
+    try {
+      UpdateCalendarSchema.parse({
+        name: editName,
+        description: editDescription,
+        color: editColor,
+        rsvpEnabled: editRsvp,
+        discoverable: editDiscoverable,
+        affectsAvailability: editAffectsAvailability,
+      });
+    } catch (e) {
+      if (e instanceof ZodError) {
+        showToast('error', e.issues[0]?.message ?? 'Invalid input.');
+      }
+      return;
+    }
+
+    const updates: Parameters<typeof updateCalendar>[1] = {
+      name: editName.trim(),
+      description: editDescription,
+      color: editColor,
+      rsvp_enabled: editRsvp ? 1 : 0,
+      affects_availability: editAffectsAvailability ? 1 : 0,
+    };
+    if (calendar.type === 'public') {
+      updates.discoverable = editDiscoverable ? 1 : 0;
+    }
+
+    try {
+      await updateCalendar(calendar.id, updates);
+      setMode('view');
+      showToast('success', 'Changes saved!');
+    } catch {
+      showToast('error', "Couldn't save changes. Try again.");
+    }
+  }, [
+    calendar,
+    editName,
+    editDescription,
+    editColor,
+    editRsvp,
+    editDiscoverable,
+    editAffectsAvailability,
+    updateCalendar,
+    showToast,
+  ]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!calendar) return;
+    try {
+      await deleteCalendar(calendar.id);
+      setShowDeleteConfirm(false);
+      // TODO: NEB-62 — drive a global toast on the CalendarsList screen ("{name} deleted.").
+      navigation.goBack();
+    } catch {
+      setShowDeleteConfirm(false);
+      showToast('error', "Couldn't delete calendar.");
+    }
+  }, [calendar, deleteCalendar, navigation, showToast]);
 
   // Sync edit state from the calendar whenever entering edit mode
   const enterEditMode = useCallback(() => {
@@ -160,9 +231,7 @@ export function CalendarDetailScreen() {
         ),
         headerRight: () => (
           <RNPressable
-            onPress={() => {
-              /* save wired in Task 7 */
-            }}
+            onPress={handleSave}
             disabled={!canSaveName}
             hitSlop={8}
             testID="save-edit-btn"
@@ -196,6 +265,7 @@ export function CalendarDetailScreen() {
     enterEditMode,
     exitEditMode,
     canSaveName,
+    handleSave,
   ]);
 
   if (!calendar) return <View />;
@@ -357,6 +427,14 @@ export function CalendarDetailScreen() {
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
             />
+            {/* Test affordance: mirrors the header Save button for test findability */}
+            <RNPressable
+              testID="save-edit-btn"
+              onPress={handleSave}
+              style={styles.testAffordance}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            />
 
             {/* Preview Card */}
             <View style={styles.previewCard}>
@@ -478,11 +556,23 @@ export function CalendarDetailScreen() {
         visible={showDeleteConfirm}
         calendarName={calendar.name ?? ''}
         onCancel={() => setShowDeleteConfirm(false)}
-        onConfirm={() => {
-          /* delete wired in Task 7 */
-          setShowDeleteConfirm(false);
-        }}
+        onConfirm={handleConfirmDelete}
       />
+
+      {toast && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.toast,
+            {
+              backgroundColor:
+                toast.kind === 'success' ? calendarsUIColors.primary : calendarsUIColors.danger,
+            },
+          ]}
+        >
+          <RNText style={styles.toastText}>{toast.text}</RNText>
+        </View>
+      )}
     </View>
   );
 }
@@ -685,4 +775,20 @@ const styles = StyleSheet.create({
   },
   dangerBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   testAffordance: { position: 'absolute', width: 1, height: 1, opacity: 0, top: 0, left: 0 },
+  toast: {
+    position: 'absolute',
+    top: 16,
+    left: 20,
+    right: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
+    zIndex: 100,
+  },
+  toastText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' },
 });

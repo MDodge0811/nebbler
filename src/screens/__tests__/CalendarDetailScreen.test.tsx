@@ -1,4 +1,4 @@
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -20,8 +20,13 @@ jest.mock('@hooks/useCalendarDetail', () => ({
   useCalendarDetail: () => mockDetail,
 }));
 
+const mockUpdateCalendar = jest.fn();
+const mockDeleteCalendar = jest.fn();
 jest.mock('@hooks/useCalendars', () => ({
-  useCalendarMutations: () => ({ updateCalendar: jest.fn(), deleteCalendar: jest.fn() }),
+  useCalendarMutations: () => ({
+    updateCalendar: mockUpdateCalendar,
+    deleteCalendar: mockDeleteCalendar,
+  }),
 }));
 
 const { CalendarDetailScreen } = require('../CalendarDetailScreen');
@@ -185,5 +190,78 @@ describe('CalendarDetailScreen — edit mode', () => {
     expect(getByText('Edit Calendar')).toBeTruthy();
     fireEvent.press(getByTestId('close-edit-btn', { includeHiddenElements: true }));
     expect(queryByText('Edit Calendar')).toBeNull();
+  });
+});
+
+describe('CalendarDetailScreen — save & delete', () => {
+  beforeEach(() => {
+    mockUpdateCalendar.mockReset();
+    mockDeleteCalendar.mockReset();
+  });
+
+  it('calls updateCalendar with current edit state', async () => {
+    mockDetail = detail();
+    mockUpdateCalendar.mockResolvedValue(undefined);
+    const { getByTestId } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
+    fireEvent.press(getByTestId('save-edit-btn', { includeHiddenElements: true }));
+    await Promise.resolve();
+    expect(mockUpdateCalendar).toHaveBeenCalledWith(
+      'cal-1',
+      expect.objectContaining({
+        name: 'Game Night',
+        color: '#A78BFA',
+        affects_availability: 1,
+      })
+    );
+  });
+
+  it('omits discoverable for non-public calendars', async () => {
+    mockDetail = detail({ calendar: { ...baseCalendar, type: 'social' } });
+    mockUpdateCalendar.mockResolvedValue(undefined);
+    const { getByTestId } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
+    fireEvent.press(getByTestId('save-edit-btn', { includeHiddenElements: true }));
+    await Promise.resolve();
+    const args = mockUpdateCalendar.mock.calls[0][1];
+    expect(args).not.toHaveProperty('discoverable');
+  });
+
+  it('shows success toast and returns to view mode on save', async () => {
+    mockDetail = detail();
+    mockUpdateCalendar.mockResolvedValue(undefined);
+    const { getByTestId, getByText, queryByText } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
+    await act(async () => {
+      fireEvent.press(getByTestId('save-edit-btn', { includeHiddenElements: true }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(getByText('Changes saved!')).toBeTruthy();
+    expect(queryByText('Edit Calendar')).toBeNull();
+  });
+
+  it('stays in edit mode on save error', async () => {
+    mockDetail = detail();
+    mockUpdateCalendar.mockRejectedValue(new Error('boom'));
+    const { getByTestId, getByText } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
+    await act(async () => {
+      fireEvent.press(getByTestId('save-edit-btn', { includeHiddenElements: true }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(getByText('Edit Calendar')).toBeTruthy();
+    expect(getByText(/Couldn't save changes/i)).toBeTruthy();
+  });
+
+  it('deletes the calendar and navigates back', async () => {
+    mockDetail = detail();
+    mockDeleteCalendar.mockResolvedValue(undefined);
+    const { getByTestId, getByText } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
+    fireEvent.press(getByTestId('delete-calendar-btn'));
+    fireEvent.press(getByText('Delete'));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mockDeleteCalendar).toHaveBeenCalledWith('cal-1');
+    expect(mockGoBack).toHaveBeenCalled();
   });
 });
