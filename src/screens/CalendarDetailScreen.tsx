@@ -14,7 +14,7 @@ import Svg, { Path } from 'react-native-svg';
 import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
 import { useCalendarDetail } from '@hooks/useCalendarDetail';
 import { useCalendarMutations } from '@hooks/useCalendars';
-import { UpdateCalendarSchema } from '@database/schemas';
+import { UpdateCalendarSchema, type UpdateCalendarFormData } from '@database/schemas';
 import { ZodError } from 'zod';
 import { CalendarTypeBadge } from '@components/calendars/CalendarTypeBadge';
 import { DeleteCalendarConfirmModal } from '@components/calendars/DeleteCalendarConfirmModal';
@@ -137,8 +137,9 @@ export function CalendarDetailScreen() {
 
   const handleSave = useCallback(async () => {
     if (!calendar) return;
+    let parsed: UpdateCalendarFormData;
     try {
-      UpdateCalendarSchema.parse({
+      parsed = UpdateCalendarSchema.parse({
         name: editName,
         description: editDescription,
         color: editColor,
@@ -154,9 +155,9 @@ export function CalendarDetailScreen() {
     }
 
     const updates: Parameters<typeof updateCalendar>[1] = {
-      name: editName.trim(),
-      description: editDescription,
-      color: editColor,
+      name: parsed.name,
+      description: parsed.description,
+      color: parsed.color,
       rsvp_enabled: editRsvp ? 1 : 0,
       affects_availability: editAffectsAvailability ? 1 : 0,
     };
