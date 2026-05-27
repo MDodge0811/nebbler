@@ -204,8 +204,10 @@ describe('CalendarDetailScreen — save & delete', () => {
     mockUpdateCalendar.mockResolvedValue(undefined);
     const { getByTestId } = render(<CalendarDetailScreen />);
     fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
-    fireEvent.press(getByTestId('save-edit-btn', { includeHiddenElements: true }));
-    await Promise.resolve();
+    await act(async () => {
+      fireEvent.press(getByTestId('save-edit-btn', { includeHiddenElements: true }));
+      await Promise.resolve();
+    });
     expect(mockUpdateCalendar).toHaveBeenCalledWith(
       'cal-1',
       expect.objectContaining({
@@ -221,8 +223,10 @@ describe('CalendarDetailScreen — save & delete', () => {
     mockUpdateCalendar.mockResolvedValue(undefined);
     const { getByTestId } = render(<CalendarDetailScreen />);
     fireEvent.press(getByTestId('enter-edit-btn-inline', { includeHiddenElements: true }));
-    fireEvent.press(getByTestId('save-edit-btn', { includeHiddenElements: true }));
-    await Promise.resolve();
+    await act(async () => {
+      fireEvent.press(getByTestId('save-edit-btn', { includeHiddenElements: true }));
+      await Promise.resolve();
+    });
     const args = mockUpdateCalendar.mock.calls[0][1];
     expect(args).not.toHaveProperty('discoverable');
   });
