@@ -267,3 +267,34 @@ describe('CalendarDetailScreen — save & delete', () => {
     expect(mockGoBack).toHaveBeenCalled();
   });
 });
+
+describe('CalendarDetailScreen — reactive pop-back', () => {
+  it('calls goBack when calendar becomes null after having loaded', () => {
+    mockDetail = detail();
+    const { rerender } = render(<CalendarDetailScreen />);
+    mockGoBack.mockClear();
+
+    mockDetail = detail({ calendar: null });
+    rerender(<CalendarDetailScreen />);
+
+    expect(mockGoBack).toHaveBeenCalled();
+  });
+
+  it('calls goBack when currentMembership becomes null after having loaded', () => {
+    mockDetail = detail();
+    const { rerender } = render(<CalendarDetailScreen />);
+    mockGoBack.mockClear();
+
+    mockDetail = detail({ currentMembership: null });
+    rerender(<CalendarDetailScreen />);
+
+    expect(mockGoBack).toHaveBeenCalled();
+  });
+
+  it('does NOT call goBack on first render when calendar is null', () => {
+    mockDetail = detail({ calendar: null });
+    render(<CalendarDetailScreen />);
+
+    expect(mockGoBack).not.toHaveBeenCalled();
+  });
+});

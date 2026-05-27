@@ -84,7 +84,7 @@ export function CalendarDetailScreen() {
   const route = useRoute<Rt>();
   const calendarId = route.params.calendarId;
 
-  const { calendar, ownerName, members, upcomingEvents, permissions } =
+  const { calendar, ownerName, currentMembership, members, upcomingEvents, permissions } =
     useCalendarDetail(calendarId);
   const { updateCalendar, deleteCalendar } = useCalendarMutations();
   const [membersExpanded, setMembersExpanded] = useState(false);
@@ -100,6 +100,21 @@ export function CalendarDetailScreen() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasLoadedRef = useRef<boolean>(false);
+
+  // Reactive pop-back: if the calendar or membership disappears after we've
+  // confirmed they were present (e.g. remote delete or membership removal),
+  // navigate back automatically. The guard prevents a false pop on the initial
+  // null state that occurs while data is still syncing.
+  useEffect(() => {
+    if (calendar && currentMembership) {
+      hasLoadedRef.current = true;
+      return;
+    }
+    if (hasLoadedRef.current && (!calendar || !currentMembership)) {
+      navigation.goBack();
+    }
+  }, [calendar, currentMembership, navigation]);
 
   const showToast = useCallback((kind: 'success' | 'error', text: string) => {
     if (toastTimerRef.current) {
