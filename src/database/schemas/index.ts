@@ -7,3 +7,4 @@ export {
 } from './apiSchemas';
 export { CreateEventSchema, type CreateEventFormData } from './eventSchemas';
 export { CreateCalendarSchema, type CreateCalendarFormData } from './calendarSchemas';
+export { UpdateCalendarSchema, type UpdateCalendarFormData } from './updateCalendarSchema';

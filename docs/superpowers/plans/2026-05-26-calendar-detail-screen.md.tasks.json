@@ -1,0 +1,40 @@
+{
+  "planPath": "nebbler/docs/superpowers/plans/2026-05-26-calendar-detail-screen.md",
+  "tasks": [
+    { "id": 1, "subject": "Task 1: useCalendarDetail composite hook", "status": "completed" },
+    { "id": 2, "subject": "Task 2: Shared calendar component primitives", "status": "completed" },
+    { "id": 3, "subject": "Task 3: DeleteCalendarConfirmModal component", "status": "completed" },
+    { "id": 4, "subject": "Task 4: UpdateCalendarSchema (Zod)", "status": "completed" },
+    {
+      "id": 5,
+      "subject": "Task 5: CalendarDetailScreen view mode",
+      "status": "completed",
+      "blockedBy": [1, 2]
+    },
+    {
+      "id": 6,
+      "subject": "Task 6: CalendarDetailScreen edit mode",
+      "status": "completed",
+      "blockedBy": [3, 5]
+    },
+    {
+      "id": 7,
+      "subject": "Task 7: Save and Delete actions",
+      "status": "completed",
+      "blockedBy": [4, 6]
+    },
+    {
+      "id": 8,
+      "subject": "Task 8: Reactive lifecycle pop-back",
+      "status": "completed",
+      "blockedBy": [7]
+    },
+    {
+      "id": 9,
+      "subject": "Task 9: Wire entry navigation + finalize",
+      "status": "completed",
+      "blockedBy": [8]
+    }
+  ],
+  "lastUpdated": "2026-05-26T00:00:00Z"
+}

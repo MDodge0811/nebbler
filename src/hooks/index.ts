@@ -25,5 +25,9 @@ export {
   useCalendarGroupMutations,
 } from './useCalendarGroups';
 
+// Calendar detail hook
+export { useCalendarDetail } from './useCalendarDetail';
+export type { CalendarDetailMember, CalendarDetailPermissions } from './useCalendarDetail';
+
 // Event response hooks
 export { useEventResponses, useEventResponseMutations } from './useEventResponses';
