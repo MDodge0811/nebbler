@@ -163,7 +163,7 @@ export function useUserProfile(userId: string | undefined) {
     avatar_color: string | null;
   }>(
     userId
-      ? `SELECT id, first_name, last_name, avatar_color FROM users WHERE id = ?`
+      ? `SELECT id, first_name, last_name, avatar_color FROM users WHERE id = ? AND deleted_at IS NULL`
       : `SELECT 1 WHERE 0`,
     userId ? [userId] : []
   );
