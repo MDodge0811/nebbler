@@ -108,11 +108,23 @@ export async function blockUser(otherUserId: string, currentUserId: string): Pro
       ['blocked', currentUserId, now, existing.id]
     );
   } else {
-    await ps.execute(
+    // INSERT as pending first (server's handle_upsert always creates pending).
+    // Then immediately UPDATE to blocked — server's handle_update routes this
+    // to the block transition which respects the requested status and blocker_id.
+    // PowerSync's upload queue preserves ordering of both writes.
+    const insertResult = await ps.execute(
       `INSERT INTO user_connections
          (id, requester_id, addressee_id, status, blocker_id, deleted_at, inserted_at, updated_at)
-       VALUES (uuid(), ?, ?, ?, ?, NULL, ?, ?)`,
-      [currentUserId, otherUserId, 'blocked', currentUserId, now, now]
+       VALUES (uuid(), ?, ?, ?, NULL, NULL, ?, ?)
+       RETURNING id`,
+      [currentUserId, otherUserId, 'pending', now, now]
+    );
+    const newId = insertResult.rows?._array[0]?.id as string;
+    await ps.execute(
+      `UPDATE user_connections
+       SET status = ?, blocker_id = ?, updated_at = ?
+       WHERE id = ?`,
+      ['blocked', currentUserId, now, newId]
     );
   }
 }

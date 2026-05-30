@@ -117,12 +117,28 @@ describe('blockUser', () => {
     );
   });
 
-  it('INSERTs a new blocked row when no active connection exists', async () => {
+  it('INSERTs a pending row then UPDATEs to blocked when no active connection exists', async () => {
     mockGetOptional.mockResolvedValue(null);
+    // First execute is the INSERT (returns new id); second is the UPDATE
+    mockExecute
+      .mockResolvedValueOnce({ rows: { _array: [{ id: 'new-conn-id' }] } })
+      .mockResolvedValueOnce({ rows: { _array: [] } });
+
     await blockUser('other-user-uuid', 'current-user-uuid');
-    expect(mockExecute).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO user_connections'),
-      expect.arrayContaining(['blocked', 'current-user-uuid'])
-    );
+
+    expect(mockExecute).toHaveBeenCalledTimes(2);
+
+    // First call: INSERT as pending
+    const [insertSql, insertParams] = mockExecute.mock.calls[0] as [string, unknown[]];
+    expect(insertSql).toContain('INSERT INTO user_connections');
+    expect(insertParams).toContain('pending');
+    expect(insertParams).not.toContain('blocked');
+
+    // Second call: UPDATE to blocked + set blocker_id
+    const [updateSql, updateParams] = mockExecute.mock.calls[1] as [string, unknown[]];
+    expect(updateSql).toContain('UPDATE user_connections');
+    expect(updateParams).toContain('blocked');
+    expect(updateParams).toContain('current-user-uuid');
+    expect(updateParams).toContain('new-conn-id');
   });
 });

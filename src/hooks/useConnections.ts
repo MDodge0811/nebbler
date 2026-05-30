@@ -105,47 +105,52 @@ export function useConnectionWith(otherUserId: string | undefined) {
 }
 
 /**
- * Count of calendars where current user AND `otherUserId` both have an
+ * Count of calendars where BOTH currentUserId AND otherUserId have an
  * active calendar_members row.
  */
-export function useSharedCalendarCount(otherUserId: string | undefined) {
+export function useSharedCalendarCount(
+  currentUserId: string | undefined,
+  otherUserId: string | undefined
+) {
   const { data } = useQuery<{ count: number }>(
-    otherUserId
+    currentUserId && otherUserId
       ? `SELECT COUNT(*) as count FROM (
            SELECT cm1.calendar_id
            FROM calendar_members cm1
            JOIN calendar_members cm2 ON cm2.calendar_id = cm1.calendar_id
            WHERE cm1.user_id = ?
-             AND cm2.user_id != ?
              AND cm2.user_id = ?
              AND cm1.deleted_at IS NULL
              AND cm2.deleted_at IS NULL
          )`
       : `SELECT 0 as count WHERE 0`,
-    otherUserId ? [otherUserId, otherUserId, otherUserId] : []
+    currentUserId && otherUserId ? [currentUserId, otherUserId] : []
   );
 
   return data && data.length > 0 ? data[0].count : 0;
 }
 
 /**
- * Full list of shared calendars between current user and `otherUserId`.
+ * Full list of shared calendars between currentUserId and otherUserId.
+ * Requires BOTH users to have an active calendar_members row — never
+ * relies on sync-scope assumptions.
  */
-export function useSharedCalendars(otherUserId: string | undefined) {
+export function useSharedCalendars(
+  currentUserId: string | undefined,
+  otherUserId: string | undefined
+) {
   const { data } = useQuery<{ id: string; name: string; type: string; color: string | null }>(
-    otherUserId
+    currentUserId && otherUserId
       ? `SELECT c.id, c.name, c.type, c.color
          FROM calendars c
-         JOIN calendar_members cm_other ON cm_other.calendar_id = c.id AND cm_other.user_id = ? AND cm_other.deleted_at IS NULL
+         JOIN calendar_members cm_self ON cm_self.calendar_id = c.id
+           AND cm_self.user_id = ? AND cm_self.deleted_at IS NULL
+         JOIN calendar_members cm_other ON cm_other.calendar_id = c.id
+           AND cm_other.user_id = ? AND cm_other.deleted_at IS NULL
          WHERE c.deleted_at IS NULL
-           AND EXISTS (
-             SELECT 1 FROM calendar_members cm_self
-             WHERE cm_self.calendar_id = c.id AND cm_self.deleted_at IS NULL
-               -- cm_self.user_id is implied current user via sync-rule scope
-           )
          ORDER BY c.name ASC`
       : `SELECT 1 WHERE 0`,
-    otherUserId ? [otherUserId] : []
+    currentUserId && otherUserId ? [currentUserId, otherUserId] : []
   );
 
   return data ?? [];
