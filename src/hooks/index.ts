@@ -31,3 +31,13 @@ export type { CalendarDetailMember, CalendarDetailPermissions } from './useCalen
 
 // Event response hooks
 export { useEventResponses, useEventResponseMutations } from './useEventResponses';
+
+// Connection hooks (People tab)
+export {
+  useConnections,
+  useConnectionWith,
+  useSharedCalendarCount,
+  useSharedCalendars,
+  useUserProfile,
+} from './useConnections';
+export type { HydratedConnection } from './useConnections';

@@ -6,5 +6,10 @@ export { AppSchema } from './schema';
 export type { Database } from './schema';
 
 // Connector
-export { PowerSyncConnector, setClerkTokenGetter, clearClerkTokenGetter } from './connector';
+export {
+  PowerSyncConnector,
+  setClerkTokenGetter,
+  clearClerkTokenGetter,
+  getApiToken,
+} from './connector';
 export type { PowerSyncCredentials, ClerkTokenGetter } from './connector';
