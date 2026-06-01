@@ -349,7 +349,9 @@ export function CalendarsScreen() {
             <EditableGroupName
               value={newGroupName}
               onChangeText={setNewGroupName}
-              onSubmit={handleSubmitNewGroup}
+              onSubmit={() => {
+                void handleSubmitNewGroup();
+              }}
               autoFocus
             />
           </View>

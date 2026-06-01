@@ -207,7 +207,12 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
             </FormControl>
 
             <VStack className={buttonRowStyle({})}>
-              <Button onPress={passwordSignIn} isDisabled={!isLoaded || submitting !== null}>
+              <Button
+                onPress={() => {
+                  void passwordSignIn();
+                }}
+                isDisabled={!isLoaded || submitting !== null}
+              >
                 {submitting === 'password' && <ButtonSpinner />}
                 <ButtonText>
                   {submitting === 'password' ? 'Signing in…' : 'Sign in with password'}
@@ -215,7 +220,9 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
               </Button>
               <Button
                 variant="outline"
-                onPress={sendCode}
+                onPress={() => {
+                  void sendCode();
+                }}
                 isDisabled={!isLoaded || submitting !== null}
               >
                 {submitting === 'code' && <ButtonSpinner />}
@@ -235,7 +242,9 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
           <VStack className={socialStyle({})}>
             <Button
               variant="outline"
-              onPress={() => oauth('oauth_google')}
+              onPress={() => {
+                void oauth('oauth_google');
+              }}
               isDisabled={!!oauthInFlight}
             >
               {oauthInFlight === 'oauth_google' && <ButtonSpinner />}
@@ -243,7 +252,9 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
             </Button>
             <Button
               variant="outline"
-              onPress={() => oauth('oauth_apple')}
+              onPress={() => {
+                void oauth('oauth_apple');
+              }}
               isDisabled={!!oauthInFlight}
             >
               {oauthInFlight === 'oauth_apple' && <ButtonSpinner />}
@@ -251,7 +262,9 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
             </Button>
             <Button
               variant="outline"
-              onPress={() => oauth('oauth_facebook')}
+              onPress={() => {
+                void oauth('oauth_facebook');
+              }}
               isDisabled={!!oauthInFlight}
             >
               {oauthInFlight === 'oauth_facebook' && <ButtonSpinner />}

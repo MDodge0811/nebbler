@@ -230,9 +230,10 @@ export function EventDetailScreen() {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: async () => {
-          await deleteEvent(event.id);
-          navigation.goBack();
+        onPress: () => {
+          void deleteEvent(event.id).then(() => {
+            navigation.goBack();
+          });
         },
       },
     ]);
@@ -314,7 +315,13 @@ export function EventDetailScreen() {
           </RNPressable>
         ),
         headerRight: () => (
-          <RNPressable onPress={handleSaveEdit} disabled={!isValid || isSaving} hitSlop={8}>
+          <RNPressable
+            onPress={() => {
+              void handleSaveEdit();
+            }}
+            disabled={!isValid || isSaving}
+            hitSlop={8}
+          >
             <RNText
               style={{
                 fontSize: 16,

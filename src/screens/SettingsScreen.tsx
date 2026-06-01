@@ -49,7 +49,14 @@ export function SettingsScreen(_props: MainTabScreenProps<'Settings'>) {
       </Box>
 
       <Box className={logoutContainerStyle({})}>
-        <Button variant="outline" action="negative" onPress={handleLogout} isDisabled={signingOut}>
+        <Button
+          variant="outline"
+          action="negative"
+          onPress={() => {
+            void handleLogout();
+          }}
+          isDisabled={signingOut}
+        >
           {signingOut && <ButtonSpinner />}
           <ButtonText>{signingOut ? 'Signing Out...' : 'Sign Out'}</ButtonText>
         </Button>

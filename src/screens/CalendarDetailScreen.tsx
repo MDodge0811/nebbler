@@ -262,7 +262,9 @@ export function CalendarDetailScreen() {
         ),
         headerRight: () => (
           <RNPressable
-            onPress={handleSave}
+            onPress={() => {
+              void handleSave();
+            }}
             disabled={!canSaveName}
             hitSlop={8}
             testID="save-edit-btn"
@@ -461,7 +463,9 @@ export function CalendarDetailScreen() {
             {/* Test affordance: mirrors the header Save button for test findability */}
             <RNPressable
               testID="save-edit-btn"
-              onPress={handleSave}
+              onPress={() => {
+                void handleSave();
+              }}
               style={styles.testAffordance}
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
@@ -587,7 +591,9 @@ export function CalendarDetailScreen() {
         visible={showDeleteConfirm}
         calendarName={calendar.name ?? ''}
         onCancel={() => setShowDeleteConfirm(false)}
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
       />
 
       {toast && (

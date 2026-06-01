@@ -194,7 +194,12 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
               )}
             </FormControl>
 
-            <Button onPress={submit} isDisabled={submitting || !isLoaded}>
+            <Button
+              onPress={() => {
+                void submit();
+              }}
+              isDisabled={submitting || !isLoaded}
+            >
               {submitting && <ButtonSpinner />}
               <ButtonText>{submitting ? 'Creating account…' : 'Create account'}</ButtonText>
             </Button>

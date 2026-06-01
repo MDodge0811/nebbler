@@ -257,7 +257,13 @@ export function CreateEventScreen() {
         </RNPressable>
       ),
       headerRight: () => (
-        <RNPressable onPress={handleSave} disabled={!isValid || isSaving} hitSlop={8}>
+        <RNPressable
+          onPress={() => {
+            void handleSave();
+          }}
+          disabled={!isValid || isSaving}
+          hitSlop={8}
+        >
           <RNText
             style={{
               fontSize: 16,

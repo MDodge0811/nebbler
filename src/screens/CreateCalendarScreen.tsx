@@ -655,7 +655,9 @@ export function CreateCalendarScreen() {
       ),
       headerRight: () => (
         <RNPressable
-          onPress={handleSave}
+          onPress={() => {
+            void handleSave();
+          }}
           disabled={!isValid || isSaving}
           hitSlop={8}
           style={[

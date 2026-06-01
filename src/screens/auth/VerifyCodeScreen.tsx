@@ -132,7 +132,12 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
               )}
             </FormControl>
 
-            <Button onPress={verify} isDisabled={submitting}>
+            <Button
+              onPress={() => {
+                void verify();
+              }}
+              isDisabled={submitting}
+            >
               {submitting && <ButtonSpinner />}
               <ButtonText>{submitting ? 'Verifying…' : 'Verify and continue'}</ButtonText>
             </Button>
