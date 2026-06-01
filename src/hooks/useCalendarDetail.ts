@@ -3,6 +3,18 @@ import { useEffect, useMemo, useState } from 'react';
 
 import type { Calendar, Event, User } from '@database/schema';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import { firstRow, reactiveQuery } from '@utils/reactiveQuery';
+
+function pickName(user?: Pick<User, 'display_name' | 'first_name'>): string {
+  return user?.display_name ?? user?.first_name ?? '';
+}
+
+function resolveViewMode(
+  membership: Pick<MembershipJoinRow, 'view_mode'> | null,
+  calendar: Pick<Calendar, 'default_view_mode'> | null
+): string {
+  return membership?.view_mode ?? calendar?.default_view_mode ?? 'full';
+}
 
 interface MembershipJoinRow {
   id: string;
@@ -59,47 +71,48 @@ export function useCalendarDetail(calendarId: string | undefined) {
   const userId = authUser?.id;
 
   // 1. Calendar by id
-  const { data: calendars = [], isLoading: calLoading } = useQuery<Calendar>(
-    calendarId
-      ? 'SELECT * FROM calendars WHERE id = ? AND deleted_at IS NULL'
-      : 'SELECT * FROM calendars WHERE 0',
-    calendarId ? [calendarId] : []
+  const [calSql, calParams] = reactiveQuery(
+    !!calendarId,
+    'SELECT * FROM calendars WHERE id = ? AND deleted_at IS NULL',
+    [calendarId]
   );
-  const calendar = calendars[0] ?? null;
+  const { data: calendars = [], isLoading: calLoading } = useQuery<Calendar>(calSql, calParams);
+  const calendar = firstRow(calendars);
 
   // 2. Owner user by calendar.owner_id
-  const { data: owners = [] } = useQuery<User>(
-    calendar?.owner_id ? 'SELECT * FROM users WHERE id = ?' : 'SELECT * FROM users WHERE 0',
-    calendar?.owner_id ? [calendar.owner_id] : []
-  );
-  const ownerName = owners[0]?.display_name ?? owners[0]?.first_name ?? '';
+  const ownerId = calendar?.owner_id;
+  const [ownerSql, ownerParams] = reactiveQuery(!!ownerId, 'SELECT * FROM users WHERE id = ?', [
+    ownerId,
+  ]);
+  const { data: owners = [] } = useQuery<User>(ownerSql, ownerParams);
+  const ownerName = pickName(owners[0]);
 
   // 3. Current user's membership (joined with roles)
-  const { data: memberships = [] } = useQuery<MembershipJoinRow>(
-    calendarId && userId
-      ? `SELECT cm.id, cm.calendar_id, cm.user_id, cm.role_id, cm.view_mode,
+  const [memSql, memParams] = reactiveQuery(
+    !!(calendarId && userId),
+    `SELECT cm.id, cm.calendar_id, cm.user_id, cm.role_id, cm.view_mode,
                 r.level AS role_level, r.name AS role_name
          FROM calendar_members cm
          JOIN roles r ON cm.role_id = r.id
-         WHERE cm.calendar_id = ? AND cm.user_id = ? AND cm.deleted_at IS NULL`
-      : 'SELECT * FROM calendar_members WHERE 0',
-    calendarId && userId ? [calendarId, userId] : []
+         WHERE cm.calendar_id = ? AND cm.user_id = ? AND cm.deleted_at IS NULL`,
+    [calendarId, userId]
   );
-  const currentMembership = memberships[0] ?? null;
+  const { data: memberships = [] } = useQuery<MembershipJoinRow>(memSql, memParams);
+  const currentMembership = firstRow(memberships);
 
   // 4. All members (joined with roles + users)
-  const { data: memberRows = [] } = useQuery<MemberJoinRow>(
-    calendarId
-      ? `SELECT cm.id, cm.user_id, cm.role_id,
+  const [membersSql, membersParams] = reactiveQuery(
+    !!calendarId,
+    `SELECT cm.id, cm.user_id, cm.role_id,
                 r.level AS role_level, r.name AS role_name,
                 u.display_name, u.first_name
          FROM calendar_members cm
          JOIN roles r ON cm.role_id = r.id
          LEFT JOIN users u ON cm.user_id = u.id
-         WHERE cm.calendar_id = ? AND cm.deleted_at IS NULL`
-      : 'SELECT * FROM calendar_members WHERE 0',
-    calendarId ? [calendarId] : []
+         WHERE cm.calendar_id = ? AND cm.deleted_at IS NULL`,
+    [calendarId]
   );
+  const { data: memberRows = [] } = useQuery<MemberJoinRow>(membersSql, membersParams);
 
   const members = useMemo<CalendarDetailMember[]>(() => {
     return memberRows
@@ -131,16 +144,16 @@ export function useCalendarDetail(calendarId: string | undefined) {
     }, 60_000);
     return () => clearInterval(id);
   }, []);
-  const { data: upcomingEvents = [] } = useQuery<Event>(
-    calendarId
-      ? `SELECT * FROM events
+  const [eventsSql, eventsParams] = reactiveQuery(
+    !!calendarId,
+    `SELECT * FROM events
          WHERE calendar_id = ? AND deleted_at IS NULL AND start_time >= ?
-         ORDER BY start_time ASC`
-      : 'SELECT * FROM events WHERE 0',
-    calendarId ? [calendarId, nowIso] : []
+         ORDER BY start_time ASC`,
+    [calendarId, nowIso]
   );
+  const { data: upcomingEvents = [] } = useQuery<Event>(eventsSql, eventsParams);
 
-  const effectiveViewMode = currentMembership?.view_mode ?? calendar?.default_view_mode ?? 'full';
+  const effectiveViewMode = resolveViewMode(currentMembership, calendar);
 
   const permissions = useMemo<CalendarDetailPermissions>(() => {
     if (!userId) {
