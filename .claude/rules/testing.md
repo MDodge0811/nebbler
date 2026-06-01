@@ -38,3 +38,4 @@ Add `jest.mock('module-name', () => ({...}))` to `jest.setup.js`.
 - Adding new Gluestack UI components via `npx gluestack-ui add <name>` may require adding new functions to the `nativewind` mock
 - `react-native-reanimated` is mocked via `react-native-reanimated/mock` in `jest.setup.js`
 - When adding chained Gesture API methods (`.activeOffsetY()`, `.failOffsetX()`, etc.), add matching `jest.fn().mockReturnThis()` to the `Gesture.Pan()` mock in `jest.setup.js`
+- **Header buttons set via `navigation.setOptions`** aren't in the render tree: capture them by scanning `mockSetOptions.mock.calls` for the latest `headerLeft`/`headerRight` factory, invoke it, and read `.props.onPress`. Type the mock calls (e.g. `as Array<[{ headerRight?: () => React.ReactElement<{ onPress?: () => void }> }]>`) — untyped access trips `no-unsafe-member-access`, and `noUncheckedIndexedAccess` requires `calls[i]?.[0]`.

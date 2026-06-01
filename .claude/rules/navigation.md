@@ -25,6 +25,16 @@ React Navigation 7 with native stack, drawer, and bottom tabs.
 
 Screens with custom headers set `headerShown: false` on their tab options and use `useSafeAreaInsets()` for top padding.
 
+## Screen Decomposition Pattern
+
+High-complexity screens are split into a thin orchestrator + presentational bodies + a form hook (see `EventDetailScreen`, `CreateEventScreen`, `CalendarDetailScreen`):
+
+- **`use<Screen>Form(entity, onDone)` hook** (`src/hooks/`) owns state, validation, and handlers; takes a navigation callback (e.g. `goBack`) rather than touching `navigation` directly
+- **Presentational view/edit bodies** live in a per-screen subdir (e.g. `src/screens/calendarDetail/`) with co-located `styles.ts` / `icons.tsx`
+- The screen file wires the hook to the bodies and owns only the `navigation.setOptions` headers
+
+This keeps each function under the complexity ceiling and isolates pure logic (e.g. `isCreateCalendarDirty`, `buildCalendarUpdates`) for unit tests.
+
 ## Adding a New Screen
 
 1. Create the component in `src/screens/`

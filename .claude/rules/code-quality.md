@@ -18,6 +18,7 @@ paths:
 - Test files (`__tests__/`, `*.test.ts`, `*.spec.ts`) have Jest globals (`describe`, `it`, `expect`, `jest`, etc.) available automatically
 - JS config files have `global`, `jest`, `module`, `require` globals
 - The `URL` global is available in TS files
+- **Cyclomatic complexity is enforced**: `complexity: ['error', { max: 12 }]` — CI fails above 12. Drivers: `if/for/while/case/catch`, `?:`, `&&`, `||`, `??`, and `?.`. `useCallback`/`useEffect`/`.map()` arrows count as **separate** functions, so moving JSX/handlers out of a component body is the highest-leverage fix. Functions scoring 11 are fine — don't over-decompose.
 
 ## Formatting (Prettier)
 
@@ -30,6 +31,9 @@ paths:
 - Strict mode enabled
 - Module resolution: `bundler`
 - Untyped third-party modules get declarations in `src/types/` (e.g., `react-native-polyfill-globals.d.ts`)
+- `noUncheckedIndexedAccess` is on: `arr[i]` / `obj[key]` are `T | undefined` — guard or use `?.` (commonly bites typed test mocks like `mock.calls[i]?.[0]`)
+- `exactOptionalPropertyTypes` is on: an optional prop that may receive explicit `undefined` must be typed `?: T | undefined`
+- `npm run check` = `lint && format:check && typecheck && test` (lint runs first and stops the chain on failure). Don't pipe it through `tail`/`head` to check the exit code — the pipeline reports the pager's status (0), masking real failures.
 
 ## Unused Code Detection (Knip)
 
