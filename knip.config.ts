@@ -18,6 +18,8 @@ const config: KnipConfig = {
     '__mocks__/**',
   ],
   ignoreDependencies: [
+    // Consumed only via ambient import in src/types/ts-reset.d.ts; not a direct import
+    '@total-typescript/ts-reset',
     'babel-preset-expo',
     'babel-plugin-module-resolver',
     // Peer dependency required by @testing-library/react-native
