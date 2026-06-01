@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
 import { useQuery } from '@powersync/react';
-import { useCurrentUser } from '@hooks/useCurrentUser';
-import { useCalendarGroupMemberships } from '@hooks/useCalendarGroups';
+import { useMemo } from 'react';
+
 import type { Event } from '@database/schema';
+import { useCalendarGroupMemberships } from '@hooks/useCalendarGroups';
+import { useCurrentUser } from '@hooks/useCurrentUser';
 
 export interface FeedEvent extends Event {
   calendar_name: string;
@@ -21,7 +22,7 @@ export interface DateSection {
 }
 
 export function isEmptySentinel(item: FeedEvent | EmptySentinel): item is EmptySentinel {
-  return '_empty' in item && item._empty === true;
+  return '_empty' in item && item._empty;
 }
 
 /**

@@ -1,21 +1,20 @@
 const { FlatCompat } = require('@eslint/eslintrc');
 const js = require('@eslint/js');
-const typescriptEslint = require('@typescript-eslint/eslint-plugin');
-const typescriptParser = require('@typescript-eslint/parser');
+const tseslint = require('typescript-eslint');
 const reactPlugin = require('eslint-plugin-react');
 const reactHooksPlugin = require('eslint-plugin-react-hooks');
 const reactNativePlugin = require('eslint-plugin-react-native');
 const prettierPlugin = require('eslint-plugin-prettier');
+const importX = require('eslint-plugin-import-x');
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+const compat = new FlatCompat({ baseDirectory: __dirname });
 
-module.exports = [
+module.exports = tseslint.config(
   js.configs.recommended,
   ...compat.extends('plugin:prettier/recommended'),
   {
     files: ['**/*.js'],
+    ...tseslint.configs.disableTypeChecked,
     languageOptions: {
       globals: {
         module: 'readonly',
@@ -30,11 +29,11 @@ module.exports = [
   {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
-      parser: typescriptParser,
+      parser: tseslint.parser,
       parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
+        projectService: true,
+        tsconfigRootDir: __dirname,
+        ecmaFeatures: { jsx: true },
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
@@ -54,47 +53,79 @@ module.exports = [
       },
     },
     plugins: {
-      '@typescript-eslint': typescriptEslint,
+      '@typescript-eslint': tseslint.plugin,
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       'react-native': reactNativePlugin,
       prettier: prettierPlugin,
+      'import-x': importX,
     },
     settings: {
-      react: {
-        version: 'detect',
+      react: { version: 'detect' },
+      'import-x/resolver': {
+        typescript: { project: './tsconfig.json' },
       },
     },
     rules: {
-      // TypeScript rules
+      // --- existing rules (preserved) ---
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-
-      // React rules
+      '@typescript-eslint/no-explicit-any': 'error',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react/jsx-uses-react': 'off',
       'react/jsx-uses-vars': 'error',
-
-      // React Hooks rules
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
-
-      // React Native rules
+      'react-hooks/exhaustive-deps': 'error',
       'react-native/no-inline-styles': 'warn',
       'react-native/no-color-literals': 'warn',
       'react-native/no-raw-text': 'off',
       'react-native/no-unused-styles': 'error',
       'react-native/split-platform-components': 'error',
-
-      // Prettier
       'prettier/prettier': 'error',
-
-      // General
       'no-console': 'off',
       'no-unused-vars': 'off',
+      // --- Complexity probe (non-blocking) ---
+      // Cyclomatic-complexity warning to surface gnarly functions without
+      // failing CI. Run as 'warn' to map the landscape, then ratchet `max`
+      // down and promote to 'error' once existing offenders are refactored.
+      complexity: ['warn', { max: 10 }],
+      // --- Tier 2a: async safety (NEW) ---
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      // --- Tier 2b: type-safety ---
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+      '@typescript-eslint/no-unnecessary-condition': 'error',
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        { allowNumber: true, allowBoolean: true },
+      ],
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      // --- Tier 2c: stylistic + ergonomics ---
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
+      ],
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
+      '@typescript-eslint/prefer-nullish-coalescing': 'error',
+      '@typescript-eslint/prefer-optional-chain': 'error',
+      // --- Tier 3b: import cycle and order ---
+      'import-x/no-cycle': ['error', { maxDepth: Infinity }],
+      'import-x/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+          pathGroups: [{ pattern: '@/**', group: 'internal' }],
+          'newlines-between': 'always',
+          alphabetize: { order: 'asc', caseInsensitive: true },
+        },
+      ],
     },
   },
   {
@@ -124,5 +155,5 @@ module.exports = [
       'components/ui/**',
       '.claude/worktrees/**',
     ],
-  },
-];
+  }
+);

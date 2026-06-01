@@ -1,6 +1,8 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { AddConnectionScreen } from '../AddConnectionScreen';
+
 import { RateLimitedError } from '@utils/userSearch';
+
+import { AddConnectionScreen } from '../AddConnectionScreen';
 
 jest.useFakeTimers();
 
@@ -19,14 +21,14 @@ jest.mock('@utils/userSearch', () => {
     }
   }
   return {
-    searchUsers: (...args: unknown[]) => mockSearchUsers(...args),
+    searchUsers: (...args: unknown[]): unknown => mockSearchUsers(...args),
     RateLimitedError: MockRateLimitedError,
   };
 });
 
 const mockUseConnections = jest.fn();
 jest.mock('@hooks/useConnections', () => ({
-  useConnections: (...args: unknown[]) => mockUseConnections(...args),
+  useConnections: (...args: unknown[]): unknown => mockUseConnections(...args),
 }));
 
 jest.mock('@hooks/useCurrentUser', () => ({
@@ -36,13 +38,13 @@ jest.mock('@hooks/useCurrentUser', () => ({
 const mockSend = jest.fn();
 const mockAccept = jest.fn();
 jest.mock('@utils/connections', () => ({
-  sendConnectionRequest: (...args: unknown[]) => mockSend(...args),
-  acceptConnection: (...args: unknown[]) => mockAccept(...args),
+  sendConnectionRequest: (...args: unknown[]): unknown => mockSend(...args),
+  acceptConnection: (...args: unknown[]): unknown => mockAccept(...args),
 }));
 
 const mockShowToast = jest.fn();
 jest.mock('@/components/ui/toast', () => ({
-  useToast: () => ({ show: (opts: unknown) => mockShowToast(opts) }),
+  useToast: () => ({ show: (opts: unknown): unknown => mockShowToast(opts) }),
 }));
 
 beforeEach(() => {

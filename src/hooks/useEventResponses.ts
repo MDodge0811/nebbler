@@ -1,4 +1,5 @@
 import { useQuery, usePowerSync } from '@powersync/react';
+
 import type { EventResponse } from '@database/schema';
 
 /**
@@ -35,7 +36,8 @@ export function useEventResponseMutations() {
       [eventId, userId, resolvedStatus, respondedAt, now, now]
     );
 
-    return result.rows?._array[0]?.id as string;
+    const row = (result.rows?._array as { id: string }[] | undefined)?.[0];
+    return row?.id ?? '';
   };
 
   const updateResponse = async (id: string, status: string) => {

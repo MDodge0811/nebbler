@@ -1,8 +1,9 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { ConnectionsScreen, AddConnectionScreen, PersonProfileScreen } from '@screens/people';
+
 import type { PeopleStackParamList } from '@navigation/types';
+import { ConnectionsScreen, AddConnectionScreen, PersonProfileScreen } from '@screens/people';
 
 const PeopleStack = createNativeStackNavigator<PeopleStackParamList>();
 

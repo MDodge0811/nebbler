@@ -1,4 +1,6 @@
+import { useQuery } from '@powersync/react';
 import { renderHook } from '@testing-library/react-native';
+
 import {
   useConnections,
   useConnectionWith,
@@ -9,11 +11,10 @@ import {
 
 // Follow the existing test pattern in __tests__/useCalendars.test.ts —
 // mock @powersync/react's useQuery to return canned rows for given SQL.
+// jest.mock is hoisted above these imports, so useQuery resolves to the mock.
 jest.mock('@powersync/react', () => ({
   useQuery: jest.fn(),
 }));
-
-import { useQuery } from '@powersync/react';
 
 describe('useConnections', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -60,7 +61,7 @@ describe('useConnections', () => {
     expect(result.current.pendingIncoming).toHaveLength(1);
     expect(result.current.accepted).toHaveLength(1);
     expect(result.current.pendingOutgoing).toHaveLength(0);
-    expect(result.current.accepted[0].first_name).toBe('Joe');
+    expect(result.current.accepted[0]!.first_name).toBe('Joe');
   });
 });
 
@@ -150,7 +151,7 @@ describe('useSharedCalendars', () => {
     });
     const { result } = renderHook(() => useSharedCalendars('me', 'other'));
     expect(result.current).toHaveLength(1);
-    expect(result.current[0].name).toBe('Book Club');
+    expect(result.current[0]!.name).toBe('Book Club');
   });
 
   it('passes both user ids as SQL params (self JOIN)', () => {

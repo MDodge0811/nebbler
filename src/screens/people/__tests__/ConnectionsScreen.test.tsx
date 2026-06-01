@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+
 import { ConnectionsScreen } from '../ConnectionsScreen';
 
 const mockNavigate = jest.fn();
@@ -8,7 +9,7 @@ jest.mock('@react-navigation/native', () => ({
 
 const mockUseConnections = jest.fn();
 jest.mock('@hooks/useConnections', () => ({
-  useConnections: (...args: unknown[]) => mockUseConnections(...args),
+  useConnections: (...args: unknown[]): unknown => mockUseConnections(...args),
 }));
 
 jest.mock('@hooks/useCurrentUser', () => ({
@@ -19,9 +20,9 @@ const mockAccept = jest.fn();
 const mockDecline = jest.fn();
 const mockCancel = jest.fn();
 jest.mock('@utils/connections', () => ({
-  acceptConnection: (...args: unknown[]) => mockAccept(...args),
-  declineConnection: (...args: unknown[]) => mockDecline(...args),
-  cancelSentRequest: (...args: unknown[]) => mockCancel(...args),
+  acceptConnection: (...args: unknown[]): unknown => mockAccept(...args),
+  declineConnection: (...args: unknown[]): unknown => mockDecline(...args),
+  cancelSentRequest: (...args: unknown[]): unknown => mockCancel(...args),
 }));
 
 const sarah = {

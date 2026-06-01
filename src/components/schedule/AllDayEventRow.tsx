@@ -1,11 +1,12 @@
 import { memo } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
+
 import { AllDayPill } from '@components/schedule/AllDayPill';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
 
 interface AllDayEventRowProps {
   events: FeedEvent[];
-  onEventPress?: (event: FeedEvent) => void;
+  onEventPress?: ((event: FeedEvent) => void) | undefined;
 }
 
 export const AllDayEventRow = memo(function AllDayEventRow({

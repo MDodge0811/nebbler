@@ -1,3 +1,6 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
@@ -10,24 +13,22 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { ZodError } from 'zod';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
 import { Pressable } from '@/components/ui/pressable';
-import { useEventDetail } from '@hooks/useEventDetail';
-import { useEventMutations } from '@hooks/useCalendarEvents';
-import { useWritableCalendars, type WritableCalendar } from '@hooks/useWritableCalendars';
-import { useCurrentUser } from '@hooks/useCurrentUser';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import { CalendarPickerSheet } from '@components/CalendarPickerSheet';
 import { CreateEventSchema } from '@database/schemas';
+import { useEventMutations } from '@hooks/useCalendarEvents';
+import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useEventDetail } from '@hooks/useEventDetail';
+import { useWritableCalendars, type WritableCalendar } from '@hooks/useWritableCalendars';
+import type { RootStackParamList } from '@navigation/types';
 import { getCalendarColor } from '@utils/calendarColor';
 import { formatEventDateTime, formatDateShort, formatTime } from '@utils/formatTime';
-import type { RootStackParamList } from '@navigation/types';
-import { ZodError } from 'zod';
 
 // --- Styles ---
 
@@ -119,6 +120,7 @@ export function EventDetailScreen() {
       }, 100);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [event, isEditing, navigation]);
 
   // --- Edit mode helpers ---
@@ -184,7 +186,7 @@ export function EventDetailScreen() {
         const errors: Record<string, string> = {};
         err.issues.forEach((issue) => {
           const field = String(issue.path[0]);
-          if (!errors[field]) errors[field] = issue.message;
+          errors[field] ??= issue.message;
         });
         setFormErrors(errors);
       }
@@ -229,9 +231,10 @@ export function EventDetailScreen() {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: async () => {
-          await deleteEvent(event.id);
-          navigation.goBack();
+        onPress: () => {
+          void deleteEvent(event.id).then(() => {
+            navigation.goBack();
+          });
         },
       },
     ]);
@@ -297,7 +300,7 @@ export function EventDetailScreen() {
   }, []);
 
   const endTimeError =
-    formErrors.endTime ||
+    formErrors.endTime ??
     (isEditing && editEndTime <= editStartTime ? 'End time must be after start time' : undefined);
   const showEndError = !!formErrors.endTime;
 
@@ -313,7 +316,13 @@ export function EventDetailScreen() {
           </RNPressable>
         ),
         headerRight: () => (
-          <RNPressable onPress={handleSaveEdit} disabled={!isValid || isSaving} hitSlop={8}>
+          <RNPressable
+            onPress={() => {
+              void handleSaveEdit();
+            }}
+            disabled={!isValid || isSaving}
+            hitSlop={8}
+          >
             <RNText
               style={{
                 fontSize: 16,
@@ -570,6 +579,7 @@ export function EventDetailScreen() {
               <VStack className="py-4">
                 <Text className={sectionLabelStyle({})}>Created by</Text>
                 <Text className={valueStyle({})}>
+                  {/* eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- display_name can be '' (not set), which should fall through to first+last name; || is intentional */}
                   {creator.display_name ||
                     `${creator.first_name ?? ''} ${creator.last_name ?? ''}`.trim() ||
                     creator.email}

@@ -1,4 +1,5 @@
 import { render, fireEvent } from '@testing-library/react-native';
+
 import { DeleteCalendarConfirmModal } from '../DeleteCalendarConfirmModal';
 
 describe('DeleteCalendarConfirmModal', () => {

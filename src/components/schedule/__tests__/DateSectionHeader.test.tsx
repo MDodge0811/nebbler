@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
+
 import { DateSectionHeader } from '../DateSectionHeader';
 
 describe('DateSectionHeader', () => {

@@ -1,4 +1,5 @@
 import type { Theme } from '@react-navigation/native';
+
 import type { SyncState } from '@hooks/useSyncStatus';
 
 /**

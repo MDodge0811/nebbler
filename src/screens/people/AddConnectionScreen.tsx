@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
@@ -10,16 +12,15 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { searchUsers, RateLimitedError } from '@utils/userSearch';
-import { sendConnectionRequest, acceptConnection } from '@utils/connections';
+
+import { useToast } from '@/components/ui/toast';
+import { PersonRow } from '@components/people/PersonRow';
 import { useConnections } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useDebouncedValue } from '@hooks/useDebouncedValue';
-import { useToast } from '@/components/ui/toast';
-import { PersonRow } from '@components/people/PersonRow';
 import type { PeopleStackParamList } from '@navigation/types';
+import { sendConnectionRequest, acceptConnection } from '@utils/connections';
+import { searchUsers, RateLimitedError } from '@utils/userSearch';
 
 type Nav = NativeStackNavigationProp<PeopleStackParamList, 'AddConnection'>;
 
@@ -74,7 +75,7 @@ export function AddConnectionScreen() {
     setSearching(true);
     searchUsers(debouncedQuery)
       .then((data) => {
-        if (!cancelled) setResults(data as SearchUser[]);
+        if (!cancelled) setResults(data);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -129,14 +130,15 @@ export function AddConnectionScreen() {
 
   const renderTrailing = (result: SearchUser) => {
     const state = stateByUserId.get(result.id);
-    const isSubmitting =
-      submittingId === result.id || (state && submittingId === state.connectionId);
+    const isSubmitting = submittingId === result.id || submittingId === state?.connectionId;
     if (!state) {
       return (
         <Pressable
           style={[styles.primaryBtn, isSubmitting && styles.btnDisabled]}
           disabled={!!isSubmitting}
-          onPress={() => handleConnect(result.id)}
+          onPress={() => {
+            void handleConnect(result.id);
+          }}
         >
           <Text style={styles.primaryBtnText}>Connect</Text>
         </Pressable>
@@ -147,7 +149,9 @@ export function AddConnectionScreen() {
         <Pressable
           style={[styles.primaryBtn, isSubmitting && styles.btnDisabled]}
           disabled={!!isSubmitting}
-          onPress={() => handleAccept(state.connectionId)}
+          onPress={() => {
+            void handleAccept(state.connectionId);
+          }}
         >
           <Text style={styles.primaryBtnText}>Accept</Text>
         </Pressable>

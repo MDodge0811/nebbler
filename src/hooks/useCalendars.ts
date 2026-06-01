@@ -1,4 +1,5 @@
 import { useQuery, usePowerSync } from '@powersync/react';
+
 import type { Calendar, CalendarMember } from '@database/schema';
 
 /**
@@ -71,7 +72,7 @@ export function useCalendarMutations() {
           now,
         ]
       );
-      const id = result.rows?._array[0]?.id as string;
+      const id = (result.rows?._array as { id: string }[] | undefined)?.[0]?.id ?? '';
 
       await tx.execute(
         `INSERT INTO calendar_members

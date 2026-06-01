@@ -1,11 +1,12 @@
-import { memo } from 'react';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { memo } from 'react';
+import Svg, { Path } from 'react-native-svg';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { formatSectionDate } from '@utils/formatTime';
-import Svg, { Path } from 'react-native-svg';
 
 const containerStyle = tva({ base: 'bg-background-0 px-4 py-2' });
 const rowStyle = tva({ base: 'items-center justify-between' });

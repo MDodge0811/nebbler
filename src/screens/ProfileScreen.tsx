@@ -1,3 +1,6 @@
+import { usePowerSync } from '@powersync/react';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import {
   Alert,
@@ -10,16 +13,14 @@ import {
   UIManager,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { usePowerSync } from '@powersync/react';
-import { useCurrentUser } from '@hooks/useCurrentUser';
-import { useAuth } from '@hooks/useAuth';
-import { useConnections, useUserProfile } from '@hooks/useConnections';
+
 import { AvatarCircle } from '@components/ui/AvatarCircle';
 import { ColorSwatchGrid } from '@components/ui/ColorSwatchGrid';
-import { displayName } from '@utils/displayName';
+import { useAuth } from '@hooks/useAuth';
+import { useConnections, useUserProfile } from '@hooks/useConnections';
+import { useCurrentUser } from '@hooks/useCurrentUser';
 import type { RootStackParamList } from '@navigation/types';
+import { displayName } from '@utils/displayName';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -54,7 +55,13 @@ export function ProfileScreen() {
   const handleLogOut = () => {
     Alert.alert('Log out?', '', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: () => signOut() },
+      {
+        text: 'Log Out',
+        style: 'destructive',
+        onPress: () => {
+          void signOut();
+        },
+      },
     ]);
   };
 
@@ -96,7 +103,9 @@ export function ProfileScreen() {
             <View style={styles.divider} />
             <ColorSwatchGrid
               value={profile.avatar_color ?? '#00DB74'}
-              onChange={handleColorChange}
+              onChange={(hex) => {
+                void handleColorChange(hex);
+              }}
             />
           </>
         )}

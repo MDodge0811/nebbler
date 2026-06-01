@@ -1,5 +1,6 @@
 import { View, Pressable, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+
 import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
 
 interface ColorSwatchGridProps {

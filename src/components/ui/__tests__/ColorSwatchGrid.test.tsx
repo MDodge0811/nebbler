@@ -1,6 +1,8 @@
 import { fireEvent, render } from '@testing-library/react-native';
-import { ColorSwatchGrid } from '../ColorSwatchGrid';
+
 import { CALENDAR_PALETTE } from '@constants/calendarsUI';
+
+import { ColorSwatchGrid } from '../ColorSwatchGrid';
 
 describe('ColorSwatchGrid', () => {
   it('renders all 12 swatches', () => {

@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
 import { useQuery } from '@powersync/react';
-import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useEffect, useMemo, useState } from 'react';
+
 import type { Calendar, Event, User } from '@database/schema';
+import { useCurrentUser } from '@hooks/useCurrentUser';
 
 interface MembershipJoinRow {
   id: string;
@@ -120,12 +121,16 @@ export function useCalendarDetail(calendarId: string | undefined) {
       });
   }, [memberRows]);
 
-  // 5. Upcoming events — nowIso re-buckets once per minute so the list stays fresh
-
-  const nowIso = useMemo(
-    () => new Date().toISOString(),
-    [calendarId, Math.floor(Date.now() / 60_000)]
-  );
+  // 5. Upcoming events — nowIso re-buckets once per minute so the list stays fresh.
+  //    useState + setInterval is the idiomatic way to have a periodically-updated
+  //    reactive value; useMemo can't express "recompute on a timer" without a dep.
+  const [nowIso, setNowIso] = useState(() => new Date().toISOString());
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNowIso(new Date().toISOString());
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
   const { data: upcomingEvents = [] } = useQuery<Event>(
     calendarId
       ? `SELECT * FROM events

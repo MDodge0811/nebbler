@@ -1,13 +1,15 @@
-import { StyleSheet, View } from 'react-native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { StyleSheet, View } from 'react-native';
+
 import { HStack } from '@/components/ui/hstack';
-import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
+import type { Calendar } from '@database/schema';
+import { getCalendarColor } from '@utils/calendarColor';
+
+import { CalendarCheckbox } from './CalendarCheckbox';
 import { CalendarIcon } from './CalendarIcon';
 import { TypeBadge } from './TypeBadge';
-import { CalendarCheckbox } from './CalendarCheckbox';
-import { getCalendarColor } from '@utils/calendarColor';
-import type { Calendar } from '@database/schema';
 
 const nameStyle = tva({ base: 'text-[15px] font-medium text-typography-900' });
 const memberCountStyle = tva({ base: 'mt-px text-xs text-typography-400' });

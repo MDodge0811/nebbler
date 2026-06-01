@@ -1,9 +1,10 @@
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 import type { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
+
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 
@@ -81,7 +82,7 @@ export function CustomTabBar({ state, descriptors, navigation: tabNavigation }: 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
+        const { options } = descriptors[route.key]!;
         const isFocused = state.index === index;
         const isCreateTab = route.name === 'Create';
 

@@ -1,9 +1,10 @@
-import { useState } from 'react';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useState } from 'react';
+
 import { Box } from '@/components/ui/box';
+import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
 import { SyncStatusIndicator } from '@components/SyncStatusIndicator';
 import { useAuth } from '@hooks/useAuth';
 import type { MainTabScreenProps } from '@navigation/types';
@@ -49,7 +50,14 @@ export function SettingsScreen(_props: MainTabScreenProps<'Settings'>) {
       </Box>
 
       <Box className={logoutContainerStyle({})}>
-        <Button variant="outline" action="negative" onPress={handleLogout} isDisabled={signingOut}>
+        <Button
+          variant="outline"
+          action="negative"
+          onPress={() => {
+            void handleLogout();
+          }}
+          isDisabled={signingOut}
+        >
           {signingOut && <ButtonSpinner />}
           <ButtonText>{signingOut ? 'Signing Out...' : 'Sign Out'}</ButtonText>
         </Button>

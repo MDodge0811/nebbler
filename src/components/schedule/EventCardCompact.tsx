@@ -1,14 +1,15 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { AttendeeRow, type Attendee } from '@components/schedule/AttendeeRow';
+import type { FeedEvent } from '@hooks/useScheduleFeed';
 import { getCalendarColor } from '@utils/calendarColor';
 import { formatTimeShort } from '@utils/formatTime';
-import type { FeedEvent } from '@hooks/useScheduleFeed';
 
 const cardStyle = tva({
   base: 'mx-4 mb-2 overflow-hidden rounded-lg border-[0.5px] border-outline-200 shadow-sm',
@@ -19,7 +20,7 @@ const timeStyle = tva({ base: 'mx-2 text-xs text-typography-500' });
 
 interface EventCardCompactProps {
   event: FeedEvent;
-  onPress?: () => void;
+  onPress?: (() => void) | undefined;
   attendees?: Attendee[];
 }
 

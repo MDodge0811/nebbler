@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { ClerkProvider, useAuth as useClerkAuth } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { PowerSyncContext } from '@powersync/react';
-import { PowerSyncDatabase } from '@powersync/react-native';
+import { type PowerSyncDatabase } from '@powersync/react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useRef, useState } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+import '@/global.css';
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
+import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { Spinner } from '@/components/ui/spinner';
-import { AppNavigator } from '@navigation/AppNavigator';
+import { Text } from '@/components/ui/text';
 import {
   initializeDatabase,
   connectDatabase,
@@ -17,14 +19,13 @@ import {
   setClerkTokenGetter,
   clearClerkTokenGetter,
 } from '@database/index';
+import { AppNavigator } from '@navigation/AppNavigator';
 
 // Clerk's Expo SDK auto-reads this env var. Expo exposes any var prefixed
 // with `EXPO_PUBLIC_` to the client bundle at build time.
 // https://clerk.com/docs/expo/getting-started/quickstart
-const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
-
-import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
-import '@/global.css';
+const clerkPublishableKey: string =
+  (process.env as Record<string, string | undefined>)['EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY'] ?? '';
 
 const loadingContainerStyle = tva({
   base: 'flex-1 items-center justify-center bg-background-0',
@@ -66,9 +67,9 @@ export default function App() {
   useEffect(() => {
     initializeDatabase()
       .then(setDatabase)
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error('Failed to initialize database:', err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : String(err));
       });
   }, []);
 
@@ -104,7 +105,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GluestackUIProvider mode="light">
-        <ClerkProvider tokenCache={tokenCache}>
+        <ClerkProvider {...(tokenCache ? { tokenCache } : {})}>
           <PowerSyncContext.Provider value={database}>
             <ClerkPowerSyncBridge />
             <StatusBar style="auto" />

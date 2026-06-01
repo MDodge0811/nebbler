@@ -1,8 +1,9 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { memo, useCallback } from 'react';
 import { View } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { Text } from '@/components/ui/text';
+
 import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { calendarColors } from '@constants/calendarColors';
 
 const cellStyle = tva({ base: 'flex-1 items-center py-1' });

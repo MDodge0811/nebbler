@@ -1,5 +1,6 @@
 import { fireEvent, render } from '@testing-library/react-native';
 import { Text } from 'react-native';
+
 import { PersonRow } from '../PersonRow';
 
 const sarah = {
@@ -42,7 +43,9 @@ describe('PersonRow', () => {
       last_name: 'Chendelvecciowinterbottom',
     };
     const { getByText } = render(<PersonRow user={longName} trailing={<Text>x</Text>} />);
-    const nameEl = getByText('Sarahbethanymariannakatlyn Chendelvecciowinterbottom');
+    const nameEl = getByText('Sarahbethanymariannakatlyn Chendelvecciowinterbottom') as unknown as {
+      props: { numberOfLines: number };
+    };
     expect(nameEl.props.numberOfLines).toBe(1);
   });
 });

@@ -1,9 +1,11 @@
 import { Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+
 import { calendarsUIColors } from '@constants/calendarsUI';
-import { formatTimeRange, formatEventDateTime } from '@utils/formatTime';
-import { RsvpBadge, type RsvpStatus } from './RsvpBadge';
 import type { Event } from '@database/schema';
+import { formatTimeRange, formatEventDateTime } from '@utils/formatTime';
+
+import { RsvpBadge, type RsvpStatus } from './RsvpBadge';
 
 interface EventRowProps {
   event: Event;

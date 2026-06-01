@@ -1,9 +1,10 @@
 import {
-  AbstractPowerSyncDatabase,
-  CrudEntry,
-  PowerSyncBackendConnector,
+  type AbstractPowerSyncDatabase,
+  type CrudEntry,
+  type PowerSyncBackendConnector,
   UpdateType,
 } from '@powersync/react-native';
+
 import { powersyncConfig } from '@constants/config';
 import { FetchCredentialsResponseSchema } from '@database/schemas';
 
@@ -193,7 +194,7 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
         'Content-Type': 'application/json',
         ...(authToken && { Authorization: `Bearer ${authToken}` }),
       },
-      body: op !== UpdateType.DELETE ? JSON.stringify(opData) : undefined,
+      ...(op !== UpdateType.DELETE ? { body: JSON.stringify(opData) } : {}),
     });
 
     if (!response.ok) {

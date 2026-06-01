@@ -34,7 +34,7 @@ export function useSyncStatus(): SyncStatusInfo {
     if (!status.connected) {
       return 'offline';
     }
-    if (status.dataFlowStatus?.downloading) {
+    if (status.dataFlowStatus.downloading) {
       return 'syncing';
     }
     if (status.hasSynced) {
@@ -46,10 +46,10 @@ export function useSyncStatus(): SyncStatusInfo {
   return {
     state: getSyncState(),
     isConnected: status.connected,
-    isSyncing: status.dataFlowStatus?.downloading ?? false,
+    isSyncing: status.dataFlowStatus.downloading ?? false,
     hasSynced: status.hasSynced ?? false,
     lastSyncedAt: status.lastSyncedAt ?? null,
-    uploadQueueCount: status.dataFlowStatus?.uploading ? 1 : 0, // Simplified
+    uploadQueueCount: status.dataFlowStatus.uploading ? 1 : 0, // Simplified
     downloadProgress: null, // PowerSync doesn't provide granular progress
     error: null, // Would need error boundary integration
   };
@@ -61,5 +61,5 @@ export function useSyncStatus(): SyncStatusInfo {
  */
 export function useHasPendingChanges(): boolean {
   const status = useStatus();
-  return status.dataFlowStatus?.uploading ?? false;
+  return status.dataFlowStatus.uploading ?? false;
 }

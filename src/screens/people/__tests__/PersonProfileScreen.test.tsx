@@ -1,5 +1,6 @@
-import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+
 import { PersonProfileScreen } from '../PersonProfileScreen';
 
 const mockGoBack = jest.fn();
@@ -18,22 +19,22 @@ const mockUseConnectionWith = jest.fn();
 const mockUseSharedCalendars = jest.fn();
 const mockUseSharedCalendarCount = jest.fn();
 jest.mock('@hooks/useConnections', () => ({
-  useUserProfile: (...args: unknown[]) => mockUseUserProfile(...args),
-  useConnectionWith: (...args: unknown[]) => mockUseConnectionWith(...args),
-  useSharedCalendars: (...args: unknown[]) => mockUseSharedCalendars(...args),
-  useSharedCalendarCount: (...args: unknown[]) => mockUseSharedCalendarCount(...args),
+  useUserProfile: (...args: unknown[]): unknown => mockUseUserProfile(...args),
+  useConnectionWith: (...args: unknown[]): unknown => mockUseConnectionWith(...args),
+  useSharedCalendars: (...args: unknown[]): unknown => mockUseSharedCalendars(...args),
+  useSharedCalendarCount: (...args: unknown[]): unknown => mockUseSharedCalendarCount(...args),
 }));
 
 const mockRemove = jest.fn();
 const mockBlock = jest.fn();
 jest.mock('@utils/connections', () => ({
-  removeConnection: (...args: unknown[]) => mockRemove(...args),
-  blockUser: (...args: unknown[]) => mockBlock(...args),
+  removeConnection: (...args: unknown[]): unknown => mockRemove(...args),
+  blockUser: (...args: unknown[]): unknown => mockBlock(...args),
 }));
 
 const mockShowToast = jest.fn();
 jest.mock('@/components/ui/toast', () => ({
-  useToast: () => ({ show: (opts: unknown) => mockShowToast(opts) }),
+  useToast: () => ({ show: (opts: unknown): unknown => mockShowToast(opts) }),
 }));
 
 beforeEach(() => {

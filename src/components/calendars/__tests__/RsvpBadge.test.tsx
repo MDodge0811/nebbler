@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react-native';
+
 import { RsvpBadge } from '../RsvpBadge';
 
 describe('RsvpBadge', () => {

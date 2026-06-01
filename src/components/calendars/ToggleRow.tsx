@@ -1,4 +1,5 @@
 import { StyleSheet, Switch, Text as RNText, View } from 'react-native';
+
 import { calendarsUIColors } from '@constants/calendarsUI';
 
 interface ToggleRowProps {

@@ -1,7 +1,9 @@
-import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { ProfileScreen } from '../ProfileScreen';
+import { Alert } from 'react-native';
+
 import { CALENDAR_PALETTE } from '@constants/calendarsUI';
+
+import { ProfileScreen } from '../ProfileScreen';
 
 const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
@@ -20,8 +22,8 @@ jest.mock('@hooks/useCurrentUser', () => ({
 const mockUseUserProfile = jest.fn();
 const mockUseConnections = jest.fn();
 jest.mock('@hooks/useConnections', () => ({
-  useUserProfile: (...args: unknown[]) => mockUseUserProfile(...args),
-  useConnections: (...args: unknown[]) => mockUseConnections(...args),
+  useUserProfile: (...args: unknown[]): unknown => mockUseUserProfile(...args),
+  useConnections: (...args: unknown[]): unknown => mockUseConnections(...args),
 }));
 
 const mockExecute = jest.fn();

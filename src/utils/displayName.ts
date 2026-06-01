@@ -30,7 +30,7 @@ export function displayName(user: DisplayNameUser): string {
         `[data-quality] user ${user.id} has null first_name and last_name; falling back to email local-part`
       );
     }
-    return user.email.split('@')[0];
+    return user.email.split('@')[0] ?? user.email;
   }
 
   return 'Unknown';

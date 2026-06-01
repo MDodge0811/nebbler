@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { WeekStripDayHeaders } from './week-strip/WeekStripDayHeaders';
-import { WeekStrip } from './week-strip/WeekStrip';
-import { MonthGrid, ROW_HEIGHT as MONTH_ROW_HEIGHT } from './month-grid/MonthGrid';
-import { GrabHandle, GRAB_HANDLE_HEIGHT } from './GrabHandle';
+
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthRowCount } from '@utils/monthUtils';
+
+import { GrabHandle, GRAB_HANDLE_HEIGHT } from './GrabHandle';
+import { MonthGrid, ROW_HEIGHT as MONTH_ROW_HEIGHT } from './month-grid/MonthGrid';
+import { WeekStrip } from './week-strip/WeekStrip';
+import { WeekStripDayHeaders } from './week-strip/WeekStripDayHeaders';
 
 const DAY_HEADERS_HEIGHT = 24;
 const WEEK_ROW_HEIGHT = 40;
@@ -108,9 +110,11 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
       <Animated.View style={animatedContainerStyle}>
         <WeekStripDayHeaders />
         <View style={{ flex: 1, position: 'relative' }}>
-          {isWeekMode && <WeekStrip onDateSelected={onDateSelected} markedDates={markedDates} />}
+          {isWeekMode && (
+            <WeekStrip {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
+          )}
           {showMonthGrid && !isWeekMode && (
-            <MonthGrid onDateSelected={onDateSelected} markedDates={markedDates} />
+            <MonthGrid {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
           )}
         </View>
       </Animated.View>

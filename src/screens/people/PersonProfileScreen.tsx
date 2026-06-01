@@ -1,7 +1,10 @@
-import { Alert, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Alert, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
+
+import { useToast } from '@/components/ui/toast';
+import { AvatarCircle } from '@components/ui/AvatarCircle';
 import {
   useUserProfile,
   useConnectionWith,
@@ -9,11 +12,9 @@ import {
   useSharedCalendarCount,
 } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
-import { removeConnection, blockUser } from '@utils/connections';
-import { useToast } from '@/components/ui/toast';
-import { AvatarCircle } from '@components/ui/AvatarCircle';
-import { displayName } from '@utils/displayName';
 import type { PeopleStackParamList, RootStackParamList } from '@navigation/types';
+import { removeConnection, blockUser } from '@utils/connections';
+import { displayName } from '@utils/displayName';
 
 type ScreenRoute = RouteProp<PeopleStackParamList, 'PersonProfile'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -84,9 +85,11 @@ export function PersonProfileScreen() {
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: async () => {
-            await removeConnection(connection.id);
-            navigation.goBack();
+          onPress: () => {
+            void (async () => {
+              await removeConnection(connection.id);
+              navigation.goBack();
+            })();
           },
         },
       ]
@@ -103,9 +106,11 @@ export function PersonProfileScreen() {
         {
           text: 'Block',
           style: 'destructive',
-          onPress: async () => {
-            await blockUser(userId, currentUserId);
-            navigation.goBack();
+          onPress: () => {
+            void (async () => {
+              await blockUser(userId, currentUserId);
+              navigation.goBack();
+            })();
           },
         },
       ]

@@ -1,15 +1,16 @@
 import { renderHook } from '@testing-library/react-native';
+
 import { useCurrentUser } from '@hooks/useCurrentUser';
 
 const mockUseAuth = jest.fn();
 const mockUseQuery = jest.fn();
 
 jest.mock('@hooks/useAuth', () => ({
-  useAuth: () => mockUseAuth(),
+  useAuth: (): unknown => mockUseAuth(),
 }));
 
 jest.mock('@powersync/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+  useQuery: (...args: unknown[]): unknown => mockUseQuery(...args),
 }));
 
 describe('useCurrentUser', () => {

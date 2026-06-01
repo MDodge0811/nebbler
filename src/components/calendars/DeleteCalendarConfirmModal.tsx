@@ -1,4 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
+
 import { calendarsUIColors } from '@constants/calendarsUI';
 
 interface Props {

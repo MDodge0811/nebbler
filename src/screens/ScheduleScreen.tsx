@@ -1,18 +1,19 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useNavigation } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ViewToken } from 'react-native';
 import { ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
-import { ScheduleHeader } from '@components/schedule/ScheduleHeader';
 import { CalendarContainer } from '@components/schedule/CalendarContainer';
 import { EventFeed, type EventFeedRef } from '@components/schedule/EventFeed';
-import { useScheduleFeed } from '@hooks/useScheduleFeed';
+import { ScheduleHeader } from '@components/schedule/ScheduleHeader';
 import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
+import { useScheduleFeed } from '@hooks/useScheduleFeed';
+import type { FeedEvent } from '@hooks/useScheduleFeed';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthBufferRange, monthKeyOf } from '@utils/dateRange';
-import type { FeedEvent } from '@hooks/useScheduleFeed';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const errorBannerStyle = tva({ base: 'bg-error-50 px-4 py-2' });
@@ -105,7 +106,7 @@ export function ScheduleScreen() {
       const topItem = viewableItems.find((item) => item.section != null);
       if (!topItem?.section) return;
 
-      const topDate = (topItem.section as { title?: string })?.title;
+      const topDate = (topItem.section as { title?: string }).title;
       if (!topDate || topDate === useScheduleStore.getState().selectedDate) return;
 
       lockSync();

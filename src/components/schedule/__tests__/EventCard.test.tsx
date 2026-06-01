@@ -1,7 +1,9 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
-import { EventCard } from '../EventCard';
+
 import type { FeedEvent } from '@hooks/useScheduleFeed';
+
+import { EventCard } from '../EventCard';
 
 function makeFeedEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
   return {
@@ -36,8 +38,7 @@ describe('EventCard', () => {
   it('renders a time range', () => {
     render(<EventCard event={makeFeedEvent()} />);
     // The formatted time will contain an en-dash separator
-    const timeText = screen.getByText(/–/);
-    expect(timeText).toBeTruthy();
+    expect(screen.getByText(/–/)).toBeTruthy();
   });
 
   it('calls onPress when pressed', () => {

@@ -1,11 +1,12 @@
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
-import { useCurrentUser } from '@hooks/useCurrentUser';
-import { UserAvatar } from '@components/schedule/UserAvatar';
 import { OverflowMenu } from '@components/schedule/OverflowMenu';
+import { UserAvatar } from '@components/schedule/UserAvatar';
+import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useScheduleStore } from '@stores/useScheduleStore';
 
 const headerContainerStyle = tva({ base: 'bg-background-0' });

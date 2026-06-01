@@ -1,0 +1,67 @@
+{
+  "planPath": "docs/superpowers/plans/2026-05-31-mobile-strict-quality-checks.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Tier 1a — Low-noise strict tsconfig flags",
+      "status": "completed",
+      "description": "**Goal:** Enable noImplicitReturns, noFallthroughCasesInSwitch, noImplicitOverride, noUnusedLocals, noUnusedParameters and fix the 3 errors they surface.\n\n**Files:** tsconfig.json; src/components/SyncStatusIndicator.tsx (effect ~L61 add `return undefined;`); src/screens/EventDetailScreen.tsx (effect ~L113 add `return undefined;`); components/ui/form-control/index.tsx (delete dead formControlLabelAstrickStyle L72-81).\n\n**Acceptance Criteria:** 5 flags present; `npm run typecheck` 0 errors; only explicit return undefined added to effects.\n\n**Verify:** `npm run typecheck && npm run lint`\n\n```json:metadata\n{\"files\": [\"tsconfig.json\", \"src/components/SyncStatusIndicator.tsx\", \"src/screens/EventDetailScreen.tsx\", \"components/ui/form-control/index.tsx\"], \"verifyCommand\": \"npm run typecheck && npm run lint\", \"acceptanceCriteria\": [\"5 flags present in tsconfig.json\", \"typecheck 0 errors\", \"only explicit return undefined added to effects\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Tier 1b — noUncheckedIndexedAccess",
+      "status": "completed",
+      "blockedBy": [1],
+      "description": "**Goal:** Enable noUncheckedIndexedAccess and fix 46 errors (8 source, 38 tests).\n\n**Files:** tsconfig.json; source: calendarColor.ts(2), monthUtils.ts(1), avatarColor.ts(1), CreateEventScreen.tsx(1), CreateCalendarScreen.tsx(1), useCalendarsListData.ts(1), CustomTabBar.tsx(1); tests: useScheduleFeed.test.ts(19), monthUtils.test.ts(7), useWeekPages.test.ts(5), useMonthPages.test.ts(4), useDragStore.test.ts(2), useCalendarsListData.test.ts(1).\n\n**Acceptance Criteria:** flag set; typecheck 0 errors; tests pass with no weakened assertions; `!` only where provably in-bounds.\n\n**Verify:** `npm run typecheck && npm run test`\n\n```json:metadata\n{\"files\": [\"tsconfig.json\", \"src/utils/calendarColor.ts\", \"src/utils/monthUtils.ts\", \"src/utils/avatarColor.ts\", \"src/screens/CreateEventScreen.tsx\", \"src/screens/CreateCalendarScreen.tsx\", \"src/hooks/useCalendarsListData.ts\", \"src/components/schedule/CustomTabBar.tsx\", \"src/hooks/__tests__/useScheduleFeed.test.ts\", \"src/utils/__tests__/monthUtils.test.ts\", \"src/components/schedule/week-strip/__tests__/useWeekPages.test.ts\", \"src/components/schedule/month-grid/__tests__/useMonthPages.test.ts\", \"src/stores/__tests__/useDragStore.test.ts\", \"src/hooks/__tests__/useCalendarsListData.test.ts\"], \"verifyCommand\": \"npm run typecheck && npm run test\", \"acceptanceCriteria\": [\"noUncheckedIndexedAccess true\", \"typecheck 0 errors\", \"tests pass no weakened assertions\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Tier 1c — exactOptionalPropertyTypes",
+      "status": "completed",
+      "blockedBy": [2],
+      "description": "**Goal:** Enable exactOptionalPropertyTypes and fix 14 errors at component-prop and PowerSync-update boundaries.\n\n**Files:** tsconfig.json; App.tsx(107), EditGroupCard.tsx(58,76), CalendarContainer.tsx(111,113), EventCard.tsx(33,39), EventFeed.tsx(141,156), CalendarDetailScreen.tsx(157), CalendarsScreen.tsx(422), CreateCalendarScreen.tsx(604), CreateEventScreen.tsx(169), database/connector.ts(190).\n\n**Acceptance Criteria:** flag set; typecheck 0 errors; tests pass.\n\n**Verify:** `npm run typecheck && npm run test`\n\n```json:metadata\n{\"files\": [\"tsconfig.json\", \"App.tsx\", \"src/components/calendars/EditGroupCard.tsx\", \"src/components/schedule/CalendarContainer.tsx\", \"src/components/schedule/EventCard.tsx\", \"src/components/schedule/EventFeed.tsx\", \"src/screens/CalendarDetailScreen.tsx\", \"src/screens/CalendarsScreen.tsx\", \"src/screens/CreateCalendarScreen.tsx\", \"src/screens/CreateEventScreen.tsx\", \"src/database/connector.ts\"], \"verifyCommand\": \"npm run typecheck && npm run test\", \"acceptanceCriteria\": [\"exactOptionalPropertyTypes true\", \"typecheck 0 errors\", \"tests pass\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Tier 2a — Type-aware ESLint infra + async-safety rules",
+      "status": "completed",
+      "blockedBy": [3],
+      "description": "**Goal:** Convert eslint.config.js to type-aware flat config via typescript-eslint; enable no-floating-promises and no-misused-promises as errors and fix all.\n\n**Files:** package.json, package-lock.json, eslint.config.js, source files with floating/misused promises.\n\n**Acceptance Criteria:** typescript-eslint installed with projectService:true; both async rules error; lint 0 errors; *.js exempt.\n\n**Verify:** `npm run lint`\n\n```json:metadata\n{\"files\": [\"package.json\", \"package-lock.json\", \"eslint.config.js\"], \"verifyCommand\": \"npm run lint\", \"acceptanceCriteria\": [\"typescript-eslint projectService:true\", \"async rules error\", \"lint 0 errors\", \"*.js exempt from type-aware rules\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Tier 2b — Strict type-safety ESLint rules",
+      "status": "completed",
+      "blockedBy": [4],
+      "description": "**Goal:** Enable strictTypeChecked type-safety rules (no-unsafe-*, no-unnecessary-condition, await-thenable, restrict-template-expressions, switch-exhaustiveness-check) as errors and fix all.\n\n**Files:** eslint.config.js, source files flagged.\n\n**Acceptance Criteria:** rules are error; lint 0 errors; no blanket eslint-disable.\n\n**Verify:** `npm run lint`\n\n```json:metadata\n{\"files\": [\"eslint.config.js\"], \"verifyCommand\": \"npm run lint\", \"acceptanceCriteria\": [\"strict type-safety rules error\", \"lint 0 errors\", \"no blanket disable\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 6: Tier 2c — Stylistic type-checked rules + consistent type imports",
+      "status": "completed",
+      "blockedBy": [5],
+      "description": "**Goal:** Add stylisticTypeChecked ergonomics and enforce consistent-type-imports. Lower priority.\n\n**Files:** eslint.config.js, source imports (mostly auto-fixable).\n\n**Acceptance Criteria:** consistent-type-imports error; stylistic rules green; lint 0 errors after --fix.\n\n**Verify:** `npm run lint`\n\n```json:metadata\n{\"files\": [\"eslint.config.js\"], \"verifyCommand\": \"npm run lint\", \"acceptanceCriteria\": [\"consistent-type-imports error\", \"stylistic rules green\", \"lint 0 errors after fix\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 7: Tier 3a — Promote no-explicit-any and exhaustive-deps to error",
+      "status": "completed",
+      "blockedBy": [6],
+      "description": "**Goal:** Turn the two warn rules into error and fix outstanding violations.\n\n**Files:** eslint.config.js, source files with any or hook-dep issues.\n\n**Acceptance Criteria:** both rules error; lint 0 errors; exhaustive-deps fixes add real deps not suppressions.\n\n**Verify:** `npm run lint && npm run test`\n\n```json:metadata\n{\"files\": [\"eslint.config.js\"], \"verifyCommand\": \"npm run lint && npm run test\", \"acceptanceCriteria\": [\"no-explicit-any and exhaustive-deps error\", \"lint 0 errors\", \"real dep fixes not suppressions\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 8: Tier 3b — Import-cycle and import-order enforcement",
+      "status": "completed",
+      "blockedBy": [7],
+      "description": "**Goal:** Add eslint-plugin-import-x to catch circular deps and enforce import ordering.\n\n**Files:** package.json, package-lock.json, eslint.config.js, knip.config.ts, source files with cycles/ordering.\n\n**Acceptance Criteria:** import-x wired with TS resolver; no-cycle and order error; lint 0 errors; knip passes.\n\n**Verify:** `npm run lint && npm run knip`\n\n```json:metadata\n{\"files\": [\"package.json\", \"package-lock.json\", \"eslint.config.js\", \"knip.config.ts\"], \"verifyCommand\": \"npm run lint && npm run knip\", \"acceptanceCriteria\": [\"import-x wired with TS resolver\", \"no-cycle and order error\", \"lint 0 errors\", \"knip passes\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 9: Tier 3c — Close CI gaps (Knip in CI + ts-reset)",
+      "status": "completed",
+      "description": "**Goal:** Make Knip a CI gate, add it to local check, and adopt @total-typescript/ts-reset for safer lib types.\n\n**Files:** .github/workflows/ci.yml, package.json, package-lock.json, src/types/ts-reset.d.ts (new), knip.config.ts, source files flagged by ts-reset.\n\n**Acceptance Criteria:** CI runs knip and fails on findings; check includes knip; ts-reset imported once; typecheck passes with ts-reset types.\n\n**Verify:** `npm run check && npm run knip`\n\n```json:metadata\n{\"files\": [\".github/workflows/ci.yml\", \"package.json\", \"package-lock.json\", \"src/types/ts-reset.d.ts\", \"knip.config.ts\"], \"verifyCommand\": \"npm run check && npm run knip\", \"acceptanceCriteria\": [\"CI runs knip fails on findings\", \"check includes knip\", \"ts-reset imported once\", \"typecheck passes with ts-reset\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-31T22:53:00Z"
+}

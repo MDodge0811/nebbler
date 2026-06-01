@@ -1,6 +1,8 @@
 import { render, fireEvent } from '@testing-library/react-native';
-import { WeekStripDayCell } from '../WeekStripDayCell';
+
 import { calendarColors } from '@constants/calendarColors';
+
+import { WeekStripDayCell } from '../WeekStripDayCell';
 
 const defaultProps = {
   dateString: '2026-02-24',
@@ -39,33 +41,33 @@ describe('WeekStripDayCell', () => {
 
   it('renders with selected style (green filled circle, white text)', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} isSelected />);
-    const text = getByText('24');
+    const text = getByText('24') as { props: { style: unknown } };
     expect(text.props.style).toEqual(expect.objectContaining({ color: '#FFFFFF' }));
   });
 
   it('renders with today style (green outline, dark text) when not selected', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} isToday />);
-    const text = getByText('24');
+    const text = getByText('24') as { props: { style: unknown } };
     expect(text.props.style).toEqual(expect.objectContaining({ color: calendarColors.dayText }));
   });
 
   it('renders with normal style (day text color) when not selected and not today', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} />);
-    const text = getByText('24');
+    const text = getByText('24') as { props: { style: unknown } };
     expect(text.props.style).toEqual(expect.objectContaining({ color: calendarColors.dayText }));
   });
 
   it('selected takes priority over today', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} isSelected isToday />);
     // Selected wins: green filled circle with white text
-    const text = getByText('24');
+    const text = getByText('24') as { props: { style: unknown } };
     expect(text.props.style).toEqual(expect.objectContaining({ color: '#FFFFFF' }));
   });
 
   describe('isAdjacentMonth', () => {
     it('renders with disabled color when isAdjacentMonth is true', () => {
       const { getByText } = render(<WeekStripDayCell {...defaultProps} isAdjacentMonth />);
-      const text = getByText('24');
+      const text = getByText('24') as { props: { style: unknown } };
       expect(text.props.style).toEqual(expect.objectContaining({ color: calendarColors.disabled }));
     });
 
@@ -73,14 +75,14 @@ describe('WeekStripDayCell', () => {
       const { getByText } = render(
         <WeekStripDayCell {...defaultProps} isSelected isAdjacentMonth />
       );
-      const text = getByText('24');
+      const text = getByText('24') as { props: { style: unknown } };
       // Should use disabled color, not white
       expect(text.props.style).toEqual(expect.objectContaining({ color: calendarColors.disabled }));
     });
 
     it('overrides today styling when isAdjacentMonth is true', () => {
       const { getByText } = render(<WeekStripDayCell {...defaultProps} isToday isAdjacentMonth />);
-      const text = getByText('24');
+      const text = getByText('24') as { props: { style: unknown } };
       expect(text.props.style).toEqual(expect.objectContaining({ color: calendarColors.disabled }));
     });
 

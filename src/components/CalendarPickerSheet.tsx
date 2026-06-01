@@ -1,11 +1,12 @@
-import { FlatList, Modal, StyleSheet, View } from 'react-native';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { FlatList, Modal, StyleSheet, View } from 'react-native';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
-import { getCalendarColor } from '@utils/calendarColor';
+import { Text } from '@/components/ui/text';
 import type { WritableCalendar } from '@hooks/useWritableCalendars';
+import { getCalendarColor } from '@utils/calendarColor';
 
 const overlayStyle = tva({ base: 'flex-1 justify-end' });
 const sheetStyle = tva({
@@ -31,6 +32,8 @@ function getTypeBadge(type: string | null): string {
       return 'Social';
     case 'public':
       return 'Group';
+    case null:
+      return '';
     default:
       return '';
   }

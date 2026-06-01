@@ -1,4 +1,5 @@
 import { render, fireEvent, act } from '@testing-library/react-native';
+import React from 'react';
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -15,9 +16,9 @@ jest.mock('@react-navigation/native', () => ({
   useRoute: () => ({ params: mockRouteParams }),
 }));
 
-let mockDetail: any;
+let mockDetail: object;
 jest.mock('@hooks/useCalendarDetail', () => ({
-  useCalendarDetail: () => mockDetail,
+  useCalendarDetail: (): unknown => mockDetail,
 }));
 
 const mockUpdateCalendar = jest.fn();
@@ -29,7 +30,9 @@ jest.mock('@hooks/useCalendars', () => ({
   }),
 }));
 
-const { CalendarDetailScreen } = require('../CalendarDetailScreen');
+const { CalendarDetailScreen } = require('../CalendarDetailScreen') as {
+  CalendarDetailScreen: () => React.ReactElement;
+};
 
 const baseCalendar = {
   id: 'cal-1',
@@ -46,7 +49,7 @@ const baseCalendar = {
   deleted_at: null,
 };
 
-function detail(overrides: Partial<any> = {}) {
+function detail(overrides: Partial<object> = {}) {
   return {
     calendar: baseCalendar,
     ownerName: 'Sarah',
@@ -227,7 +230,7 @@ describe('CalendarDetailScreen — save & delete', () => {
       fireEvent.press(getByTestId('save-edit-btn', { includeHiddenElements: true }));
       await Promise.resolve();
     });
-    const args = mockUpdateCalendar.mock.calls[0][1];
+    const args = (mockUpdateCalendar.mock.calls[0] as [unknown, object])[1];
     expect(args).not.toHaveProperty('discoverable');
   });
 

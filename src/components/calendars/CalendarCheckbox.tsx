@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
+
 import { Pressable } from '@/components/ui/pressable';
 
 interface CalendarCheckboxProps {

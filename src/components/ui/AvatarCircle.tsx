@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
+
 import { getAvatarColor, getInitials } from '@utils/avatarColor';
 
 type AvatarCircleSize = 32 | 40 | 56 | 80;

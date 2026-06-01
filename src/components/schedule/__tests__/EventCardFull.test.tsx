@@ -1,6 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { EventCardFull } from '../EventCardFull';
+
 import type { FeedEvent } from '@hooks/useScheduleFeed';
+
+import { EventCardFull } from '../EventCardFull';
 
 function makeFeedEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
   return {

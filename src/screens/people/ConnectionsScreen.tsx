@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCallback, useState } from 'react';
 import {
   View,
@@ -10,13 +12,12 @@ import {
   UIManager,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import { PersonRow } from '@components/people/PersonRow';
 import { useConnections, type HydratedConnection } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
-import { acceptConnection, declineConnection, cancelSentRequest } from '@utils/connections';
-import { PersonRow } from '@components/people/PersonRow';
 import type { PeopleStackParamList } from '@navigation/types';
+import { acceptConnection, declineConnection, cancelSentRequest } from '@utils/connections';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -88,7 +89,9 @@ export function ConnectionsScreen() {
                   <Pressable
                     style={[styles.primaryBtn, submittingId === c.id && styles.btnDisabled]}
                     disabled={submittingId === c.id}
-                    onPress={() => runMutation(c.id, acceptConnection)}
+                    onPress={() => {
+                      void runMutation(c.id, acceptConnection);
+                    }}
                   >
                     <Text style={styles.primaryBtnText}>Accept</Text>
                   </Pressable>
@@ -96,7 +99,9 @@ export function ConnectionsScreen() {
                     style={[styles.iconBtn, submittingId === c.id && styles.btnDisabled]}
                     disabled={submittingId === c.id}
                     accessibilityLabel="Decline"
-                    onPress={() => runMutation(c.id, declineConnection)}
+                    onPress={() => {
+                      void runMutation(c.id, declineConnection);
+                    }}
                   >
                     <Text style={styles.iconBtnText}>✕</Text>
                   </Pressable>
@@ -139,7 +144,9 @@ export function ConnectionsScreen() {
                       style={[styles.iconBtn, submittingId === c.id && styles.btnDisabled]}
                       disabled={submittingId === c.id}
                       accessibilityLabel="Cancel"
-                      onPress={() => runMutation(c.id, cancelSentRequest)}
+                      onPress={() => {
+                        void runMutation(c.id, cancelSentRequest);
+                      }}
                     >
                       <Text style={styles.iconBtnText}>✕</Text>
                     </Pressable>

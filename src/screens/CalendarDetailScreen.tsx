@@ -1,3 +1,6 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Pressable as RNPressable,
@@ -7,20 +10,18 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import Svg, { Path } from 'react-native-svg';
-import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
-import { useCalendarDetail } from '@hooks/useCalendarDetail';
-import { useCalendarMutations } from '@hooks/useCalendars';
-import { UpdateCalendarSchema, type UpdateCalendarFormData } from '@database/schemas';
 import { ZodError } from 'zod';
+
 import { CalendarTypeBadge } from '@components/calendars/CalendarTypeBadge';
 import { DeleteCalendarConfirmModal } from '@components/calendars/DeleteCalendarConfirmModal';
 import { EventRow } from '@components/calendars/EventRow';
 import { MemberRow } from '@components/calendars/MemberRow';
 import { ToggleRow } from '@components/calendars/ToggleRow';
+import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
+import { UpdateCalendarSchema, type UpdateCalendarFormData } from '@database/schemas';
+import { useCalendarDetail } from '@hooks/useCalendarDetail';
+import { useCalendarMutations } from '@hooks/useCalendars';
 import type { RootStackParamList } from '@navigation/types';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
@@ -156,8 +157,8 @@ export function CalendarDetailScreen() {
 
     const updates: Parameters<typeof updateCalendar>[1] = {
       name: parsed.name,
-      description: parsed.description,
-      color: parsed.color,
+      ...(parsed.description !== undefined ? { description: parsed.description } : {}),
+      ...(parsed.color !== undefined ? { color: parsed.color } : {}),
       rsvp_enabled: editRsvp ? 1 : 0,
       affects_availability: editAffectsAvailability ? 1 : 0,
     };
@@ -262,7 +263,9 @@ export function CalendarDetailScreen() {
         ),
         headerRight: () => (
           <RNPressable
-            onPress={handleSave}
+            onPress={() => {
+              void handleSave();
+            }}
             disabled={!canSaveName}
             hitSlop={8}
             testID="save-edit-btn"
@@ -461,7 +464,9 @@ export function CalendarDetailScreen() {
             {/* Test affordance: mirrors the header Save button for test findability */}
             <RNPressable
               testID="save-edit-btn"
-              onPress={handleSave}
+              onPress={() => {
+                void handleSave();
+              }}
               style={styles.testAffordance}
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
@@ -587,7 +592,9 @@ export function CalendarDetailScreen() {
         visible={showDeleteConfirm}
         calendarName={calendar.name ?? ''}
         onCancel={() => setShowDeleteConfirm(false)}
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
       />
 
       {toast && (

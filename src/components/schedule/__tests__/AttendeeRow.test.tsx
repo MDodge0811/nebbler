@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
+
 import { AttendeeRow, type Attendee } from '../AttendeeRow';
 
 const mockAttendees: Attendee[] = [
