@@ -21,7 +21,7 @@ export async function sendConnectionRequest(
      RETURNING id`,
     [requesterId, addresseeId, 'pending', now, now]
   );
-  return result.rows?._array[0]?.id as string;
+  return (result.rows?._array as { id: string }[] | undefined)?.[0]?.id ?? '';
 }
 
 /**
@@ -119,7 +119,7 @@ export async function blockUser(otherUserId: string, currentUserId: string): Pro
        RETURNING id`,
       [currentUserId, otherUserId, 'pending', now, now]
     );
-    const newId = insertResult.rows?._array[0]?.id as string;
+    const newId = (insertResult.rows?._array as { id: string }[] | undefined)?.[0]?.id ?? '';
     await ps.execute(
       `UPDATE user_connections
        SET status = ?, blocker_id = ?, updated_at = ?
