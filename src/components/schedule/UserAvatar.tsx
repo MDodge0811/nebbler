@@ -9,8 +9,8 @@ const initialsStyle = tva({ base: 'font-bold text-white' });
 
 interface UserAvatarProps {
   userId: string;
-  firstName?: string | null;
-  lastName?: string | null;
+  firstName?: string | null | undefined;
+  lastName?: string | null | undefined;
   fallbackName: string;
   size?: number;
   onPress?: () => void;

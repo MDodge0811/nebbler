@@ -10,8 +10,8 @@ export type CardDisplayMode = 'full' | 'compact' | 'busy';
 interface EventCardProps {
   event: FeedEvent;
   mode?: CardDisplayMode;
-  onPress?: () => void;
-  onMeatballPress?: () => void;
+  onPress?: (() => void) | undefined;
+  onMeatballPress?: (() => void) | undefined;
   attendees?: Attendee[];
   footer?: ReactNode;
 }

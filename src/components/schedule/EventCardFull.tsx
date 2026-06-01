@@ -26,8 +26,8 @@ const calendarIndicatorStyle = tva({ base: 'items-center gap-2' });
 
 interface EventCardFullProps {
   event: FeedEvent;
-  onPress?: () => void;
-  onMeatballPress?: () => void;
+  onPress?: (() => void) | undefined;
+  onMeatballPress?: (() => void) | undefined;
   attendees?: Attendee[];
   footer?: ReactNode;
 }

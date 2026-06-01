@@ -193,7 +193,7 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
         'Content-Type': 'application/json',
         ...(authToken && { Authorization: `Bearer ${authToken}` }),
       },
-      body: op !== UpdateType.DELETE ? JSON.stringify(opData) : undefined,
+      ...(op !== UpdateType.DELETE ? { body: JSON.stringify(opData) } : {}),
     });
 
     if (!response.ok) {

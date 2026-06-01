@@ -166,11 +166,12 @@ export function CreateEventScreen() {
 
     setIsSaving(true);
     try {
+      const trimmedDescription = description.trim();
       await createEvent({
         calendarId: calendar.id,
         createdByUserId: authUser.id,
         title: title.trim(),
-        description: description.trim() || undefined,
+        ...(trimmedDescription ? { description: trimmedDescription } : {}),
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
       });

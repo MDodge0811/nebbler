@@ -26,7 +26,7 @@ interface EditGroupCardProps {
   isPrimary: boolean;
   onNameChange: (name: string) => void;
   onNameBlur: () => void;
-  onDelete?: () => void;
+  onDelete?: (() => void) | undefined;
   autoFocusName?: boolean;
   children: ReactNode;
 }

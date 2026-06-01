@@ -156,8 +156,8 @@ export function CalendarDetailScreen() {
 
     const updates: Parameters<typeof updateCalendar>[1] = {
       name: parsed.name,
-      description: parsed.description,
-      color: parsed.color,
+      ...(parsed.description !== undefined ? { description: parsed.description } : {}),
+      ...(parsed.color !== undefined ? { color: parsed.color } : {}),
       rsvp_enabled: editRsvp ? 1 : 0,
       affects_availability: editAffectsAvailability ? 1 : 0,
     };

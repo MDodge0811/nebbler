@@ -19,7 +19,7 @@ const timeStyle = tva({ base: 'mx-2 text-xs text-typography-500' });
 
 interface EventCardCompactProps {
   event: FeedEvent;
-  onPress?: () => void;
+  onPress?: (() => void) | undefined;
   attendees?: Attendee[];
 }
 

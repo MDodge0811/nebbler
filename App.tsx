@@ -104,7 +104,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GluestackUIProvider mode="light">
-        <ClerkProvider tokenCache={tokenCache}>
+        <ClerkProvider {...(tokenCache ? { tokenCache } : {})}>
           <PowerSyncContext.Provider value={database}>
             <ClerkPowerSyncBridge />
             <StatusBar style="auto" />

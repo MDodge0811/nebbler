@@ -600,12 +600,13 @@ export function CreateCalendarScreen() {
 
     setIsSaving(true);
     try {
+      const trimmedDescription = description.trim();
       const calendarId = await createCalendar(
         {
           ownerId: authUser.id,
           type,
           name: name.trim(),
-          description: description.trim() || undefined,
+          ...(trimmedDescription ? { description: trimmedDescription } : {}),
           color: selectedColor,
           affectsAvailability: showAsBusy,
         },

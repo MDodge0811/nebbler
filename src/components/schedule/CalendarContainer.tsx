@@ -108,9 +108,11 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
       <Animated.View style={animatedContainerStyle}>
         <WeekStripDayHeaders />
         <View style={{ flex: 1, position: 'relative' }}>
-          {isWeekMode && <WeekStrip onDateSelected={onDateSelected} markedDates={markedDates} />}
+          {isWeekMode && (
+            <WeekStrip {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
+          )}
           {showMonthGrid && !isWeekMode && (
-            <MonthGrid onDateSelected={onDateSelected} markedDates={markedDates} />
+            <MonthGrid {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
           )}
         </View>
       </Animated.View>
