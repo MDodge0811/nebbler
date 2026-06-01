@@ -79,8 +79,8 @@ describe('useDragStore', () => {
       useDragStore.getState().registerDropZone('zone-a', { y: 200, height: 60 });
       const zones = useDragStore.getState().dropZones;
       expect(zones).toHaveLength(1);
-      expect(zones[0].y).toBe(200);
-      expect(zones[0].height).toBe(60);
+      expect(zones[0]!.y).toBe(200);
+      expect(zones[0]!.height).toBe(60);
     });
 
     it('findDropZone returns groupId when pageY is inside a zone', () => {

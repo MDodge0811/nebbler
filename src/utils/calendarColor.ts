@@ -24,7 +24,7 @@ export function getCalendarColor(calendarId: string): string {
   for (let i = 0; i < calendarId.length; i++) {
     hash = hash + calendarId.charCodeAt(i);
   }
-  const color = CALENDAR_COLORS[hash % CALENDAR_COLORS.length];
+  const color = CALENDAR_COLORS[hash % CALENDAR_COLORS.length]!;
   colorCache.set(calendarId, color);
   return color;
 }

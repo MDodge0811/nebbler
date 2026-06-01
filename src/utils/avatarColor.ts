@@ -18,7 +18,7 @@ export function getAvatarColor(userId: string): string {
   for (let i = 0; i < userId.length; i++) {
     hash = hash + userId.charCodeAt(i);
   }
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length]!;
 }
 
 /**

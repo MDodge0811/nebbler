@@ -12,14 +12,14 @@ describe('useMonthPages', () => {
   it('centers on the anchor date month', () => {
     const { result } = renderHook(() => useMonthPages(anchor));
     const { months, centerIndex } = result.current;
-    expect(months[centerIndex].key).toBe('2026-02-01');
+    expect(months[centerIndex]!.key).toBe('2026-02-01');
   });
 
   it('months are in chronological order', () => {
     const { result } = renderHook(() => useMonthPages(anchor));
     const { months } = result.current;
     for (let i = 1; i < months.length; i++) {
-      expect(months[i].key > months[i - 1].key).toBe(true);
+      expect(months[i]!.key > months[i - 1]!.key).toBe(true);
     }
   });
 
@@ -63,7 +63,7 @@ describe('useMonthPages', () => {
 
     it('returns 0 for the earliest buffered month', () => {
       const { result } = renderHook(() => useMonthPages(anchor));
-      const earliestKey = result.current.months[0].key;
+      const earliestKey = result.current.months[0]!.key;
       expect(result.current.getPageIndexForMonth(earliestKey)).toBe(0);
     });
   });

@@ -103,11 +103,11 @@ export function CreateEventScreen() {
 
   // Default to first writable calendar when available
   const calendar =
-    writableCalendars.find((c) => c.id === selectedCalendarId) ?? writableCalendars[0];
+    writableCalendars.find((c) => c.id === selectedCalendarId) ?? writableCalendars.at(0);
 
   useEffect(() => {
     if (!selectedCalendarId && writableCalendars.length > 0) {
-      setSelectedCalendarId(writableCalendars[0].id);
+      setSelectedCalendarId(writableCalendars[0]!.id);
     }
   }, [selectedCalendarId, writableCalendars]);
 

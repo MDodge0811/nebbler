@@ -386,7 +386,7 @@ function CalendarPreviewCard({ name, type, color }: { name: string; type: string
     <View style={styles.previewCard}>
       <View style={[styles.previewIcon, { backgroundColor: tintBg, borderColor: tintBorder }]}>
         {hasName ? (
-          <RNText style={styles.previewLetter}>{name.trim()[0].toUpperCase()}</RNText>
+          <RNText style={styles.previewLetter}>{name.trim()[0]!.toUpperCase()}</RNText>
         ) : (
           <RNText style={styles.previewEmoji}>{'📅'}</RNText>
         )}

@@ -81,7 +81,7 @@ export function CustomTabBar({ state, descriptors, navigation: tabNavigation }: 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
+        const { options } = descriptors[route.key]!;
         const isFocused = state.index === index;
         const isCreateTab = route.name === 'Create';
 

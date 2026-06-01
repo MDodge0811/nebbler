@@ -52,7 +52,7 @@ export function useCalendarsListData() {
     for (const m of allMemberships) {
       if (!m.calendar_group_id || !m.calendar_id) continue;
       if (!map[m.calendar_group_id]) map[m.calendar_group_id] = [];
-      map[m.calendar_group_id].push(m.calendar_id);
+      map[m.calendar_group_id]!.push(m.calendar_id);
     }
     return map;
   }, [allMemberships]);
