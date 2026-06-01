@@ -21,6 +21,8 @@ import { VStack } from '@/components/ui/vstack';
 import type { AuthStackScreenProps } from '@navigation/types';
 import { extractClerkError } from '@utils/clerkError';
 
+import { SocialSignInButtons, type OAuthStrategy } from './SocialSignInButtons';
+
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const scrollContentStyle = tva({ base: 'flex-grow justify-center p-6' });
 const headerStyle = tva({ base: 'mb-8 items-center' });
@@ -33,7 +35,6 @@ const errorBannerTextStyle = tva({ base: 'text-center text-error-600' });
 const dividerStyle = tva({ base: 'my-6 flex-row items-center' });
 const dividerLineStyle = tva({ base: 'flex-1 border-t border-typography-200' });
 const dividerTextStyle = tva({ base: 'mx-3 text-typography-500' });
-const socialStyle = tva({ base: 'gap-3' });
 const footerStyle = tva({ base: 'mt-6 flex-row items-center justify-center' });
 const footerTextStyle = tva({ base: 'text-typography-600' });
 const linkTextStyle = tva({ base: 'ml-1 font-semibold text-primary-500' });
@@ -44,8 +45,6 @@ const styles = StyleSheet.create({
 
 // Required so OAuth redirects complete on iOS.
 WebBrowser.maybeCompleteAuthSession();
-
-type OAuthStrategy = 'oauth_google' | 'oauth_apple' | 'oauth_facebook';
 
 interface FormErrors {
   email?: string;
@@ -240,38 +239,12 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
             <Box className={dividerLineStyle({})} />
           </Box>
 
-          <VStack className={socialStyle({})}>
-            <Button
-              variant="outline"
-              onPress={() => {
-                void oauth('oauth_google');
-              }}
-              isDisabled={!!oauthInFlight}
-            >
-              {oauthInFlight === 'oauth_google' && <ButtonSpinner />}
-              <ButtonText>Continue with Google</ButtonText>
-            </Button>
-            <Button
-              variant="outline"
-              onPress={() => {
-                void oauth('oauth_apple');
-              }}
-              isDisabled={!!oauthInFlight}
-            >
-              {oauthInFlight === 'oauth_apple' && <ButtonSpinner />}
-              <ButtonText>Continue with Apple</ButtonText>
-            </Button>
-            <Button
-              variant="outline"
-              onPress={() => {
-                void oauth('oauth_facebook');
-              }}
-              isDisabled={!!oauthInFlight}
-            >
-              {oauthInFlight === 'oauth_facebook' && <ButtonSpinner />}
-              <ButtonText>Continue with Facebook</ButtonText>
-            </Button>
-          </VStack>
+          <SocialSignInButtons
+            oauthInFlight={oauthInFlight}
+            onPress={(strategy) => {
+              void oauth(strategy);
+            }}
+          />
 
           <Box className={footerStyle({})}>
             <Text className={footerTextStyle({})}>New to Nebbler?</Text>

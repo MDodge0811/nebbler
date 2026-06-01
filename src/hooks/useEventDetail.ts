@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 
 import type { Event, Calendar, User } from '@database/schema';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import { firstRow, reactiveQuery } from '@utils/reactiveQuery';
 
 interface MembershipRow {
   id: string;
@@ -30,41 +31,43 @@ export function useEventDetail(eventId: string | undefined) {
   const userId = authUser?.id;
 
   // 1. Event by ID
-  const { data: events = [] } = useQuery<Event>(
-    eventId
-      ? 'SELECT * FROM events WHERE id = ? AND deleted_at IS NULL'
-      : 'SELECT * FROM events WHERE 0',
-    eventId ? [eventId] : []
+  const [eventSql, eventParams] = reactiveQuery(
+    !!eventId,
+    'SELECT * FROM events WHERE id = ? AND deleted_at IS NULL',
+    [eventId]
   );
-  const event = events[0] ?? null;
+  const { data: events = [] } = useQuery<Event>(eventSql, eventParams);
+  const event = firstRow(events);
 
   // 2. Calendar by event.calendar_id
   const calendarId = event?.calendar_id;
-  const { data: calendars = [] } = useQuery<Calendar>(
-    calendarId ? 'SELECT * FROM calendars WHERE id = ?' : 'SELECT * FROM calendars WHERE 0',
-    calendarId ? [calendarId] : []
-  );
-  const calendar = calendars[0] ?? null;
+  const [calSql, calParams] = reactiveQuery(!!calendarId, 'SELECT * FROM calendars WHERE id = ?', [
+    calendarId,
+  ]);
+  const { data: calendars = [] } = useQuery<Calendar>(calSql, calParams);
+  const calendar = firstRow(calendars);
 
   // 3. Creator user
   const creatorId = event?.created_by_user_id;
-  const { data: creators = [] } = useQuery<User>(
-    creatorId ? 'SELECT * FROM users WHERE id = ?' : 'SELECT * FROM users WHERE 0',
-    creatorId ? [creatorId] : []
+  const [creatorSql, creatorParams] = reactiveQuery(
+    !!creatorId,
+    'SELECT * FROM users WHERE id = ?',
+    [creatorId]
   );
-  const creator = creators[0] ?? null;
+  const { data: creators = [] } = useQuery<User>(creatorSql, creatorParams);
+  const creator = firstRow(creators);
 
   // 4. Current user's membership + role level for this calendar
-  const { data: memberships = [] } = useQuery<MembershipRow>(
-    calendarId && userId
-      ? `SELECT cm.*, r.level AS role_level, r.name AS role_name
+  const [memSql, memParams] = reactiveQuery(
+    !!(calendarId && userId),
+    `SELECT cm.*, r.level AS role_level, r.name AS role_name
          FROM calendar_members cm
          JOIN roles r ON cm.role_id = r.id
-         WHERE cm.calendar_id = ? AND cm.user_id = ? AND cm.deleted_at IS NULL`
-      : 'SELECT * FROM calendar_members WHERE 0',
-    calendarId && userId ? [calendarId, userId] : []
+         WHERE cm.calendar_id = ? AND cm.user_id = ? AND cm.deleted_at IS NULL`,
+    [calendarId, userId]
   );
-  const membership = memberships[0] ?? null;
+  const { data: memberships = [] } = useQuery<MembershipRow>(memSql, memParams);
+  const membership = firstRow(memberships);
 
   // 5. Computed permissions
   const permissions = useMemo<EventPermissions>(() => {
