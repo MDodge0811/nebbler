@@ -87,6 +87,7 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
     signInLoaded,
     signUp,
     signUpLoaded,
+    submitting,
   ]);
 
   return (

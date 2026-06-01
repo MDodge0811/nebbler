@@ -86,7 +86,7 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
     } finally {
       setSubmitting(false);
     }
-  }, [email, firstName, isLoaded, lastName, navigation, password, signUp]);
+  }, [email, firstName, isLoaded, lastName, navigation, password, signUp, submitting]);
 
   return (
     <KeyboardAvoidingView
