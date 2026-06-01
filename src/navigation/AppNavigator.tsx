@@ -11,7 +11,7 @@ import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
 import { ScheduleScreen } from '@screens/ScheduleScreen';
 import { CalendarsScreen } from '@screens/CalendarsScreen';
-import { PeopleScreen } from '@screens/PeopleScreen';
+import { PeopleTabNavigator } from '@screens/PeopleTabNavigator';
 import { SettingsScreen } from '@screens/SettingsScreen';
 import { ProfileScreen } from '@screens/ProfileScreen';
 import { CreateEventScreen } from '@screens/CreateEventScreen';
@@ -60,7 +60,7 @@ function MainTabs() {
           },
         }}
       />
-      <Tab.Screen name="People" component={PeopleScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="People" component={PeopleTabNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
