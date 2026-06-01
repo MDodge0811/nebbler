@@ -22,6 +22,7 @@ import { ZodError } from 'zod';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { ColorSwatchGrid } from '@components/ui/ColorSwatchGrid';
 import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
 import type { CalendarGroup } from '@database/schema';
 import { CreateCalendarSchema } from '@database/schemas';
@@ -246,35 +247,6 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
 
-  // Color swatches
-  colorContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    padding: 12,
-    paddingHorizontal: 10,
-    backgroundColor: calendarsUIColors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-  },
-  colorSwatch: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  colorSwatchSelected: {
-    borderWidth: 2.5,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-
   // Group picker
   groupPicker: {
     flexDirection: 'row',
@@ -442,25 +414,6 @@ function TypeCard({
       </View>
       <RNText style={styles.typeLabel}>{option.label}</RNText>
       <RNText style={styles.typeDescription}>{option.description}</RNText>
-    </Pressable>
-  );
-}
-
-function ColorSwatch({
-  hex,
-  selected,
-  onPress,
-}: {
-  hex: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      style={[styles.colorSwatch, { backgroundColor: hex }, selected && styles.colorSwatchSelected]}
-      onPress={onPress}
-    >
-      {selected && <CheckIcon size={14} color="#FFFFFF" />}
     </Pressable>
   );
 }
@@ -759,16 +712,7 @@ export function CreateCalendarScreen() {
           {/* Color */}
           <VStack>
             <SectionLabel label="Color" />
-            <View style={styles.colorContainer}>
-              {CALENDAR_PALETTE.map((entry) => (
-                <ColorSwatch
-                  key={entry.hex}
-                  hex={entry.hex}
-                  selected={selectedColor === entry.hex}
-                  onPress={() => setSelectedColor(entry.hex)}
-                />
-              ))}
-            </View>
+            <ColorSwatchGrid value={selectedColor} onChange={setSelectedColor} />
           </VStack>
 
           {/* Calendar Group */}

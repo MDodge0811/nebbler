@@ -84,21 +84,27 @@ export function useConnections(currentUserId: string | undefined) {
 
 /**
  * Active connection row between current user and `otherUserId`, either direction.
+ * Filters explicitly by both parties so behavior does not depend on sync-rule scope.
  */
-export function useConnectionWith(otherUserId: string | undefined) {
+export function useConnectionWith(
+  currentUserId: string | undefined,
+  otherUserId: string | undefined
+) {
   const { data } = useQuery<{
     id: string;
     status: 'pending' | 'accepted' | 'declined' | 'blocked';
     requester_id: string;
     addressee_id: string;
   }>(
-    otherUserId
+    currentUserId && otherUserId
       ? `SELECT id, status, requester_id, addressee_id
          FROM user_connections
-         WHERE (requester_id = ? OR addressee_id = ?) AND deleted_at IS NULL
+         WHERE ((requester_id = ? AND addressee_id = ?)
+             OR (requester_id = ? AND addressee_id = ?))
+           AND deleted_at IS NULL
          LIMIT 1`
       : `SELECT 1 WHERE 0`,
-    otherUserId ? [otherUserId, otherUserId] : []
+    currentUserId && otherUserId ? [currentUserId, otherUserId, otherUserId, currentUserId] : []
   );
 
   return data[0] ?? null;

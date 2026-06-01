@@ -22,11 +22,17 @@ export type RootStackParamList = {
   CalendarDetail: { calendarId: string };
 };
 
+export type PeopleStackParamList = {
+  Connections: undefined;
+  AddConnection: undefined;
+  PersonProfile: { userId: string };
+};
+
 export type MainTabParamList = {
   Calendars: undefined;
   Home: undefined;
   Create: undefined;
-  People: undefined;
+  People: NavigatorScreenParams<PeopleStackParamList>;
   Settings: undefined;
 };
 
@@ -48,6 +54,11 @@ export type DrawerScreenPropsType<T extends keyof DrawerParamList> = CompositeSc
 export type MainTabScreenProps<T extends keyof MainTabParamList> = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, T>,
   DrawerScreenPropsType<keyof DrawerParamList>
+>;
+
+export type PeopleStackScreenProps<T extends keyof PeopleStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<PeopleStackParamList, T>,
+  MainTabScreenProps<keyof MainTabParamList>
 >;
 
 declare global {

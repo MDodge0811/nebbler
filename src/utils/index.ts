@@ -10,3 +10,4 @@ export {
   blockUser,
 } from './connections';
 export { searchUsers, RateLimitedError } from './userSearch';
+export { displayName } from './displayName';

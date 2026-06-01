@@ -21,7 +21,7 @@ import { CalendarsScreen } from '@screens/CalendarsScreen';
 import { CreateCalendarScreen } from '@screens/CreateCalendarScreen';
 import { CreateEventScreen } from '@screens/CreateEventScreen';
 import { EventDetailScreen } from '@screens/EventDetailScreen';
-import { PeopleScreen } from '@screens/PeopleScreen';
+import { PeopleTabNavigator } from '@screens/PeopleTabNavigator';
 import { ProfileScreen } from '@screens/ProfileScreen';
 import { ScheduleScreen } from '@screens/ScheduleScreen';
 import { SettingsScreen } from '@screens/SettingsScreen';
@@ -61,7 +61,7 @@ function MainTabs() {
           },
         }}
       />
-      <Tab.Screen name="People" component={PeopleScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="People" component={PeopleTabNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );

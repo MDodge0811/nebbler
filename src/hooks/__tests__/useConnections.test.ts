@@ -66,18 +66,40 @@ describe('useConnections', () => {
 });
 
 describe('useConnectionWith', () => {
-  it('returns null when userId is undefined', () => {
-    (useQuery as jest.Mock).mockReturnValue({ data: [] });
-    const { result } = renderHook(() => useConnectionWith(undefined));
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('returns null when otherUserId is undefined', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false, error: undefined });
+    const { result } = renderHook(() => useConnectionWith('me', undefined));
     expect(result.current).toBeNull();
   });
 
-  it('returns the single row when one matches', () => {
+  it('returns null when currentUserId is undefined', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false, error: undefined });
+    const { result } = renderHook(() => useConnectionWith(undefined, 'them'));
+    expect(result.current).toBeNull();
+  });
+
+  it('binds query to both currentUserId and otherUserId in both directions', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false, error: undefined });
+    renderHook(() => useConnectionWith('me', 'them'));
+    expect(useQuery as jest.Mock).toHaveBeenCalledWith(
+      expect.stringContaining('requester_id = ?'),
+      ['me', 'them', 'them', 'me']
+    );
+  });
+
+  it('returns the first matching row when present', () => {
     (useQuery as jest.Mock).mockReturnValue({
-      data: [{ id: '1', status: 'accepted' }],
+      data: [{ id: 'c1', status: 'accepted', requester_id: 'me', addressee_id: 'them' }],
+      isLoading: false,
+      error: undefined,
     });
-    const { result } = renderHook(() => useConnectionWith('other-user-id'));
-    expect(result.current?.id).toBe('1');
+    const { result } = renderHook(() => useConnectionWith('me', 'them'));
+    expect(result.current?.id).toBe('c1');
+    expect(result.current?.status).toBe('accepted');
   });
 });
 
