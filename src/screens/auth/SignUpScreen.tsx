@@ -54,7 +54,7 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
   const [genericError, setGenericError] = useState<string | undefined>();
 
   const submit = useCallback(async () => {
-    if (!isLoaded || !signUp || submitting) return;
+    if (!isLoaded || submitting) return;
 
     const fieldErrors: FormErrors = {};
     if (!firstName.trim()) fieldErrors.firstName = 'First name is required';

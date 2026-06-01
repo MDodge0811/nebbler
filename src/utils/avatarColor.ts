@@ -30,13 +30,13 @@ export function getInitials(
   lastName?: string | null,
   fallback?: string
 ): string {
-  const first = firstName?.trim()?.[0];
-  const last = lastName?.trim()?.[0];
+  const first = firstName?.trim()[0];
+  const last = lastName?.trim()[0];
 
   if (first && last) return `${first}${last}`.toUpperCase();
   if (first) return first.toUpperCase();
   if (last) return last.toUpperCase();
 
-  const fallbackChar = fallback?.trim()?.[0];
+  const fallbackChar = fallback?.trim()[0];
   return fallbackChar ? fallbackChar.toUpperCase() : '?';
 }

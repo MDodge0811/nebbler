@@ -31,7 +31,6 @@ interface RsvpBadgeProps {
 export function RsvpBadge({ status }: RsvpBadgeProps) {
   if (!status) return null;
   const c = CONFIGS[status];
-  if (!c) return null;
   return (
     <View style={[styles.badge, { backgroundColor: c.bg, borderColor: c.border }]}>
       <RNText style={[styles.label, { color: c.color }]}>{c.label}</RNText>

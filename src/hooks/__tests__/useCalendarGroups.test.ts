@@ -5,17 +5,19 @@ const mockExecute = jest.fn();
 const mockWriteTransaction = jest.fn();
 
 jest.mock('@powersync/react', () => ({
-  usePowerSync: () => ({ execute: mockExecute, writeTransaction: mockWriteTransaction }),
+  usePowerSync: (): unknown => ({ execute: mockExecute, writeTransaction: mockWriteTransaction }),
 }));
 
 describe('useCalendarGroupMutations', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockExecute.mockResolvedValue({ rows: { _array: [{ id: 'mock-uuid' }] } });
-    mockWriteTransaction.mockImplementation(async (cb) => {
-      const tx = { execute: mockExecute };
-      return cb(tx);
-    });
+    mockWriteTransaction.mockImplementation(
+      async (cb: (tx: { execute: jest.Mock }) => Promise<unknown>) => {
+        const tx = { execute: mockExecute };
+        return cb(tx);
+      }
+    );
   });
 
   describe('createGroup (transaction pattern)', () => {
@@ -30,7 +32,7 @@ describe('useCalendarGroupMutations', () => {
       const { result } = renderHook(() => useCalendarGroupMutations());
       await result.current.createGroup('user-1', 'My Group');
 
-      const firstSql = mockExecute.mock.calls[0][0] as string;
+      const firstSql = (mockExecute.mock.calls[0] as [string])[0];
       expect(firstSql).toEqual(expect.stringContaining('uuid()'));
       expect(firstSql).toEqual(expect.stringContaining('RETURNING id'));
     });
@@ -39,7 +41,7 @@ describe('useCalendarGroupMutations', () => {
       const { result } = renderHook(() => useCalendarGroupMutations());
       await result.current.createGroup('user-1', 'My Group');
 
-      const secondParams = mockExecute.mock.calls[1][1] as unknown[];
+      const secondParams = (mockExecute.mock.calls[1] as [string, unknown[]])[1];
       expect(secondParams[0]).toBe('mock-uuid');
     });
 
@@ -47,7 +49,7 @@ describe('useCalendarGroupMutations', () => {
       const { result } = renderHook(() => useCalendarGroupMutations());
       await result.current.createGroup('user-1', 'My Group');
 
-      const secondSql = mockExecute.mock.calls[1][0] as string;
+      const secondSql = (mockExecute.mock.calls[1] as [string])[0];
       expect(secondSql).toEqual(expect.stringContaining('uuid()'));
     });
 
@@ -64,7 +66,7 @@ describe('useCalendarGroupMutations', () => {
       const { result } = renderHook(() => useCalendarGroupMutations());
       await result.current.addCalendarToGroup('group-1', 'cal-1');
 
-      const sql = mockExecute.mock.calls[0][0] as string;
+      const sql = (mockExecute.mock.calls[0] as [string])[0];
       expect(sql).toEqual(expect.stringContaining('uuid()'));
     });
 
@@ -72,7 +74,7 @@ describe('useCalendarGroupMutations', () => {
       const { result } = renderHook(() => useCalendarGroupMutations());
       await result.current.addCalendarToGroup('group-1', 'cal-1');
 
-      const sql = mockExecute.mock.calls[0][0] as string;
+      const sql = (mockExecute.mock.calls[0] as [string])[0];
       expect(sql).toEqual(expect.stringContaining('RETURNING id'));
     });
 
@@ -80,7 +82,7 @@ describe('useCalendarGroupMutations', () => {
       const { result } = renderHook(() => useCalendarGroupMutations());
       await result.current.addCalendarToGroup('group-1', 'cal-1');
 
-      const params = mockExecute.mock.calls[0][1] as unknown[];
+      const params = (mockExecute.mock.calls[0] as [string, unknown[]])[1];
       // Params should be: [groupId, calendarId, viewMode, inserted_at, updated_at]
       expect(params).toHaveLength(5);
       expect(params[0]).toBe('group-1');

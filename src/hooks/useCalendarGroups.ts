@@ -55,7 +55,7 @@ export function useCalendarGroupMutations() {
          VALUES (uuid(), ?, ?, ?, ?, ?) RETURNING id`,
         [ownerId, name, type ?? 'personal', now, now]
       );
-      const id = result.rows?._array[0]?.id as string;
+      const id = (result.rows?._array as { id: string }[] | undefined)?.[0]?.id ?? '';
 
       await tx.execute(
         `INSERT INTO calendar_group_users
@@ -94,7 +94,8 @@ export function useCalendarGroupMutations() {
       [groupId, calendarId, viewMode ?? null, now, now]
     );
 
-    return result.rows?._array[0]?.id as string;
+    const row = (result.rows?._array as { id: string }[] | undefined)?.[0];
+    return row?.id ?? '';
   };
 
   const removeCalendarFromGroup = async (id: string) => {

@@ -31,6 +31,8 @@ function getTypeBadge(type: string | null): string {
       return 'Social';
     case 'public':
       return 'Group';
+    case null:
+      return '';
     default:
       return '';
   }

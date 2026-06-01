@@ -21,7 +21,7 @@ export interface DateSection {
 }
 
 export function isEmptySentinel(item: FeedEvent | EmptySentinel): item is EmptySentinel {
-  return '_empty' in item && item._empty === true;
+  return '_empty' in item && (item as EmptySentinel)._empty;
 }
 
 /**

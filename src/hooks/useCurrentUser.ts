@@ -19,7 +19,7 @@ export function useCurrentUser() {
   );
 
   return {
-    user: data?.[0] ?? null,
+    user: data[0] ?? null,
     authUser,
     isLoading,
     error,

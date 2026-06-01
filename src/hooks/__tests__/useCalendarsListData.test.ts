@@ -15,7 +15,7 @@ let mockCalendarsReturn = {
 };
 
 jest.mock('@powersync/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+  useQuery: (...args: unknown[]): unknown => mockUseQuery(...args),
 }));
 
 jest.mock('@hooks/useCalendarGroups', () => ({

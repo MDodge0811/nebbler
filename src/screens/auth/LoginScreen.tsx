@@ -63,7 +63,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
   const [oauthInFlight, setOauthInFlight] = useState<OAuthStrategy | null>(null);
 
   const passwordSignIn = useCallback(async () => {
-    if (!isLoaded || !signIn || submitting) return;
+    if (!isLoaded || submitting) return;
 
     const trimmed = email.trim();
     const errors: FormErrors = {};
@@ -81,7 +81,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
     try {
       const result = await signIn.create({ identifier: trimmed, password });
 
-      if (result.status === 'complete' && setActive) {
+      if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
         // ClerkPowerSyncBridge will pick up the new session.
         return;
@@ -98,7 +98,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
   }, [email, isLoaded, password, setActive, signIn, submitting]);
 
   const sendCode = useCallback(async () => {
-    if (!isLoaded || !signIn || submitting) return;
+    if (!isLoaded || submitting) return;
 
     const trimmed = email.trim();
     if (!trimmed) {

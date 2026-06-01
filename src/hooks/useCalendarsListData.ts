@@ -38,7 +38,6 @@ export function useCalendarsListData() {
   const primaryGroupId = user?.primary_calendar_group_id ?? null;
 
   const sortedGroups = useMemo(() => {
-    if (!groups) return [];
     return [...groups].sort((a, b) => {
       if (a.id === primaryGroupId) return -1;
       if (b.id === primaryGroupId) return 1;
@@ -48,7 +47,6 @@ export function useCalendarsListData() {
 
   const groupCalendarsMap = useMemo(() => {
     const map: Record<string, string[]> = {};
-    if (!allMemberships) return map;
     for (const m of allMemberships) {
       if (!m.calendar_group_id || !m.calendar_id) continue;
       if (!map[m.calendar_group_id]) map[m.calendar_group_id] = [];
@@ -58,14 +56,12 @@ export function useCalendarsListData() {
   }, [allMemberships]);
 
   const ungroupedCalendars = useMemo(() => {
-    if (!calendars || !allMemberships) return [];
     const groupedIds = new Set(allMemberships.map((m) => m.calendar_id));
     return calendars.filter((c) => !groupedIds.has(c.id));
   }, [calendars, allMemberships]);
 
   const memberCountMap = useMemo(() => {
     const map: Record<string, number> = {};
-    if (!memberCounts) return map;
     for (const row of memberCounts) {
       map[row.calendar_id] = row.member_count;
     }
@@ -74,7 +70,6 @@ export function useCalendarsListData() {
 
   const calendarsById = useMemo(() => {
     const map: Record<string, (typeof calendars)[number]> = {};
-    if (!calendars) return map;
     for (const c of calendars) {
       map[c.id] = c;
     }
@@ -88,7 +83,7 @@ export function useCalendarsListData() {
     ungroupedCalendars,
     memberCountMap,
     calendarsById,
-    allMemberships: allMemberships ?? [],
+    allMemberships,
     isLoading,
     error,
   };

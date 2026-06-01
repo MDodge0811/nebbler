@@ -14,8 +14,7 @@ export function useAuth() {
   const clerk = useClerkAuth();
   const { user: clerkUser, isLoaded: userLoaded } = useUser();
 
-  const internalUserId =
-    (clerkUser?.publicMetadata?.internal_user_id as string | undefined) ?? null;
+  const internalUserId = (clerkUser?.publicMetadata.internal_user_id as string | undefined) ?? null;
 
   const user =
     clerkUser && internalUserId

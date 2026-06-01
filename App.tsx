@@ -21,7 +21,8 @@ import {
 // Clerk's Expo SDK auto-reads this env var. Expo exposes any var prefixed
 // with `EXPO_PUBLIC_` to the client bundle at build time.
 // https://clerk.com/docs/expo/getting-started/quickstart
-const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
+const clerkPublishableKey: string =
+  (process.env as Record<string, string | undefined>)['EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY'] ?? '';
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '@/global.css';
@@ -66,9 +67,9 @@ export default function App() {
   useEffect(() => {
     initializeDatabase()
       .then(setDatabase)
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error('Failed to initialize database:', err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : String(err));
       });
   }, []);
 

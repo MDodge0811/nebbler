@@ -52,7 +52,7 @@ describe('CalendarContainer', () => {
     const { getByTestId, rerender } = render(<CalendarContainer markedDates={{}} />);
 
     // Start in week mode — no month grid
-    expect(() => getByTestId('month-grid-flatlist')).toThrow();
+    expect((): unknown => getByTestId('month-grid-flatlist')).toThrow();
 
     // Switch to month mode
     act(() => {
@@ -81,7 +81,7 @@ describe('CalendarContainer', () => {
 
     // MonthGrid stays mounted (hasExpandedRef) but is hidden via conditional render
     // In our implementation, !isWeekMode is false, so MonthGrid is not rendered
-    expect(() => getByTestId('month-grid-flatlist')).toThrow();
+    expect((): unknown => getByTestId('month-grid-flatlist')).toThrow();
   });
 
   it('sets displayMonth from visibleDate on expand', () => {

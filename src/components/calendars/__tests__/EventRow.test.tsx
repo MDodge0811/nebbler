@@ -1,13 +1,25 @@
 import { render, fireEvent } from '@testing-library/react-native';
 import { EventRow } from '../EventRow';
 
-const ev = {
+import type { Event } from '@database/schema';
+
+const ev: Event = {
   id: 'e1',
   calendar_id: 'c1',
+  created_by_user_id: 'user-1',
   title: 'Game Night',
+  description: null,
   start_time: '2026-06-01T19:00:00Z',
   end_time: '2026-06-01T22:00:00Z',
-} as any;
+  rrule: null,
+  duration_minutes: null,
+  recurring_event_id: null,
+  recurrence_id: null,
+  exdates: null,
+  deleted_at: null,
+  inserted_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+};
 
 describe('EventRow', () => {
   it('shows the event title when not free/busy', () => {

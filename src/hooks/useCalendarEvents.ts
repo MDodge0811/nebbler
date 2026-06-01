@@ -107,7 +107,8 @@ export function useEventMutations() {
       ]
     );
 
-    return result.rows?._array[0]?.id as string;
+    const row = (result.rows?._array as { id: string }[] | undefined)?.[0];
+    return row?.id ?? '';
   };
 
   const updateEvent = async (id: string, updates: Partial<Omit<Event, 'id'>>) => {

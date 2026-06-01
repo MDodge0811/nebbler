@@ -105,7 +105,7 @@ export function ScheduleScreen() {
       const topItem = viewableItems.find((item) => item.section != null);
       if (!topItem?.section) return;
 
-      const topDate = (topItem.section as { title?: string })?.title;
+      const topDate = (topItem.section as { title?: string }).title;
       if (!topDate || topDate === useScheduleStore.getState().selectedDate) return;
 
       lockSync();

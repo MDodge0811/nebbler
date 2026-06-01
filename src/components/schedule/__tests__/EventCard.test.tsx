@@ -36,8 +36,7 @@ describe('EventCard', () => {
   it('renders a time range', () => {
     render(<EventCard event={makeFeedEvent()} />);
     // The formatted time will contain an en-dash separator
-    const timeText = screen.getByText(/–/);
-    expect(timeText).toBeTruthy();
+    expect(screen.getByText(/–/)).toBeTruthy();
   });
 
   it('calls onPress when pressed', () => {

@@ -14,6 +14,6 @@ export function useRoles() {
  */
 export function useOwnerRole() {
   const { data: roles, isLoading, error } = useRoles();
-  const ownerRole = roles?.find((r) => r.level === 40) ?? null;
+  const ownerRole = roles.find((r) => r.level === 40) ?? null;
   return { ownerRole, isLoading, error };
 }

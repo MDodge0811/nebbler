@@ -15,7 +15,7 @@ jest.mock('@hooks/useAuth', () => ({
 }));
 
 jest.mock('@react-navigation/native', () => ({
-  ...jest.requireActual('@react-navigation/native'),
+  ...(jest.requireActual('@react-navigation/native') as object),
   useNavigation: () => ({
     dispatch: jest.fn(),
     getParent: () => ({ dispatch: mockDispatch }),

@@ -5,7 +5,7 @@ import type { FeedEvent, EmptySentinel } from '../useScheduleFeed';
 const mockUseQuery = jest.fn().mockReturnValue({ data: [], isLoading: false, error: undefined });
 
 jest.mock('@powersync/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+  useQuery: (...args: unknown[]): unknown => mockUseQuery(...args),
 }));
 
 jest.mock('@hooks/useAuth', () => ({
@@ -150,7 +150,7 @@ describe('useScheduleFeed', () => {
     renderHook(() => useScheduleFeed('2026-02-24', '2026-02-25'));
 
     // Third useQuery call should be the events query with calendar_id IN (?)
-    const thirdCall = mockUseQuery.mock.calls[2];
+    const thirdCall = mockUseQuery.mock.calls[2] as [string, string[]];
     expect(thirdCall[0]).toContain('calendar_id IN');
     expect(thirdCall[1]).toContain('cal-1');
   });

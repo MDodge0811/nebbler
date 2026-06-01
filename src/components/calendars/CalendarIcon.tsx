@@ -10,7 +10,7 @@ interface CalendarIconProps {
 
 export function CalendarIcon({ calendarName, calendarId, color }: CalendarIconProps) {
   const resolvedColor = color ?? getCalendarColor(calendarId);
-  const letter = (calendarName ?? '?').charAt(0).toUpperCase();
+  const letter = calendarName.charAt(0).toUpperCase();
 
   return (
     <View

@@ -5,17 +5,19 @@ const mockExecute = jest.fn();
 const mockWriteTransaction = jest.fn();
 
 jest.mock('@powersync/react', () => ({
-  usePowerSync: () => ({ execute: mockExecute, writeTransaction: mockWriteTransaction }),
+  usePowerSync: (): unknown => ({ execute: mockExecute, writeTransaction: mockWriteTransaction }),
 }));
 
 describe('useCalendarMutations', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockExecute.mockResolvedValue({ rows: { _array: [{ id: 'mock-uuid' }] } });
-    mockWriteTransaction.mockImplementation(async (cb) => {
-      const tx = { execute: mockExecute };
-      return cb(tx);
-    });
+    mockWriteTransaction.mockImplementation(
+      async (cb: (tx: { execute: jest.Mock }) => Promise<unknown>) => {
+        const tx = { execute: mockExecute };
+        return cb(tx);
+      }
+    );
   });
 
   describe('createCalendar', () => {
@@ -38,7 +40,7 @@ describe('useCalendarMutations', () => {
       const { result } = renderHook(() => useCalendarMutations());
       await result.current.createCalendar(attrs, ownerRoleId);
 
-      const firstSql = mockExecute.mock.calls[0][0] as string;
+      const firstSql = (mockExecute.mock.calls[0] as [string])[0];
       expect(firstSql).toEqual(expect.stringContaining('uuid()'));
       expect(firstSql).toEqual(expect.stringContaining('RETURNING id'));
     });
@@ -47,7 +49,7 @@ describe('useCalendarMutations', () => {
       const { result } = renderHook(() => useCalendarMutations());
       await result.current.createCalendar(attrs, ownerRoleId);
 
-      const secondParams = mockExecute.mock.calls[1][1] as unknown[];
+      const secondParams = (mockExecute.mock.calls[1] as [string, unknown[]])[1];
       expect(secondParams[0]).toBe('mock-uuid');
     });
 
@@ -55,7 +57,7 @@ describe('useCalendarMutations', () => {
       const { result } = renderHook(() => useCalendarMutations());
       await result.current.createCalendar(attrs, ownerRoleId);
 
-      const secondSql = mockExecute.mock.calls[1][0] as string;
+      const secondSql = (mockExecute.mock.calls[1] as [string])[0];
       expect(secondSql).toEqual(expect.stringContaining('uuid()'));
     });
 
