@@ -34,6 +34,25 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1 },
 });
 
+type SignUpResource = NonNullable<ReturnType<typeof useSignUp>['signUp']>;
+type SignInResource = NonNullable<ReturnType<typeof useSignIn>['signIn']>;
+type SetActiveSignUp = ReturnType<typeof useSignUp>['setActive'];
+type SetActiveSignIn = ReturnType<typeof useSignIn>['setActive'];
+
+async function completeSignUp(signUp: SignUpResource, setActive: SetActiveSignUp, code: string) {
+  const result = await signUp.attemptEmailAddressVerification({ code });
+  if (result.status === 'complete' && setActive) {
+    await setActive({ session: result.createdSessionId });
+  }
+}
+
+async function completeSignIn(signIn: SignInResource, setActive: SetActiveSignIn, code: string) {
+  const result = await signIn.attemptFirstFactor({ strategy: 'email_code', code });
+  if (result.status === 'complete' && setActive) {
+    await setActive({ session: result.createdSessionId });
+  }
+}
+
 export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'VerifyCode'>) {
   const { email, mode } = route.params;
   const isSignUp = mode === 'sign-up';
@@ -61,18 +80,9 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
 
     try {
       if (isSignUp) {
-        const result = await signUp!.attemptEmailAddressVerification({ code: trimmed });
-        if (result.status === 'complete' && setActiveSignUp) {
-          await setActiveSignUp({ session: result.createdSessionId });
-        }
+        await completeSignUp(signUp!, setActiveSignUp, trimmed);
       } else {
-        const result = await signIn!.attemptFirstFactor({
-          strategy: 'email_code',
-          code: trimmed,
-        });
-        if (result.status === 'complete' && setActiveSignIn) {
-          await setActiveSignIn({ session: result.createdSessionId });
-        }
+        await completeSignIn(signIn!, setActiveSignIn, trimmed);
       }
     } catch (err) {
       setGenericError(extractClerkError(err, 'Could not verify the code. Try again.'));

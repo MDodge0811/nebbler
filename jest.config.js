@@ -32,4 +32,6 @@ module.exports = {
     },
   },
   testMatch: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
+  testPathIgnorePatterns: ['/node_modules/', '/.claude/worktrees/'],
+  modulePathIgnorePatterns: ['/.claude/worktrees/'],
 };

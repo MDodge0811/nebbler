@@ -472,6 +472,31 @@ function GroupPickerSheet({
   );
 }
 
+// --- Dirty check ---
+
+export interface CreateCalendarDirtyState {
+  name: string;
+  type: 'private' | 'social';
+  selectedColor: string;
+  groupId: string | null;
+  showAsBusy: boolean;
+  description: string;
+}
+
+export function isCreateCalendarDirty(
+  state: CreateCalendarDirtyState,
+  defaultColor: string
+): boolean {
+  return (
+    state.name.trim() !== '' ||
+    state.type !== 'private' ||
+    state.selectedColor !== defaultColor ||
+    state.groupId !== null ||
+    !state.showAsBusy ||
+    state.description.trim() !== ''
+  );
+}
+
 // --- Screen ---
 
 export function CreateCalendarScreen() {
@@ -506,13 +531,10 @@ export function CreateCalendarScreen() {
     setSelectedColor(defaultColor);
   }, [defaultColor]);
 
-  const isDirty =
-    name.trim() !== '' ||
-    type !== 'private' ||
-    selectedColor !== defaultColor ||
-    groupId !== null ||
-    !showAsBusy ||
-    description.trim() !== '';
+  const isDirty = isCreateCalendarDirty(
+    { name, type, selectedColor, groupId, showAsBusy, description },
+    defaultColor
+  );
 
   const isValid = name.trim().length > 0 && ownerRole !== null;
 
