@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Launch the app on multiple iOS simulators against the SHARED local stack, so you
+# can sign each simulator into a DIFFERENT user and test them interacting (e.g.
+# user A creates a group event -> user B's app syncs the change).
+#
+# All instances share one backend: API :4000, PowerSync :8080, Metro :8081.
+# Each simulator is an isolated sandbox, so they each get their own local SQLite
+# and their own Clerk session — the same app build runs N times cleanly.
+#
+# Usage:
+#   ./bin/start                      # FIRST: build + run on one sim, starts Metro
+#   ./bin/start-users 2              # THEN (new terminal): add 2 more user sims
+#   ./bin/start-users "iPhone 16" "iPad (10th generation)"   # explicit devices
+#
+# Why two steps: `expo run:ios` builds and then stays attached to Metro, so it
+# can't be looped. This script reuses the artifact `bin/start` already built and
+# installs/launches it onto extra simulators via `simctl`, all pointing at the one
+# running Metro.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$APP_DIR"
+
+API_PORT=4000
+POWERSYNC_PORT=8080
+METRO_PORT=8081
+
+DEFAULT_DEVICES=("iPhone 16" "iPhone 16 Pro" "iPhone 15" "iPhone 15 Pro")
+
+BUNDLE_ID="$(node -p "require('./app.json').expo.ios.bundleIdentifier" 2>/dev/null || echo 'com.embodied.nebbler')"
+
+# --- resolve target device names -------------------------------------------------
+TARGETS=()
+if [[ $# -eq 0 ]]; then
+  TARGETS=("${DEFAULT_DEVICES[@]:0:2}")
+elif [[ $# -eq 1 && "$1" =~ ^[0-9]+$ ]]; then
+  N="$1"
+  TARGETS=("${DEFAULT_DEVICES[@]:0:$N}")
+else
+  TARGETS=("$@")
+fi
+
+# Look up a simulator UDID by exact device name (handles names with parens).
+udid_for() {
+  node -e '
+    const { execSync } = require("child_process");
+    const data = JSON.parse(execSync("xcrun simctl list devices available -j", { encoding: "utf8" }));
+    const name = process.argv[1];
+    for (const runtime of Object.keys(data.devices)) {
+      for (const d of data.devices[runtime]) {
+        if (d.name === name && d.isAvailable) { console.log(d.udid); process.exit(0); }
+      }
+    }
+    process.exit(1);
+  ' "$1" 2>/dev/null
+}
+
+# --- shared stack health (warn, not fatal) --------------------------------------
+warn=0
+curl -sf "http://localhost:$API_PORT/api/health" > /dev/null 2>&1 || { echo "WARN: API (:$API_PORT) is DOWN — start the shared stack: (cd ../nebbler-api && docker compose up -d)"; warn=1; }
+curl -sf "http://localhost:$POWERSYNC_PORT/probes/liveness" > /dev/null 2>&1 || { echo "WARN: PowerSync (:$POWERSYNC_PORT) is DOWN — start the shared stack."; warn=1; }
+[[ "$warn" -eq 1 ]] && echo ""
+
+# --- locate the build that ./bin/start produced ---------------------------------
+# Match by bundle id (not filename) and pick the most recently built one, so we
+# never grab an unrelated app from shared DerivedData.
+find_app() {
+  local search dirs candidates best="" best_mtime=0 app id m
+  dirs=("ios/build/Build/Products/Debug-iphonesimulator" "$HOME/Library/Developer/Xcode/DerivedData")
+  candidates="$(find "${dirs[@]}" -path '*Debug-iphonesimulator*' -maxdepth 6 -name '*.app' -type d 2>/dev/null || true)"
+  while IFS= read -r app; do
+    [[ -z "$app" ]] && continue
+    id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist" 2>/dev/null || true)"
+    [[ "$id" == "$BUNDLE_ID" ]] || continue
+    m="$(stat -f %m "$app" 2>/dev/null || echo 0)"
+    if (( m > best_mtime )); then best_mtime="$m"; best="$app"; fi
+  done <<< "$candidates"
+  echo "$best"
+}
+APP_PATH="$(find_app)"
+if [[ -z "$APP_PATH" ]]; then
+  echo "ERROR: No built .app for $BUNDLE_ID found. Build it once first:"
+  echo "  ./bin/start"
+  echo "then re-run ./bin/start-users in another terminal."
+  exit 1
+fi
+echo "Using build: $APP_PATH"
+echo "Bundle id:   $BUNDLE_ID"
+echo ""
+
+# --- ensure Metro is running on :8081 -------------------------------------------
+metro_up() { curl -sf "http://localhost:$METRO_PORT/status" 2>/dev/null | grep -q "packager-status:running"; }
+if ! metro_up; then
+  echo "Metro not detected on :$METRO_PORT — starting it in the background..."
+  nohup npx expo start --port "$METRO_PORT" > /tmp/nebbler-metro.log 2>&1 &
+  for _ in $(seq 1 60); do metro_up && break; sleep 1; done
+  metro_up || { echo "ERROR: Metro failed to start (see /tmp/nebbler-metro.log)"; exit 1; }
+fi
+
+# --- boot, install, launch each simulator ---------------------------------------
+open -a Simulator >/dev/null 2>&1 || true
+i=0
+for name in "${TARGETS[@]}"; do
+  udid="$(udid_for "$name" || true)"
+  if [[ -z "$udid" ]]; then
+    echo "SKIP: simulator '$name' not available (see: xcrun simctl list devices available)"
+    continue
+  fi
+  i=$((i + 1))
+  echo "[$i] $name ($udid)"
+  xcrun simctl boot "$udid" >/dev/null 2>&1 || true       # ok if already booted
+  xcrun simctl bootstatus "$udid" >/dev/null 2>&1 || true # wait until fully booted
+  xcrun simctl install "$udid" "$APP_PATH"
+  xcrun simctl launch "$udid" "$BUNDLE_ID" >/dev/null
+done
+
+echo ""
+if [[ "$i" -eq 0 ]]; then
+  echo "No simulators were launched. Pass explicit names, e.g.:"
+  echo "  ./bin/start-users \"iPhone 16\" \"iPhone 15\""
+  exit 1
+fi
+echo "Launched $i simulator(s) against the shared stack (API :$API_PORT, PowerSync :$POWERSYNC_PORT)."
+echo "Sign each simulator into a DIFFERENT user to test multi-user interaction."

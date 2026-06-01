@@ -8,8 +8,13 @@ set -euo pipefail
 # In main repo:   uses default ports (API=4000, PowerSync=8080, Expo=8081)
 #
 # Usage: ./bin/start [expo args...]
-#   ./bin/start              # prebuild (if needed) + run:ios
-#   ./bin/start --android    # prebuild (if needed) + run:android
+#   ./bin/start                      # prebuild (if needed) + run:ios
+#   ./bin/start --android            # prebuild (if needed) + run:android
+#   ./bin/start --device "iPhone 16" # target a specific simulator (passed to expo)
+#
+# To drive several users at once, run ./bin/start once (builds + starts Metro),
+# then ./bin/start-users N in another terminal to launch N more user simulators
+# against the same shared backend.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(dirname "$SCRIPT_DIR")"
