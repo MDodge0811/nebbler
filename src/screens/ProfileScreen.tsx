@@ -28,6 +28,46 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
+type AvatarCardProps = {
+  profile: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    avatar_color: string | null;
+  };
+  name: string;
+  email: string | null | undefined;
+  expanded: boolean;
+  onToggle: () => void;
+  onColorChange: (hex: string) => Promise<void>;
+};
+
+function AvatarCard({ profile, name, email, expanded, onToggle, onColorChange }: AvatarCardProps) {
+  return (
+    <View style={styles.card}>
+      <Pressable style={styles.avatarRow} onPress={onToggle}>
+        <AvatarCircle user={profile} size={56} />
+        <View style={styles.avatarMeta}>
+          <Text style={styles.avatarName}>{name}</Text>
+          {email ? <Text style={styles.avatarEmail}>{email}</Text> : null}
+        </View>
+        <Text style={styles.chevron}>{expanded ? '▾' : '▸'}</Text>
+      </Pressable>
+      {expanded && (
+        <>
+          <View style={styles.divider} />
+          <ColorSwatchGrid
+            value={profile.avatar_color ?? '#00DB74'}
+            onChange={(hex) => {
+              void onColorChange(hex);
+            }}
+          />
+        </>
+      )}
+    </View>
+  );
+}
+
 export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
   const { user: me } = useCurrentUser();
@@ -89,27 +129,14 @@ export function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
-        <Pressable style={styles.avatarRow} onPress={toggleExpanded}>
-          <AvatarCircle user={profile} size={56} />
-          <View style={styles.avatarMeta}>
-            <Text style={styles.avatarName}>{name}</Text>
-            {authUser?.email ? <Text style={styles.avatarEmail}>{authUser.email}</Text> : null}
-          </View>
-          <Text style={styles.chevron}>{expanded ? '▾' : '▸'}</Text>
-        </Pressable>
-        {expanded && (
-          <>
-            <View style={styles.divider} />
-            <ColorSwatchGrid
-              value={profile.avatar_color ?? '#00DB74'}
-              onChange={(hex) => {
-                void handleColorChange(hex);
-              }}
-            />
-          </>
-        )}
-      </View>
+      <AvatarCard
+        profile={profile}
+        name={name}
+        email={authUser?.email}
+        expanded={expanded}
+        onToggle={toggleExpanded}
+        onColorChange={handleColorChange}
+      />
 
       <Pressable style={styles.card} onPress={handleConnectionsRowTap}>
         <View style={styles.row}>
