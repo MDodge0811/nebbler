@@ -119,6 +119,7 @@ export function EventDetailScreen() {
       }, 100);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [event, isEditing, navigation]);
 
   // --- Edit mode helpers ---

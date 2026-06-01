@@ -81,6 +81,7 @@ export function SyncStatusIndicator({
     } else {
       pulseAnim.setValue(1);
     }
+    return undefined;
   }, [syncStatus.state, pulseAnim]);
 
   if (compact) {
