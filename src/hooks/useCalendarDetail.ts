@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@powersync/react';
-import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useEffect, useMemo, useState } from 'react';
+
 import type { Calendar, Event, User } from '@database/schema';
+import { useCurrentUser } from '@hooks/useCurrentUser';
 
 interface MembershipJoinRow {
   id: string;

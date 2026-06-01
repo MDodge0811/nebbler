@@ -1,14 +1,11 @@
+import { useSignIn, useSSO } from '@clerk/clerk-expo';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { useSignIn, useSSO } from '@clerk/clerk-expo';
-import * as WebBrowser from 'expo-web-browser';
-import { extractClerkError } from '@utils/clerkError';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
 import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
-import { Input, InputField } from '@/components/ui/input';
 import {
   FormControl,
   FormControlLabel,
@@ -18,7 +15,11 @@ import {
   FormControlHelper,
   FormControlHelperText,
 } from '@/components/ui/form-control';
+import { Input, InputField } from '@/components/ui/input';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import type { AuthStackScreenProps } from '@navigation/types';
+import { extractClerkError } from '@utils/clerkError';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const scrollContentStyle = tva({ base: 'flex-grow justify-center p-6' });

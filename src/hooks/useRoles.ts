@@ -1,4 +1,5 @@
 import { useQuery } from '@powersync/react';
+
 import type { Role } from '@database/schema';
 
 /**

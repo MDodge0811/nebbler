@@ -1,7 +1,8 @@
-import { PowerSyncDatabase } from '@powersync/react-native';
 import { OPSqliteOpenFactory } from '@powersync/op-sqlite';
-import { AppSchema } from './schema';
+import { PowerSyncDatabase } from '@powersync/react-native';
+
 import { PowerSyncConnector } from './connector';
+import { AppSchema } from './schema';
 
 const DATABASE_NAME = 'nebbler.sqlite';
 

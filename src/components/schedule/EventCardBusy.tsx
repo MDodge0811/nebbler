@@ -1,13 +1,14 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
+import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { getCalendarColor } from '@utils/calendarColor';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
+import { getCalendarColor } from '@utils/calendarColor';
 
 const cardStyle = tva({
   base: 'mx-4 mb-3 overflow-hidden rounded-xl border-[0.5px] border-outline-200 shadow-sm',

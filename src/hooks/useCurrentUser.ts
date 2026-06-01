@@ -1,6 +1,7 @@
 import { useQuery } from '@powersync/react';
-import { useAuth } from '@hooks/useAuth';
+
 import type { User as DbUser } from '@database/schema';
+import { useAuth } from '@hooks/useAuth';
 
 /**
  * Queries the local PowerSync users table for the authenticated user's profile.

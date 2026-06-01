@@ -1,11 +1,13 @@
 import { type ReactNode } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+
 import { HStack } from '@/components/ui/hstack';
-import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
-import { EditableGroupName } from './EditableGroupName';
+import { Text } from '@/components/ui/text';
 import { calendarsUIColors } from '@constants/calendarsUI';
+
+import { EditableGroupName } from './EditableGroupName';
 
 function TrashIcon() {
   return (

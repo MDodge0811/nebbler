@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
 import { useQuery, usePowerSync } from '@powersync/react';
-import type { Event } from '@database/schema';
+import { useMemo } from 'react';
+
 import { calendarColors } from '@constants/calendarColors';
+import type { Event } from '@database/schema';
 
 /**
  * Reactive query for events overlapping a date range.

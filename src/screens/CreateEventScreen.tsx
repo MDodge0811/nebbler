@@ -1,3 +1,6 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useNavigation } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -10,21 +13,19 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { Text } from '@/components/ui/text';
+import { ZodError } from 'zod';
+
 import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
 import { Pressable } from '@/components/ui/pressable';
-import { useCurrentUser } from '@hooks/useCurrentUser';
-import { useEventMutations } from '@hooks/useCalendarEvents';
-import { useWritableCalendars, type WritableCalendar } from '@hooks/useWritableCalendars';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import { CalendarPickerSheet } from '@components/CalendarPickerSheet';
 import { CreateEventSchema } from '@database/schemas';
-import { formatDateShort, formatTime } from '@utils/formatTime';
+import { useEventMutations } from '@hooks/useCalendarEvents';
+import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useWritableCalendars, type WritableCalendar } from '@hooks/useWritableCalendars';
 import { getCalendarColor } from '@utils/calendarColor';
-import { ZodError } from 'zod';
+import { formatDateShort, formatTime } from '@utils/formatTime';
 
 // --- Styles ---
 

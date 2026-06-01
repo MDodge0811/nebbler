@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react-native';
-import { EventCardBusy } from '../EventCardBusy';
+
 import type { FeedEvent } from '@hooks/useScheduleFeed';
+
+import { EventCardBusy } from '../EventCardBusy';
 
 function makeFeedEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
   return {

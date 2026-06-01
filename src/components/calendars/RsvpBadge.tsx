@@ -1,4 +1,5 @@
 import { StyleSheet, Text as RNText, View } from 'react-native';
+
 import { calendarsUIColors } from '@constants/calendarsUI';
 
 export type RsvpStatus = 'going' | 'maybe' | 'not_going';

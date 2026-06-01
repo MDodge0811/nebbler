@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react-native';
+
 import { buildSections, isEmptySentinel, useScheduleFeed } from '../useScheduleFeed';
 import type { FeedEvent, EmptySentinel } from '../useScheduleFeed';
 

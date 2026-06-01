@@ -1,7 +1,8 @@
 import { render, fireEvent } from '@testing-library/react-native';
-import { EventRow } from '../EventRow';
 
 import type { Event } from '@database/schema';
+
+import { EventRow } from '../EventRow';
 
 const ev: Event = {
   id: 'e1',

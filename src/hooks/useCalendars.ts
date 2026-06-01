@@ -1,4 +1,5 @@
 import { useQuery, usePowerSync } from '@powersync/react';
+
 import type { Calendar, CalendarMember } from '@database/schema';
 
 /**

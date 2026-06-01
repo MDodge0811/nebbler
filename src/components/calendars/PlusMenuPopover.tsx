@@ -1,10 +1,11 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import React from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { Text } from '@/components/ui/text';
-import { Pressable } from '@/components/ui/pressable';
+
 import { HStack } from '@/components/ui/hstack';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { calendarsUIColors } from '@constants/calendarsUI';
 
 const menuItemStyle = tva({ base: 'text-[14px] font-medium text-typography-900' });

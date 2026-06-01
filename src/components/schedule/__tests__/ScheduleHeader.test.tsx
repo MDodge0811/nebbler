@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
-import { ScheduleHeader } from '../ScheduleHeader';
+
 import { useScheduleStore } from '@stores/useScheduleStore';
+
+import { ScheduleHeader } from '../ScheduleHeader';
 
 const mockDispatch = jest.fn();
 

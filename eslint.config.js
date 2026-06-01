@@ -5,6 +5,7 @@ const reactPlugin = require('eslint-plugin-react');
 const reactHooksPlugin = require('eslint-plugin-react-hooks');
 const reactNativePlugin = require('eslint-plugin-react-native');
 const prettierPlugin = require('eslint-plugin-prettier');
+const importX = require('eslint-plugin-import-x');
 
 const compat = new FlatCompat({ baseDirectory: __dirname });
 
@@ -57,8 +58,14 @@ module.exports = tseslint.config(
       'react-hooks': reactHooksPlugin,
       'react-native': reactNativePlugin,
       prettier: prettierPlugin,
+      'import-x': importX,
     },
-    settings: { react: { version: 'detect' } },
+    settings: {
+      react: { version: 'detect' },
+      'import-x/resolver': {
+        typescript: { project: './tsconfig.json' },
+      },
+    },
     rules: {
       // --- existing rules (preserved) ---
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
@@ -103,6 +110,17 @@ module.exports = tseslint.config(
       '@typescript-eslint/no-unnecessary-type-assertion': 'error',
       '@typescript-eslint/prefer-nullish-coalescing': 'error',
       '@typescript-eslint/prefer-optional-chain': 'error',
+      // --- Tier 3b: import cycle and order ---
+      'import-x/no-cycle': ['error', { maxDepth: Infinity }],
+      'import-x/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+          pathGroups: [{ pattern: '@/**', group: 'internal' }],
+          'newlines-between': 'always',
+          alphabetize: { order: 'asc', caseInsensitive: true },
+        },
+      ],
     },
   },
   {

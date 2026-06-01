@@ -1,6 +1,8 @@
 import { render, fireEvent } from '@testing-library/react-native';
-import { MonthGrid } from '../MonthGrid';
+
 import { useScheduleStore } from '@stores/useScheduleStore';
+
+import { MonthGrid } from '../MonthGrid';
 
 // The store initializes "today" at module load
 const storeToday = useScheduleStore.getState().today;

@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react-native';
+
 import { useCurrentUser } from '@hooks/useCurrentUser';
 
 const mockUseAuth = jest.fn();

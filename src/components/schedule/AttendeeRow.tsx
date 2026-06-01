@@ -1,6 +1,7 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { Text } from '@/components/ui/text';
 import { getAvatarColor, getInitials } from '@utils/avatarColor';
 

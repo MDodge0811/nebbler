@@ -1,4 +1,5 @@
 import { useQuery, usePowerSync } from '@powersync/react';
+
 import type { EventResponse } from '@database/schema';
 
 /**

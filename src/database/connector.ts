@@ -4,6 +4,7 @@ import {
   type PowerSyncBackendConnector,
   UpdateType,
 } from '@powersync/react-native';
+
 import { powersyncConfig } from '@constants/config';
 import { FetchCredentialsResponseSchema } from '@database/schemas';
 

@@ -1,5 +1,6 @@
 import { render, fireEvent } from '@testing-library/react-native';
 import { Switch } from 'react-native';
+
 import { ToggleRow } from '../ToggleRow';
 
 describe('ToggleRow', () => {

@@ -1,7 +1,8 @@
+import { render, act } from '@testing-library/react-native';
 import React from 'react';
 import type { ForwardedRef } from 'react';
-import { render, act } from '@testing-library/react-native';
 import type { ViewToken } from 'react-native';
+
 import { useScheduleStore } from '@stores/useScheduleStore';
 
 // ---- Captured refs (set by mock render callbacks) ----

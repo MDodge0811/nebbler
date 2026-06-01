@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+
 import { getMonthStart, getMonthOffset, getMonthGrid, type MonthGrid } from '@utils/monthUtils';
 
 export const BUFFER_MONTHS = 6;

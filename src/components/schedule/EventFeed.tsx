@@ -1,15 +1,16 @@
+import { type BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useCallback, useRef, forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { SectionList, RefreshControl, type ViewToken } from 'react-native';
-import { type BottomSheetModal } from '@gorhom/bottom-sheet';
-import { DateSectionHeader } from '@components/schedule/DateSectionHeader';
-import { EventCard } from '@components/schedule/EventCard';
-import { EmptyDayCard } from '@components/schedule/EmptyDayCard';
+
 import { AllDayEventRow } from '@components/schedule/AllDayEventRow';
+import { DateSectionHeader } from '@components/schedule/DateSectionHeader';
+import { EmptyDayCard } from '@components/schedule/EmptyDayCard';
+import { EventCard } from '@components/schedule/EventCard';
 import { EventMeatballSheet } from '@components/schedule/EventMeatballSheet';
 import { isEmptySentinel } from '@hooks/useScheduleFeed';
-import { isAllDayEvent } from '@utils/eventHelpers';
-import { useScheduleStore } from '@stores/useScheduleStore';
 import type { DateSection, FeedEvent, EmptySentinel } from '@hooks/useScheduleFeed';
+import { useScheduleStore } from '@stores/useScheduleStore';
+import { isAllDayEvent } from '@utils/eventHelpers';
 
 const AUTO_COMPACT_THRESHOLD = 5;
 

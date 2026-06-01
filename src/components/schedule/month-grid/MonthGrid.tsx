@@ -6,10 +6,12 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
+
 import { WeekStripDayCell } from '@components/schedule/week-strip/WeekStripDayCell';
-import { useMonthPages, type MonthPage } from './useMonthPages';
-import { isDateInMonth, getMonthStart } from '@utils/monthUtils';
 import { useScheduleStore } from '@stores/useScheduleStore';
+import { isDateInMonth, getMonthStart } from '@utils/monthUtils';
+
+import { useMonthPages, type MonthPage } from './useMonthPages';
 
 export const ROW_HEIGHT = 40;
 

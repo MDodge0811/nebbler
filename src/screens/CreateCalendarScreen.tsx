@@ -1,3 +1,8 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -11,23 +16,19 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { ZodError } from 'zod';
+
+import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { Pressable } from '@/components/ui/pressable';
-import { useCurrentUser } from '@hooks/useCurrentUser';
-import { useCalendars, useCalendarMutations } from '@hooks/useCalendars';
-import { useCalendarGroups, useCalendarGroupMutations } from '@hooks/useCalendarGroups';
-import { useOwnerRole } from '@hooks/useRoles';
-import { CreateCalendarSchema } from '@database/schemas';
 import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
-import { ZodError } from 'zod';
 import type { CalendarGroup } from '@database/schema';
+import { CreateCalendarSchema } from '@database/schemas';
+import { useCalendarGroups, useCalendarGroupMutations } from '@hooks/useCalendarGroups';
+import { useCalendars, useCalendarMutations } from '@hooks/useCalendars';
+import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useOwnerRole } from '@hooks/useRoles';
 import type { RootStackParamList } from '@navigation/types';
 
 // --- SVG Icons (matching mockup viewBox=22) ---

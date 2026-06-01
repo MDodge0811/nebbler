@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react-native';
+
 import { useMonthPages, BUFFER_MONTHS } from '../useMonthPages';
 
 describe('useMonthPages', () => {

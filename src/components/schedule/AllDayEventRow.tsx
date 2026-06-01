@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
+
 import { AllDayPill } from '@components/schedule/AllDayPill';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
 

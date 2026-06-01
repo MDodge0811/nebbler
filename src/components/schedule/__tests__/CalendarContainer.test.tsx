@@ -1,6 +1,8 @@
 import { render, act } from '@testing-library/react-native';
-import { CalendarContainer } from '../CalendarContainer';
+
 import { useScheduleStore } from '@stores/useScheduleStore';
+
+import { CalendarContainer } from '../CalendarContainer';
 
 const storeToday = useScheduleStore.getState().today;
 

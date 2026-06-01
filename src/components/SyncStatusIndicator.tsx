@@ -1,12 +1,13 @@
-import { Animated, Easing } from 'react-native';
-import { useRef, useEffect } from 'react';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useRef, useEffect } from 'react';
+import { Animated, Easing } from 'react-native';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
+import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { useSyncStatus, type SyncState } from '@hooks/useSyncStatus';
 import { syncDotColors } from '@constants/theme';
+import { useSyncStatus, type SyncState } from '@hooks/useSyncStatus';
 
 /**
  * Configuration for each sync state

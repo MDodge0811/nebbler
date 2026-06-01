@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+
 import { Text } from '@/components/ui/text';
 import { getCalendarColor } from '@utils/calendarColor';
 

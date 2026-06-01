@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
+
 import { UserAvatar } from '../UserAvatar';
 
 jest.mock('@powersync/react', () => ({

@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
 import { useQuery } from '@powersync/react';
+import { useMemo } from 'react';
+
+import type { CalendarGroupMembership } from '@database/schema';
 import { useCalendarGroups } from '@hooks/useCalendarGroups';
 import { useCalendars } from '@hooks/useCalendars';
 import { useCurrentUser } from '@hooks/useCurrentUser';
-import type { CalendarGroupMembership } from '@database/schema';
 
 /**
  * Composite hook aggregating all data needed for CalendarsListScreen.

@@ -1,6 +1,7 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { Text } from '@/components/ui/text';
 import { calendarsUIColors } from '@constants/calendarsUI';
 

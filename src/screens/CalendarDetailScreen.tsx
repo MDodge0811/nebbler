@@ -1,3 +1,6 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Pressable as RNPressable,
@@ -7,20 +10,18 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import Svg, { Path } from 'react-native-svg';
-import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
-import { useCalendarDetail } from '@hooks/useCalendarDetail';
-import { useCalendarMutations } from '@hooks/useCalendars';
-import { UpdateCalendarSchema, type UpdateCalendarFormData } from '@database/schemas';
 import { ZodError } from 'zod';
+
 import { CalendarTypeBadge } from '@components/calendars/CalendarTypeBadge';
 import { DeleteCalendarConfirmModal } from '@components/calendars/DeleteCalendarConfirmModal';
 import { EventRow } from '@components/calendars/EventRow';
 import { MemberRow } from '@components/calendars/MemberRow';
 import { ToggleRow } from '@components/calendars/ToggleRow';
+import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
+import { UpdateCalendarSchema, type UpdateCalendarFormData } from '@database/schemas';
+import { useCalendarDetail } from '@hooks/useCalendarDetail';
+import { useCalendarMutations } from '@hooks/useCalendars';
 import type { RootStackParamList } from '@navigation/types';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });

@@ -1,6 +1,8 @@
 import { renderHook } from '@testing-library/react-native';
-import { useCalendarEvents, useMarkedDates } from '../useCalendarEvents';
+
 import type { Event } from '@database/schema';
+
+import { useCalendarEvents, useMarkedDates } from '../useCalendarEvents';
 
 const mockUseQuery = jest.fn().mockReturnValue({ data: [], isLoading: false, error: undefined });
 

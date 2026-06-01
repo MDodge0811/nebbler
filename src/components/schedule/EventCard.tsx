@@ -1,8 +1,9 @@
 import { memo, type ReactNode } from 'react';
-import { EventCardFull } from '@components/schedule/EventCardFull';
-import { EventCardCompact } from '@components/schedule/EventCardCompact';
-import { EventCardBusy } from '@components/schedule/EventCardBusy';
+
 import type { Attendee } from '@components/schedule/AttendeeRow';
+import { EventCardBusy } from '@components/schedule/EventCardBusy';
+import { EventCardCompact } from '@components/schedule/EventCardCompact';
+import { EventCardFull } from '@components/schedule/EventCardFull';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
 
 export type CardDisplayMode = 'full' | 'compact' | 'busy';

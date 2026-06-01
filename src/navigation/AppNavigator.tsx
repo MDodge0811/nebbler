@@ -1,31 +1,32 @@
-import { useEffect } from 'react';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import {
   createBottomTabNavigator,
   type BottomTabNavigationProp,
 } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useEffect } from 'react';
 
-import { ScheduleScreen } from '@screens/ScheduleScreen';
-import { CalendarsScreen } from '@screens/CalendarsScreen';
-import { PeopleScreen } from '@screens/PeopleScreen';
-import { SettingsScreen } from '@screens/SettingsScreen';
-import { ProfileScreen } from '@screens/ProfileScreen';
-import { CreateEventScreen } from '@screens/CreateEventScreen';
-import { EventDetailScreen } from '@screens/EventDetailScreen';
-import { CalendarDetailScreen } from '@screens/CalendarDetailScreen';
-import { CreateCalendarScreen } from '@screens/CreateCalendarScreen';
-import { DrawerContent } from '@components/schedule/DrawerContent';
-import { CustomTabBar } from '@components/schedule/CustomTabBar';
-import { AuthNavigator } from './AuthNavigator';
-import { navigationTheme } from '@constants/theme';
-import { useAuth } from '@hooks/useAuth';
 import { Box } from '@/components/ui/box';
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
+import { CustomTabBar } from '@components/schedule/CustomTabBar';
+import { DrawerContent } from '@components/schedule/DrawerContent';
+import { navigationTheme } from '@constants/theme';
+import { useAuth } from '@hooks/useAuth';
+import { CalendarDetailScreen } from '@screens/CalendarDetailScreen';
+import { CalendarsScreen } from '@screens/CalendarsScreen';
+import { CreateCalendarScreen } from '@screens/CreateCalendarScreen';
+import { CreateEventScreen } from '@screens/CreateEventScreen';
+import { EventDetailScreen } from '@screens/EventDetailScreen';
+import { PeopleScreen } from '@screens/PeopleScreen';
+import { ProfileScreen } from '@screens/ProfileScreen';
+import { ScheduleScreen } from '@screens/ScheduleScreen';
+import { SettingsScreen } from '@screens/SettingsScreen';
+
+import { AuthNavigator } from './AuthNavigator';
 import type { RootStackParamList, MainTabParamList, DrawerParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

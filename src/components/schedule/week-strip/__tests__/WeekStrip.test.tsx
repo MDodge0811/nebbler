@@ -1,6 +1,8 @@
 import { render, fireEvent, act } from '@testing-library/react-native';
-import { WeekStrip } from '../WeekStrip';
+
 import { useScheduleStore } from '@stores/useScheduleStore';
+
+import { WeekStrip } from '../WeekStrip';
 
 describe('WeekStrip', () => {
   beforeEach(() => {

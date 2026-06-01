@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react-native';
-import { AllDayEventRow } from '../AllDayEventRow';
+
 import type { FeedEvent } from '@hooks/useScheduleFeed';
+
+import { AllDayEventRow } from '../AllDayEventRow';
 
 function makeFeedEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
   return {

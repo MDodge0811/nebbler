@@ -1,7 +1,8 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { getAvatarColor, getInitials } from '@utils/avatarColor';
 
 const containerStyle = tva({ base: 'items-center justify-center overflow-hidden' });

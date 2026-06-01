@@ -1,9 +1,10 @@
-import { memo } from 'react';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { memo } from 'react';
+import Svg, { Rect, Path } from 'react-native-svg';
+
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import Svg, { Rect, Path } from 'react-native-svg';
 
 const containerStyle = tva({ base: 'mx-4 mb-3 items-center justify-center rounded-xl py-10' });
 const titleStyle = tva({ base: 'text-base font-bold text-typography-400' });

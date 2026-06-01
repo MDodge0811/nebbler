@@ -1,6 +1,8 @@
 import { render, fireEvent } from '@testing-library/react-native';
-import { WeekStripDayCell } from '../WeekStripDayCell';
+
 import { calendarColors } from '@constants/calendarColors';
+
+import { WeekStripDayCell } from '../WeekStripDayCell';
 
 const defaultProps = {
   dateString: '2026-02-24',

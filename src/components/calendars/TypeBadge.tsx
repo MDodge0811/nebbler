@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+
 import { Text } from '@/components/ui/text';
 
 const BADGE_STYLES: Record<string, { bg: string; color: string; label: string }> = {

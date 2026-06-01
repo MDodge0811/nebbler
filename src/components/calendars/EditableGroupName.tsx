@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput } from 'react-native';
+
 import { calendarsUIColors } from '@constants/calendarsUI';
 
 interface EditableGroupNameProps {
