@@ -86,6 +86,11 @@ module.exports = tseslint.config(
       'prettier/prettier': 'error',
       'no-console': 'off',
       'no-unused-vars': 'off',
+      // --- Complexity probe (non-blocking) ---
+      // Cyclomatic-complexity warning to surface gnarly functions without
+      // failing CI. Run as 'warn' to map the landscape, then ratchet `max`
+      // down and promote to 'error' once existing offenders are refactored.
+      complexity: ['warn', { max: 10 }],
       // --- Tier 2a: async safety (NEW) ---
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
