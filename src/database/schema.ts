@@ -18,6 +18,7 @@ const users = new Table({
   first_name: column.text,
   last_name: column.text,
   email: column.text,
+  avatar_color: column.text,
   display_name: column.text,
   primary_calendar_group_id: column.text,
   // password_hash and deleted_at are excluded — never synced to clients
@@ -111,6 +112,16 @@ const eventResponses = new Table({
   updated_at: column.text,
 });
 
+const userConnections = new Table({
+  requester_id: column.text,
+  addressee_id: column.text,
+  status: column.text,
+  blocker_id: column.text,
+  deleted_at: column.text,
+  inserted_at: column.text,
+  updated_at: column.text,
+});
+
 /**
  * AppSchema defines all synced tables
  * Table names must match the sync rules defined in PowerSync dashboard
@@ -125,6 +136,7 @@ export const AppSchema = new Schema({
   calendar_group_memberships: calendarGroupMemberships,
   events: events,
   event_responses: eventResponses,
+  user_connections: userConnections,
 });
 
 /**
@@ -141,3 +153,6 @@ export type CalendarGroupUser = Database['calendar_group_users'];
 export type CalendarGroupMembership = Database['calendar_group_memberships'];
 export type Event = Database['events'];
 export type EventResponse = Database['event_responses'];
+
+// UserConnection type is sourced from Zod schema (single source of truth)
+export type { UserConnection, ConnectionStatus } from '@database/schemas/userConnectionSchemas';

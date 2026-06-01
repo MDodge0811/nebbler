@@ -37,7 +37,7 @@ export function clearClerkTokenGetter(): void {
   clerkGetToken = null;
 }
 
-async function getApiToken(): Promise<string | null> {
+export async function getApiToken(): Promise<string | null> {
   if (!clerkGetToken) return null;
   return clerkGetToken();
 }
