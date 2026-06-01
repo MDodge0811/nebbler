@@ -1,4 +1,5 @@
 import { StyleSheet, Text as RNText, View } from 'react-native';
+
 import { calendarsUIColors } from '@constants/calendarsUI';
 
 export type RsvpStatus = 'going' | 'maybe' | 'not_going';
@@ -31,7 +32,6 @@ interface RsvpBadgeProps {
 export function RsvpBadge({ status }: RsvpBadgeProps) {
   if (!status) return null;
   const c = CONFIGS[status];
-  if (!c) return null;
   return (
     <View style={[styles.badge, { backgroundColor: c.bg, borderColor: c.border }]}>
       <RNText style={[styles.label, { color: c.color }]}>{c.label}</RNText>

@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
 import { useQuery, usePowerSync } from '@powersync/react';
-import type { Event } from '@database/schema';
+import { useMemo } from 'react';
+
 import { calendarColors } from '@constants/calendarColors';
+import type { Event } from '@database/schema';
 
 /**
  * Reactive query for events overlapping a date range.
@@ -107,7 +108,8 @@ export function useEventMutations() {
       ]
     );
 
-    return result.rows?._array[0]?.id as string;
+    const row = (result.rows?._array as { id: string }[] | undefined)?.[0];
+    return row?.id ?? '';
   };
 
   const updateEvent = async (id: string, updates: Partial<Omit<Event, 'id'>>) => {

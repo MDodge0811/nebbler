@@ -1,4 +1,6 @@
 import { render, fireEvent } from '@testing-library/react-native';
+import { Switch } from 'react-native';
+
 import { ToggleRow } from '../ToggleRow';
 
 describe('ToggleRow', () => {
@@ -7,7 +9,6 @@ describe('ToggleRow', () => {
     const { UNSAFE_getByType } = render(
       <ToggleRow checked={false} onChange={onChange} label="RSVP Enabled" description="d" />
     );
-    const { Switch } = require('react-native');
     fireEvent(UNSAFE_getByType(Switch), 'valueChange', true);
     expect(onChange).toHaveBeenCalledWith(true);
   });

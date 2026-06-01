@@ -1,3 +1,4 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useCallback, useEffect, useRef } from 'react';
 import {
   FlatList,
@@ -6,12 +7,13 @@ import {
   type NativeScrollEvent,
 } from 'react-native';
 import { View } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { Box } from '@/components/ui/box';
-import { WeekStripDayCell } from './WeekStripDayCell';
-import { useWeekPages, type WeekPage } from './useWeekPages';
-import { getWeekMonth } from '@utils/weekUtils';
 import { useScheduleStore } from '@stores/useScheduleStore';
+import { getWeekMonth } from '@utils/weekUtils';
+
+import { useWeekPages, type WeekPage } from './useWeekPages';
+import { WeekStripDayCell } from './WeekStripDayCell';
 
 const containerStyle = tva({ base: 'bg-background-0' });
 

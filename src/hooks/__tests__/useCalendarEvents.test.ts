@@ -1,11 +1,13 @@
 import { renderHook } from '@testing-library/react-native';
-import { useCalendarEvents, useMarkedDates } from '../useCalendarEvents';
+
 import type { Event } from '@database/schema';
+
+import { useCalendarEvents, useMarkedDates } from '../useCalendarEvents';
 
 const mockUseQuery = jest.fn().mockReturnValue({ data: [], isLoading: false, error: undefined });
 
 jest.mock('@powersync/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+  useQuery: (...args: unknown[]): unknown => mockUseQuery(...args),
 }));
 
 function makeEvent(overrides: Partial<Event> = {}): Event {
@@ -41,7 +43,7 @@ describe('useCalendarEvents', () => {
   it('includes deleted_at IS NULL filter in the SQL', () => {
     renderHook(() => useCalendarEvents('2026-02-01', '2026-02-28'));
 
-    const sql = mockUseQuery.mock.calls[0][0] as string;
+    const sql = (mockUseQuery.mock.calls[0] as [string])[0];
     expect(sql).toContain('deleted_at IS NULL');
   });
 });

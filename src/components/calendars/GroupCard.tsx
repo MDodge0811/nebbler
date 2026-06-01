@@ -1,12 +1,14 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { type ReactNode } from 'react';
 import { LayoutAnimation, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { HStack } from '@/components/ui/hstack';
-import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
-import { CalendarCheckbox } from './CalendarCheckbox';
+import { Text } from '@/components/ui/text';
 import { calendarsUIColors } from '@constants/calendarsUI';
+
+import { CalendarCheckbox } from './CalendarCheckbox';
 
 const primaryNameStyle = tva({ base: 'text-[15px] font-bold text-typography-900' });
 const standardNameStyle = tva({ base: 'flex-1 text-[15px] font-semibold text-typography-900' });

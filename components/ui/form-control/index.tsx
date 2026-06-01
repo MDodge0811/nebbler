@@ -69,17 +69,6 @@ const formControlLabelTextStyle = tva({
   },
 });
 
-const formControlLabelAstrickStyle = tva({
-  base: 'text-error-500 font-medium',
-  parentVariants: {
-    size: {
-      sm: 'text-sm',
-      md: 'text-base',
-      lg: 'text-lg',
-    },
-  },
-});
-
 const formControlHelperStyle = tva({
   base: 'flex-row items-center justify-start',
 });

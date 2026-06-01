@@ -1,6 +1,8 @@
+import { getApiToken } from '@database/index';
 import { searchUsers, RateLimitedError } from '@utils/userSearch';
 
-// Mock the database module so getApiToken is controllable
+// Mock the database module so getApiToken is controllable. jest.mock is hoisted
+// above these imports, so getApiToken resolves to the mock at runtime.
 jest.mock('@database/index', () => ({
   getApiToken: jest.fn(),
 }));
@@ -11,8 +13,6 @@ jest.mock('expo-constants', () => ({
     expoConfig: { extra: { apiPort: '4000', powersyncPort: '8080' } },
   },
 }));
-
-import { getApiToken } from '@database/index';
 
 const mockGetApiToken = getApiToken as jest.MockedFunction<typeof getApiToken>;
 
@@ -47,7 +47,7 @@ describe('searchUsers', () => {
       ok: true,
       status: 200,
       json: jest.fn().mockResolvedValue([mockUser]),
-    } as unknown);
+    });
 
     const result = await searchUsers('alice');
     expect(result).toHaveLength(1);
@@ -55,7 +55,10 @@ describe('searchUsers', () => {
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/api/users/search?q=alice'),
       expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-token',
+        },
       })
     );
   });
@@ -65,7 +68,7 @@ describe('searchUsers', () => {
       ok: false,
       status: 429,
       json: jest.fn().mockResolvedValue({ retry_after_seconds: 30 }),
-    } as unknown);
+    });
 
     await expect(searchUsers('alice')).rejects.toThrow(RateLimitedError);
     await expect(searchUsers('alice')).rejects.toMatchObject({ retryAfterSeconds: 30 });
@@ -76,7 +79,7 @@ describe('searchUsers', () => {
       ok: false,
       status: 400,
       json: jest.fn().mockResolvedValue({ error: 'bad request' }),
-    } as unknown);
+    });
 
     await expect(searchUsers('al')).resolves.toEqual([]);
   });
@@ -86,7 +89,7 @@ describe('searchUsers', () => {
       ok: false,
       status: 500,
       json: jest.fn().mockResolvedValue({}),
-    } as unknown);
+    });
 
     await expect(searchUsers('alice')).rejects.toThrow(/500/);
   });

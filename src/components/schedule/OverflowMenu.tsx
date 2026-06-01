@@ -1,5 +1,6 @@
-import Svg, { Circle } from 'react-native-svg';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
+import Svg, { Circle } from 'react-native-svg';
+
 import { Pressable } from '@/components/ui/pressable';
 
 function MeatballIcon({ size = 24, color = '#666666' }: { size?: number; color?: string }) {

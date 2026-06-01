@@ -1,3 +1,6 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useNavigation } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -10,21 +13,19 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { Text } from '@/components/ui/text';
+import { ZodError } from 'zod';
+
 import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
 import { Pressable } from '@/components/ui/pressable';
-import { useCurrentUser } from '@hooks/useCurrentUser';
-import { useEventMutations } from '@hooks/useCalendarEvents';
-import { useWritableCalendars, type WritableCalendar } from '@hooks/useWritableCalendars';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import { CalendarPickerSheet } from '@components/CalendarPickerSheet';
 import { CreateEventSchema } from '@database/schemas';
-import { formatDateShort, formatTime } from '@utils/formatTime';
+import { useEventMutations } from '@hooks/useCalendarEvents';
+import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useWritableCalendars, type WritableCalendar } from '@hooks/useWritableCalendars';
 import { getCalendarColor } from '@utils/calendarColor';
-import { ZodError } from 'zod';
+import { formatDateShort, formatTime } from '@utils/formatTime';
 
 // --- Styles ---
 
@@ -103,11 +104,11 @@ export function CreateEventScreen() {
 
   // Default to first writable calendar when available
   const calendar =
-    writableCalendars.find((c) => c.id === selectedCalendarId) ?? writableCalendars[0];
+    writableCalendars.find((c) => c.id === selectedCalendarId) ?? writableCalendars.at(0);
 
   useEffect(() => {
     if (!selectedCalendarId && writableCalendars.length > 0) {
-      setSelectedCalendarId(writableCalendars[0].id);
+      setSelectedCalendarId(writableCalendars[0]!.id);
     }
   }, [selectedCalendarId, writableCalendars]);
 
@@ -155,9 +156,7 @@ export function CreateEventScreen() {
         const errors: Record<string, string> = {};
         err.issues.forEach((issue) => {
           const field = String(issue.path[0]);
-          if (!errors[field]) {
-            errors[field] = issue.message;
-          }
+          errors[field] ??= issue.message;
         });
         setFormErrors(errors);
       }
@@ -166,11 +165,12 @@ export function CreateEventScreen() {
 
     setIsSaving(true);
     try {
+      const trimmedDescription = description.trim();
       await createEvent({
         calendarId: calendar.id,
         createdByUserId: authUser.id,
         title: title.trim(),
-        description: description.trim() || undefined,
+        ...(trimmedDescription ? { description: trimmedDescription } : {}),
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
       });
@@ -243,7 +243,7 @@ export function CreateEventScreen() {
   );
 
   const endTimeError =
-    formErrors.endTime || (endTime <= startTime ? 'End time must be after start time' : undefined);
+    formErrors.endTime ?? (endTime <= startTime ? 'End time must be after start time' : undefined);
   const showEndError = !!formErrors.endTime;
 
   // Configure native header with Close and Save buttons
@@ -256,7 +256,13 @@ export function CreateEventScreen() {
         </RNPressable>
       ),
       headerRight: () => (
-        <RNPressable onPress={handleSave} disabled={!isValid || isSaving} hitSlop={8}>
+        <RNPressable
+          onPress={() => {
+            void handleSave();
+          }}
+          disabled={!isValid || isSaving}
+          hitSlop={8}
+        >
           <RNText
             style={{
               fontSize: 16,

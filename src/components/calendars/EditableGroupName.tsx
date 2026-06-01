@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput } from 'react-native';
+
 import { calendarsUIColors } from '@constants/calendarsUI';
 
 interface EditableGroupNameProps {
   value: string;
   onChangeText: (text: string) => void;
   onSubmit: () => void;
-  autoFocus?: boolean;
+  autoFocus?: boolean | undefined;
 }
 
 export function EditableGroupName({

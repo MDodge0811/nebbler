@@ -1,29 +1,30 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import Svg, { Path, Line } from 'react-native-svg';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path, Line } from 'react-native-svg';
+
 import { HStack } from '@/components/ui/hstack';
-import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
-import { GroupCard } from '@components/calendars/GroupCard';
+import { Text } from '@/components/ui/text';
+import { CalendarIcon } from '@components/calendars/CalendarIcon';
 import { CalendarRow } from '@components/calendars/CalendarRow';
-import { EditGroupCard } from '@components/calendars/EditGroupCard';
 import { DraggableCalendarRow } from '@components/calendars/DraggableCalendarRow';
 import { DropZone } from '@components/calendars/DropZone';
-import { CalendarIcon } from '@components/calendars/CalendarIcon';
-import { useDragStore } from '@stores/useDragStore';
 import { EditableGroupName } from '@components/calendars/EditableGroupName';
+import { EditGroupCard } from '@components/calendars/EditGroupCard';
+import { GroupCard } from '@components/calendars/GroupCard';
 import { PlusMenuPopover } from '@components/calendars/PlusMenuPopover';
-import { useCalendarsListData } from '@hooks/useCalendarsListData';
-import { useCalendarGroupMutations } from '@hooks/useCalendarGroups';
-import { useCalendarsDisplayStore } from '@stores/useCalendarsDisplayStore';
-import { useCurrentUser } from '@hooks/useCurrentUser';
 import { calendarsUIColors, UNGROUPED_DROP_ZONE_ID } from '@constants/calendarsUI';
-import { getCalendarColor } from '@utils/calendarColor';
+import { useCalendarGroupMutations } from '@hooks/useCalendarGroups';
+import { useCalendarsListData } from '@hooks/useCalendarsListData';
+import { useCurrentUser } from '@hooks/useCurrentUser';
 import type { RootStackParamList } from '@navigation/types';
+import { useCalendarsDisplayStore } from '@stores/useCalendarsDisplayStore';
+import { useDragStore } from '@stores/useDragStore';
+import { getCalendarColor } from '@utils/calendarColor';
 
 const titleStyle = tva({ base: 'text-[28px] font-bold text-typography-900' });
 const ungroupedTitleStyle = tva({ base: 'text-[15px] font-semibold text-typography-600' });
@@ -137,9 +138,10 @@ export function CalendarsScreen() {
   const handleNameBlur = useCallback(
     async (groupId: string, originalName: string) => {
       const edited = editedNames[groupId];
-      if (edited !== undefined && edited.trim() && edited.trim() !== originalName) {
+      const trimmed = edited?.trim();
+      if (trimmed && trimmed !== originalName) {
         try {
-          await updateGroup(groupId, { name: edited.trim() });
+          await updateGroup(groupId, { name: trimmed });
         } catch (e) {
           console.error('Failed to rename group:', e);
           Alert.alert('Error', 'Failed to rename group. Please try again.');
@@ -349,7 +351,9 @@ export function CalendarsScreen() {
             <EditableGroupName
               value={newGroupName}
               onChangeText={setNewGroupName}
-              onSubmit={handleSubmitNewGroup}
+              onSubmit={() => {
+                void handleSubmitNewGroup();
+              }}
               autoFocus
             />
           </View>

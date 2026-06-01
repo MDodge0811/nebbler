@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react-native';
+
 import { CalendarTypeBadge } from '../CalendarTypeBadge';
 
 describe('CalendarTypeBadge', () => {

@@ -1,22 +1,24 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import React, { useCallback } from 'react';
 import { StyleSheet, Vibration, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
-import { CalendarIcon } from './CalendarIcon';
-import { TypeBadge } from './TypeBadge';
-import { DragHandle } from './DragHandle';
-import { useDragStore } from '@stores/useDragStore';
-import { getCalendarColor } from '@utils/calendarColor';
 import { UNGROUPED_DROP_ZONE_ID } from '@constants/calendarsUI';
 import type { Calendar } from '@database/schema';
+import { useDragStore } from '@stores/useDragStore';
+import { getCalendarColor } from '@utils/calendarColor';
+
+import { CalendarIcon } from './CalendarIcon';
+import { DragHandle } from './DragHandle';
+import { TypeBadge } from './TypeBadge';
 
 const nameStyle = tva({ base: 'text-[15px] font-medium text-typography-900' });
 

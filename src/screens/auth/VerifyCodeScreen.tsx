@@ -1,13 +1,10 @@
+import { useSignIn, useSignUp } from '@clerk/clerk-expo';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { useSignIn, useSignUp } from '@clerk/clerk-expo';
-import { extractClerkError } from '@utils/clerkError';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
 import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
-import { Input, InputField } from '@/components/ui/input';
 import {
   FormControl,
   FormControlLabel,
@@ -15,7 +12,11 @@ import {
   FormControlError,
   FormControlErrorText,
 } from '@/components/ui/form-control';
+import { Input, InputField } from '@/components/ui/input';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import type { AuthStackScreenProps } from '@navigation/types';
+import { extractClerkError } from '@utils/clerkError';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const scrollContentStyle = tva({ base: 'flex-grow justify-center p-6' });
@@ -87,6 +88,7 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
     signInLoaded,
     signUp,
     signUpLoaded,
+    submitting,
   ]);
 
   return (
@@ -132,7 +134,12 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
               )}
             </FormControl>
 
-            <Button onPress={verify} isDisabled={submitting}>
+            <Button
+              onPress={() => {
+                void verify();
+              }}
+              isDisabled={submitting}
+            >
               {submitting && <ButtonSpinner />}
               <ButtonText>{submitting ? 'Verifying…' : 'Verify and continue'}</ButtonText>
             </Button>

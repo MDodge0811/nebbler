@@ -1,9 +1,10 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { getCalendarColor } from '@utils/calendarColor';
 
 const pillStyle = tva({ base: 'mr-2 flex-row items-center overflow-hidden rounded-lg' });

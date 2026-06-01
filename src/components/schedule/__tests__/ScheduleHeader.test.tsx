@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
-import { ScheduleHeader } from '../ScheduleHeader';
+
 import { useScheduleStore } from '@stores/useScheduleStore';
+
+import { ScheduleHeader } from '../ScheduleHeader';
 
 const mockDispatch = jest.fn();
 
@@ -14,6 +16,7 @@ jest.mock('@hooks/useAuth', () => ({
   }),
 }));
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-return -- jest.requireActual returns untyped any; spreading it makes the factory return any
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
   useNavigation: () => ({

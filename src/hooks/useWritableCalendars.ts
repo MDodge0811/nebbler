@@ -1,4 +1,5 @@
 import { useQuery } from '@powersync/react';
+
 import type { Calendar } from '@database/schema';
 
 export interface WritableCalendar extends Calendar {

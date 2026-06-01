@@ -1,10 +1,11 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { Pressable } from '@/components/ui/pressable';
-import { VStack } from '@/components/ui/vstack';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Box } from '@/components/ui/box';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const headerStyle = tva({ base: 'px-5 pb-4 border-b border-outline-200' });

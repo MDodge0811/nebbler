@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react-native';
+
 import { useCalendarsListData } from '../useCalendarsListData';
 
 const mockUseQuery = jest.fn();
@@ -15,7 +16,7 @@ let mockCalendarsReturn = {
 };
 
 jest.mock('@powersync/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+  useQuery: (...args: unknown[]): unknown => mockUseQuery(...args),
 }));
 
 jest.mock('@hooks/useCalendarGroups', () => ({
@@ -119,7 +120,7 @@ describe('useCalendarsListData', () => {
 
     const { result } = renderHook(() => useCalendarsListData());
     expect(result.current.ungroupedCalendars).toHaveLength(1);
-    expect(result.current.ungroupedCalendars[0].id).toBe('c2');
+    expect(result.current.ungroupedCalendars[0]!.id).toBe('c2');
   });
 
   it('returns safe defaults with empty data', () => {

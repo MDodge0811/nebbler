@@ -1,7 +1,9 @@
 import { StyleSheet, Text as RNText, View } from 'react-native';
+
 import { calendarsUIColors } from '@constants/calendarsUI';
-import { RoleBadge, type CalendarRole } from './RoleBadge';
 import type { CalendarDetailMember } from '@hooks/useCalendarDetail';
+
+import { RoleBadge } from './RoleBadge';
 
 interface MemberRowProps {
   member: CalendarDetailMember;
@@ -22,7 +24,7 @@ export function MemberRow({ member, calendarColor }: MemberRowProps) {
         </RNText>
       </View>
       <RNText style={styles.name}>{member.display_name}</RNText>
-      <RoleBadge role={member.role_name as CalendarRole} />
+      <RoleBadge role={member.role_name} />
     </View>
   );
 }

@@ -1,5 +1,8 @@
 import { render, act } from '@testing-library/react-native';
+import React from 'react';
+import type { ForwardedRef } from 'react';
 import type { ViewToken } from 'react-native';
+
 import { useScheduleStore } from '@stores/useScheduleStore';
 
 // ---- Captured refs (set by mock render callbacks) ----
@@ -10,14 +13,21 @@ let capturedOnDateSelected: ((date: string) => void) | undefined;
 
 // ---- Mocks ----
 
+// jest.mock factories are hoisted before imports, so we must use require() inside them.
+// Cast the result to typed React module to avoid unsafe-call/assignment violations.
 jest.mock('@components/schedule/EventFeed', () => {
-  const { forwardRef, useImperativeHandle } = require('react');
-  const { View } = require('react-native');
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- require() needed inside hoisted jest.mock factory
+  const { forwardRef, useImperativeHandle } = require('react') as typeof import('react');
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- require() needed inside hoisted jest.mock factory
+  const { View } = require('react-native') as typeof import('react-native');
 
   const scrollToSection = jest.fn();
   capturedScrollToSection = scrollToSection;
 
-  const EventFeed = forwardRef(function EventFeed(props: Record<string, unknown>, ref: unknown) {
+  const EventFeed = forwardRef(function EventFeed(
+    props: Record<string, unknown>,
+    ref: ForwardedRef<{ scrollToSection: jest.Mock }>
+  ) {
     capturedOnViewableItemsChanged =
       props.onViewableItemsChanged as typeof capturedOnViewableItemsChanged;
     useImperativeHandle(ref, () => ({ scrollToSection }));
@@ -28,12 +38,14 @@ jest.mock('@components/schedule/EventFeed', () => {
 });
 
 jest.mock('@components/schedule/ScheduleHeader', () => {
-  const { View } = require('react-native');
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- require() needed inside hoisted jest.mock factory
+  const { View } = require('react-native') as typeof import('react-native');
   return { ScheduleHeader: () => <View testID="schedule-header" /> };
 });
 
 jest.mock('@components/schedule/CalendarContainer', () => {
-  const { View } = require('react-native');
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- require() needed inside hoisted jest.mock factory
+  const { View } = require('react-native') as typeof import('react-native');
   return {
     CalendarContainer: (props: { onDateSelected?: (date: string) => void }) => {
       capturedOnDateSelected = props.onDateSelected;
@@ -86,7 +98,9 @@ const storeToday = '2026-02-27';
 
 // ---- Tests ----
 
-const { ScheduleScreen } = require('../ScheduleScreen');
+const { ScheduleScreen } = require('../ScheduleScreen') as {
+  ScheduleScreen: () => React.ReactElement;
+};
 
 describe('ScheduleScreen scroll-date sync', () => {
   beforeEach(() => {
@@ -99,7 +113,7 @@ describe('ScheduleScreen scroll-date sync', () => {
       displayMonth: '2026-02-01',
       isSyncLocked: false,
     });
-    capturedScrollToSection?.mockClear();
+    capturedScrollToSection.mockClear();
   });
 
   afterEach(() => {

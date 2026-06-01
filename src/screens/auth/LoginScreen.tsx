@@ -1,14 +1,11 @@
+import { useSignIn, useSSO } from '@clerk/clerk-expo';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { useSignIn, useSSO } from '@clerk/clerk-expo';
-import * as WebBrowser from 'expo-web-browser';
-import { extractClerkError } from '@utils/clerkError';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
 import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
-import { Input, InputField } from '@/components/ui/input';
 import {
   FormControl,
   FormControlLabel,
@@ -18,7 +15,11 @@ import {
   FormControlHelper,
   FormControlHelperText,
 } from '@/components/ui/form-control';
+import { Input, InputField } from '@/components/ui/input';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import type { AuthStackScreenProps } from '@navigation/types';
+import { extractClerkError } from '@utils/clerkError';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const scrollContentStyle = tva({ base: 'flex-grow justify-center p-6' });
@@ -63,7 +64,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
   const [oauthInFlight, setOauthInFlight] = useState<OAuthStrategy | null>(null);
 
   const passwordSignIn = useCallback(async () => {
-    if (!isLoaded || !signIn || submitting) return;
+    if (!isLoaded || submitting) return;
 
     const trimmed = email.trim();
     const errors: FormErrors = {};
@@ -81,7 +82,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
     try {
       const result = await signIn.create({ identifier: trimmed, password });
 
-      if (result.status === 'complete' && setActive) {
+      if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
         // ClerkPowerSyncBridge will pick up the new session.
         return;
@@ -98,7 +99,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
   }, [email, isLoaded, password, setActive, signIn, submitting]);
 
   const sendCode = useCallback(async () => {
-    if (!isLoaded || !signIn || submitting) return;
+    if (!isLoaded || submitting) return;
 
     const trimmed = email.trim();
     if (!trimmed) {
@@ -207,7 +208,12 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
             </FormControl>
 
             <VStack className={buttonRowStyle({})}>
-              <Button onPress={passwordSignIn} isDisabled={!isLoaded || submitting !== null}>
+              <Button
+                onPress={() => {
+                  void passwordSignIn();
+                }}
+                isDisabled={!isLoaded || submitting !== null}
+              >
                 {submitting === 'password' && <ButtonSpinner />}
                 <ButtonText>
                   {submitting === 'password' ? 'Signing in…' : 'Sign in with password'}
@@ -215,7 +221,9 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
               </Button>
               <Button
                 variant="outline"
-                onPress={sendCode}
+                onPress={() => {
+                  void sendCode();
+                }}
                 isDisabled={!isLoaded || submitting !== null}
               >
                 {submitting === 'code' && <ButtonSpinner />}
@@ -235,7 +243,9 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
           <VStack className={socialStyle({})}>
             <Button
               variant="outline"
-              onPress={() => oauth('oauth_google')}
+              onPress={() => {
+                void oauth('oauth_google');
+              }}
               isDisabled={!!oauthInFlight}
             >
               {oauthInFlight === 'oauth_google' && <ButtonSpinner />}
@@ -243,7 +253,9 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
             </Button>
             <Button
               variant="outline"
-              onPress={() => oauth('oauth_apple')}
+              onPress={() => {
+                void oauth('oauth_apple');
+              }}
               isDisabled={!!oauthInFlight}
             >
               {oauthInFlight === 'oauth_apple' && <ButtonSpinner />}
@@ -251,7 +263,9 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
             </Button>
             <Button
               variant="outline"
-              onPress={() => oauth('oauth_facebook')}
+              onPress={() => {
+                void oauth('oauth_facebook');
+              }}
               isDisabled={!!oauthInFlight}
             >
               {oauthInFlight === 'oauth_facebook' && <ButtonSpinner />}

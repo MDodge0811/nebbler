@@ -66,9 +66,9 @@ export function useConnections(currentUserId: string | undefined) {
 
   return useMemo(
     () => ({
-      pendingIncoming: incoming.data ?? [],
-      accepted: accepted.data ?? [],
-      pendingOutgoing: outgoing.data ?? [],
+      pendingIncoming: incoming.data,
+      accepted: accepted.data,
+      pendingOutgoing: outgoing.data,
       isLoading: incoming.isLoading || accepted.isLoading || outgoing.isLoading,
     }),
     [
@@ -101,7 +101,7 @@ export function useConnectionWith(otherUserId: string | undefined) {
     otherUserId ? [otherUserId, otherUserId] : []
   );
 
-  return data && data.length > 0 ? data[0] : null;
+  return data[0] ?? null;
 }
 
 /**
@@ -127,7 +127,7 @@ export function useSharedCalendarCount(
     currentUserId && otherUserId ? [currentUserId, otherUserId] : []
   );
 
-  return data && data.length > 0 ? data[0].count : 0;
+  return data[0]?.count ?? 0;
 }
 
 /**
@@ -153,7 +153,7 @@ export function useSharedCalendars(
     currentUserId && otherUserId ? [currentUserId, otherUserId] : []
   );
 
-  return data ?? [];
+  return data;
 }
 
 /**
@@ -173,5 +173,5 @@ export function useUserProfile(userId: string | undefined) {
     userId ? [userId] : []
   );
 
-  return data && data.length > 0 ? data[0] : null;
+  return data[0] ?? null;
 }
