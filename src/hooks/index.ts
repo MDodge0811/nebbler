@@ -41,3 +41,4 @@ export {
   useUserProfile,
 } from './useConnections';
 export type { HydratedConnection } from './useConnections';
+export { useDebouncedValue } from './useDebouncedValue';
