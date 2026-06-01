@@ -1,6 +1,6 @@
 import { useCallback, useRef, forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { SectionList, RefreshControl, type ViewToken } from 'react-native';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { type BottomSheetModal } from '@gorhom/bottom-sheet';
 import { DateSectionHeader } from '@components/schedule/DateSectionHeader';
 import { EventCard } from '@components/schedule/EventCard';
 import { EmptyDayCard } from '@components/schedule/EmptyDayCard';
@@ -92,10 +92,7 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
       const timedCount = filtered.filter((item) => !isEmptySentinel(item)).length;
       return {
         ...section,
-        data:
-          timedCount > 0
-            ? filtered
-            : [{ _empty: true, id: `empty-${section.title}` } as EmptySentinel],
+        data: timedCount > 0 ? filtered : [{ _empty: true as const, id: `empty-${section.title}` }],
         eventCount: timedCount,
       };
     });

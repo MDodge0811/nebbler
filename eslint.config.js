@@ -95,6 +95,14 @@ module.exports = tseslint.config(
         { allowNumber: true, allowBoolean: true },
       ],
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      // --- Tier 2c: stylistic + ergonomics ---
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
+      ],
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
+      '@typescript-eslint/prefer-nullish-coalescing': 'error',
+      '@typescript-eslint/prefer-optional-chain': 'error',
     },
   },
   {

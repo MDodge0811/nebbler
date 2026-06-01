@@ -185,7 +185,7 @@ export function EventDetailScreen() {
         const errors: Record<string, string> = {};
         err.issues.forEach((issue) => {
           const field = String(issue.path[0]);
-          if (!errors[field]) errors[field] = issue.message;
+          errors[field] ??= issue.message;
         });
         setFormErrors(errors);
       }
@@ -299,7 +299,7 @@ export function EventDetailScreen() {
   }, []);
 
   const endTimeError =
-    formErrors.endTime ||
+    formErrors.endTime ??
     (isEditing && editEndTime <= editStartTime ? 'End time must be after start time' : undefined);
   const showEndError = !!formErrors.endTime;
 
@@ -578,6 +578,7 @@ export function EventDetailScreen() {
               <VStack className="py-4">
                 <Text className={sectionLabelStyle({})}>Created by</Text>
                 <Text className={valueStyle({})}>
+                  {/* eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- display_name can be '' (not set), which should fall through to first+last name; || is intentional */}
                   {creator.display_name ||
                     `${creator.first_name ?? ''} ${creator.last_name ?? ''}`.trim() ||
                     creator.email}

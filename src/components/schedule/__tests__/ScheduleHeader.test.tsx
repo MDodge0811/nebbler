@@ -14,8 +14,9 @@ jest.mock('@hooks/useAuth', () => ({
   }),
 }));
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-return -- jest.requireActual returns untyped any; spreading it makes the factory return any
 jest.mock('@react-navigation/native', () => ({
-  ...(jest.requireActual('@react-navigation/native') as object),
+  ...jest.requireActual('@react-navigation/native'),
   useNavigation: () => ({
     dispatch: jest.fn(),
     getParent: () => ({ dispatch: mockDispatch }),

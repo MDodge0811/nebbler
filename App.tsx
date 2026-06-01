@@ -5,7 +5,7 @@ import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { ClerkProvider, useAuth as useClerkAuth } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { PowerSyncContext } from '@powersync/react';
-import { PowerSyncDatabase } from '@powersync/react-native';
+import { type PowerSyncDatabase } from '@powersync/react-native';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { Spinner } from '@/components/ui/spinner';

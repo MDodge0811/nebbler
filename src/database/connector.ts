@@ -1,7 +1,7 @@
 import {
-  AbstractPowerSyncDatabase,
-  CrudEntry,
-  PowerSyncBackendConnector,
+  type AbstractPowerSyncDatabase,
+  type CrudEntry,
+  type PowerSyncBackendConnector,
   UpdateType,
 } from '@powersync/react-native';
 import { powersyncConfig } from '@constants/config';

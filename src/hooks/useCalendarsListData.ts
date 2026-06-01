@@ -33,7 +33,7 @@ export function useCalendarsListData() {
   );
 
   const isLoading = groupsLoading || calendarsLoading || membershipsLoading || memberCountsLoading;
-  const error = groupsError || calendarsError || membershipsError || memberCountsError;
+  const error = groupsError ?? calendarsError ?? membershipsError ?? memberCountsError;
 
   const primaryGroupId = user?.primary_calendar_group_id ?? null;
 
@@ -49,7 +49,7 @@ export function useCalendarsListData() {
     const map: Record<string, string[]> = {};
     for (const m of allMemberships) {
       if (!m.calendar_group_id || !m.calendar_id) continue;
-      if (!map[m.calendar_group_id]) map[m.calendar_group_id] = [];
+      map[m.calendar_group_id] ??= [];
       map[m.calendar_group_id]!.push(m.calendar_id);
     }
     return map;

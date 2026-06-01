@@ -5,7 +5,7 @@ import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
-import { useSyncStatus, SyncState } from '@hooks/useSyncStatus';
+import { useSyncStatus, type SyncState } from '@hooks/useSyncStatus';
 import { syncDotColors } from '@constants/theme';
 
 /**

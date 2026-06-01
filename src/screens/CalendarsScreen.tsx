@@ -137,9 +137,10 @@ export function CalendarsScreen() {
   const handleNameBlur = useCallback(
     async (groupId: string, originalName: string) => {
       const edited = editedNames[groupId];
-      if (edited !== undefined && edited.trim() && edited.trim() !== originalName) {
+      const trimmed = edited?.trim();
+      if (trimmed && trimmed !== originalName) {
         try {
-          await updateGroup(groupId, { name: edited.trim() });
+          await updateGroup(groupId, { name: trimmed });
         } catch (e) {
           console.error('Failed to rename group:', e);
           Alert.alert('Error', 'Failed to rename group. Please try again.');

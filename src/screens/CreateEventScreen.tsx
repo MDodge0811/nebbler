@@ -155,9 +155,7 @@ export function CreateEventScreen() {
         const errors: Record<string, string> = {};
         err.issues.forEach((issue) => {
           const field = String(issue.path[0]);
-          if (!errors[field]) {
-            errors[field] = issue.message;
-          }
+          errors[field] ??= issue.message;
         });
         setFormErrors(errors);
       }
@@ -244,7 +242,7 @@ export function CreateEventScreen() {
   );
 
   const endTimeError =
-    formErrors.endTime || (endTime <= startTime ? 'End time must be after start time' : undefined);
+    formErrors.endTime ?? (endTime <= startTime ? 'End time must be after start time' : undefined);
   const showEndError = !!formErrors.endTime;
 
   // Configure native header with Close and Save buttons

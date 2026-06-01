@@ -591,7 +591,7 @@ export function CreateCalendarScreen() {
         const errors: Record<string, string> = {};
         err.issues.forEach((issue) => {
           const field = String(issue.path[0]);
-          if (!errors[field]) errors[field] = issue.message;
+          errors[field] ??= issue.message;
         });
         setFormErrors(errors);
       }
@@ -617,7 +617,7 @@ export function CreateCalendarScreen() {
         await addCalendarToGroup(groupId, calendarId);
       }
 
-      navigation.replace('CalendarDetail', { calendarId: calendarId! });
+      navigation.replace('CalendarDetail', { calendarId: calendarId });
     } finally {
       setIsSaving(false);
     }
