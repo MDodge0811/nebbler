@@ -178,22 +178,59 @@ describe('AddConnectionScreen', () => {
     await waitFor(() => expect(mockSend).toHaveBeenCalledWith('u1', 'me'));
   });
 
-  it('shows a toast on RateLimitedError', async () => {
+  it('shows a toast on RateLimitedError with the expected title + placement', async () => {
     mockSearchUsers.mockRejectedValue(new RateLimitedError(60));
     const { getByPlaceholderText } = render(<AddConnectionScreen />);
     typeQuery(getByPlaceholderText, 'sa');
     await waitFor(() =>
-      expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ id: 'rate-limited' }))
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'rate-limited',
+          title: 'Slow down a moment — try again in a few seconds.',
+          placement: 'top',
+        })
+      )
     );
   });
 
-  it('shows a generic toast on other errors', async () => {
+  it('shows a generic toast on other errors with the expected title + placement', async () => {
     mockSearchUsers.mockRejectedValue(new Error('boom'));
     const { getByPlaceholderText } = render(<AddConnectionScreen />);
     typeQuery(getByPlaceholderText, 'sa');
     await waitFor(() =>
-      expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ id: 'search-error' }))
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'search-error',
+          title: "Couldn't reach the server. Check your connection.",
+          placement: 'top',
+        })
+      )
     );
+  });
+
+  it('renders all 4 chip states in the same result list', async () => {
+    // u1: no map entry → Connect
+    // u2: incoming → Accept
+    // u3: outgoing → Pending
+    // u4: accepted → Connected
+    mockUseConnections.mockReturnValue({
+      pendingIncoming: [{ id: 'c-u2', requester_id: 'u2', addressee_id: 'me', status: 'pending' }],
+      pendingOutgoing: [{ id: 'c-u3', requester_id: 'me', addressee_id: 'u3', status: 'pending' }],
+      accepted: [{ id: 'c-u4', requester_id: 'me', addressee_id: 'u4', status: 'accepted' }],
+      isLoading: false,
+    });
+    mockSearchUsers.mockResolvedValue([
+      { id: 'u1', first_name: 'One', last_name: 'A', avatar_color: null },
+      { id: 'u2', first_name: 'Two', last_name: 'B', avatar_color: null },
+      { id: 'u3', first_name: 'Three', last_name: 'C', avatar_color: null },
+      { id: 'u4', first_name: 'Four', last_name: 'D', avatar_color: null },
+    ]);
+    const { getByPlaceholderText, findByText } = render(<AddConnectionScreen />);
+    typeQuery(getByPlaceholderText, 'us');
+    expect(await findByText('Connect')).toBeTruthy();
+    expect(await findByText('Accept')).toBeTruthy();
+    expect(await findByText('Pending')).toBeTruthy();
+    expect(await findByText('Connected')).toBeTruthy();
   });
 
   it('row tap navigates to PersonProfile', async () => {

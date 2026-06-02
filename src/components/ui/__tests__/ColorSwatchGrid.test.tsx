@@ -28,4 +28,11 @@ describe('ColorSwatchGrid', () => {
     fireEvent.press(getByTestId(`color-swatch-${CALENDAR_PALETTE[5].hex}`));
     expect(onChange).toHaveBeenCalledWith(CALENDAR_PALETTE[5].hex);
   });
+
+  it('matches the selected swatch case-insensitively', () => {
+    const lowercase = CALENDAR_PALETTE[2].hex.toLowerCase();
+    const { queryByTestId } = render(<ColorSwatchGrid value={lowercase} onChange={() => {}} />);
+    // Stored value happens to be lowercase; palette uses uppercase — still highlights it.
+    expect(queryByTestId(`color-swatch-${CALENDAR_PALETTE[2].hex}-selected`)).toBeTruthy();
+  });
 });

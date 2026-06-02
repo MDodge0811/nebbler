@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { AvatarCircle } from '../AvatarCircle';
 
@@ -55,5 +56,15 @@ describe('AvatarCircle', () => {
     expect(circle.props.style.width).toBe(size);
     expect(circle.props.style.height).toBe(size);
     expect(circle.props.style.borderRadius).toBe(size / 2);
+  });
+
+  it.each([32, 40, 56, 80])('initial fontSize is proportional (~40%) at size %i', (size) => {
+    const { getByText } = render(<AvatarCircle user={baseUser} size={size as 32 | 40 | 56 | 80} />);
+    // Style is an array (component-level + dynamic) — flatten before reading.
+    const initial = getByText('SC') as unknown as {
+      props: { style: Parameters<typeof StyleSheet.flatten>[0] };
+    };
+    const flattened = StyleSheet.flatten(initial.props.style) as { fontSize: number };
+    expect(flattened.fontSize).toBe(Math.round(size * 0.4));
   });
 });

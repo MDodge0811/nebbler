@@ -97,11 +97,46 @@ describe('PersonProfileScreen', () => {
     expect(getByText('January 2026')).toBeTruthy();
   });
 
-  it('Find a Time tap shows Coming Soon toast', () => {
+  it('hides the Since tile when connection is pending', () => {
+    mockUseConnectionWith.mockReturnValue({
+      id: 'c1',
+      status: 'pending',
+      requester_id: 'me',
+      addressee_id: 'them',
+      updated_at: '2026-01-15T00:00:00Z',
+    });
+    const { queryByText } = render(<PersonProfileScreen />);
+    expect(queryByText('Since')).toBeNull();
+    expect(queryByText('January 2026')).toBeNull();
+  });
+
+  it('hides the Since tile when no connection', () => {
+    mockUseConnectionWith.mockReturnValue(null);
+    const { queryByText } = render(<PersonProfileScreen />);
+    expect(queryByText('Since')).toBeNull();
+  });
+
+  it('writes the user name to the nav header via setOptions', () => {
+    render(<PersonProfileScreen />);
+    expect(mockSetOptions).toHaveBeenCalledWith({ title: 'Sarah Chen' });
+  });
+
+  it('hides the Remove row when there is no connection (Block only)', () => {
+    mockUseConnectionWith.mockReturnValue(null);
+    const { queryByText, getByText } = render(<PersonProfileScreen />);
+    expect(queryByText('Remove Connection')).toBeNull();
+    expect(getByText('Block')).toBeTruthy();
+  });
+
+  it('Find a Time tap shows Coming Soon toast (id + title + placement)', () => {
     const { getByText } = render(<PersonProfileScreen />);
     fireEvent.press(getByText(/Find a Time/i));
     expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'find-a-time-coming-soon' })
+      expect.objectContaining({
+        id: 'find-a-time-coming-soon',
+        title: 'Find a Time is coming soon.',
+        placement: 'top',
+      })
     );
   });
 
@@ -159,5 +194,13 @@ describe('PersonProfileScreen', () => {
     mockUseUserProfile.mockReturnValue({ user: null, isLoading: false });
     const { getByText } = render(<PersonProfileScreen />);
     expect(getByText(/This person isn't available/i)).toBeTruthy();
+  });
+
+  it('renders the skeleton (no "unavailable" copy) while userLoading and no cached row', () => {
+    mockUseUserProfile.mockReturnValue({ user: null, isLoading: true });
+    const { queryByText } = render(<PersonProfileScreen />);
+    expect(queryByText(/This person isn't available/i)).toBeNull();
+    // setOptions should not be called with a name yet (no name to show).
+    expect(mockSetOptions).not.toHaveBeenCalled();
   });
 });
