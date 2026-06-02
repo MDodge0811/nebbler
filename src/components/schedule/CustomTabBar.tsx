@@ -1,18 +1,16 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import type { ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 
+import { Box } from '@/components/ui/box';
+import { DynamicColorText, DynamicColorView } from '@/components/ui/dynamic';
 import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
 
 const TAB_COLORS = {
   active: '#00DB74',
   inactive: '#999999',
-  background: '#FFFFFF',
-  border: '#E5E5E5',
 } as const;
 
 function CalendarIcon({ color }: { color: string }) {
@@ -80,7 +78,10 @@ export function CustomTabBar({ state, descriptors, navigation: tabNavigation }: 
   const rootNavigation = useNavigation();
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <DynamicColorView
+      className="flex-row border-t-[0.5px] border-typography-100 bg-background-0"
+      paddingBottom={insets.bottom}
+    >
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key]!;
         const isFocused = state.index === index;
@@ -90,15 +91,17 @@ export function CustomTabBar({ state, descriptors, navigation: tabNavigation }: 
           return (
             <Pressable
               key={route.key}
-              style={styles.tab}
+              className="flex-1 items-center justify-center pb-1 pt-2"
               onPress={() => rootNavigation.navigate('CreateEvent')}
               accessibilityRole="button"
               accessibilityLabel="Create event"
             >
-              <View style={styles.createButton}>
+              <Box className="h-10 w-10 items-center justify-center rounded-full bg-brand-primary">
                 <PlusIcon />
-              </View>
-              <Text style={[styles.label, { color: TAB_COLORS.inactive }]}>New</Text>
+              </Box>
+              <DynamicColorText className="mt-0.5 text-[10px]" color={TAB_COLORS.inactive}>
+                New
+              </DynamicColorText>
             </Pressable>
           );
         }
@@ -123,41 +126,15 @@ export function CustomTabBar({ state, descriptors, navigation: tabNavigation }: 
             accessibilityRole="tab"
             accessibilityState={{ selected: isFocused }}
             accessibilityLabel={options.tabBarAccessibilityLabel ?? route.name}
-            style={styles.tab}
+            className="flex-1 items-center justify-center pb-1 pt-2"
           >
             {Icon && <Icon color={color} />}
-            <Text style={[styles.label, { color }]}>{route.name}</Text>
+            <DynamicColorText className="mt-0.5 text-[10px]" color={color}>
+              {route.name}
+            </DynamicColorText>
           </Pressable>
         );
       })}
-    </View>
+    </DynamicColorView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    backgroundColor: TAB_COLORS.background,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: TAB_COLORS.border,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  label: {
-    fontSize: 10,
-    marginTop: 2,
-  },
-  createButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: TAB_COLORS.active,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

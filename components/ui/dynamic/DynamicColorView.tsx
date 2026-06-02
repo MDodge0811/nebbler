@@ -18,6 +18,8 @@ export interface DynamicColorViewProps extends IBoxProps {
   top?: number;
   /** Runtime top padding (px). Applied via inline style for safe-area-inset-driven spacing. */
   paddingTop?: number;
+  /** Runtime bottom padding (px). Applied via inline style for safe-area-inset-driven spacing. */
+  paddingBottom?: number;
 }
 
 /**
@@ -33,7 +35,17 @@ export const DynamicColorView = React.forwardRef<
   React.ComponentRef<typeof Box>,
   DynamicColorViewProps
 >(function DynamicColorView(
-  { backgroundColor, borderColor, shadowColor, zIndex, top, paddingTop, style, ...props },
+  {
+    backgroundColor,
+    borderColor,
+    shadowColor,
+    zIndex,
+    top,
+    paddingTop,
+    paddingBottom,
+    style,
+    ...props
+  },
   ref
 ) {
   const dynamicStyle: ViewStyle = {};
@@ -54,6 +66,9 @@ export const DynamicColorView = React.forwardRef<
   }
   if (paddingTop !== undefined) {
     dynamicStyle.paddingTop = paddingTop;
+  }
+  if (paddingBottom !== undefined) {
+    dynamicStyle.paddingBottom = paddingBottom;
   }
 
   return <Box ref={ref} style={[dynamicStyle, style]} {...props} />;

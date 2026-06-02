@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import { AllDayPill } from '@components/schedule/AllDayPill';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
@@ -19,8 +19,8 @@ export const AllDayEventRow = memo(function AllDayEventRow({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      className="py-1"
+      contentContainerClassName="px-4"
     >
       {events.map((event) => (
         <AllDayPill
@@ -32,13 +32,4 @@ export const AllDayEventRow = memo(function AllDayEventRow({
       ))}
     </ScrollView>
   );
-});
-
-const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 4,
-  },
-  content: {
-    paddingHorizontal: 16,
-  },
 });
