@@ -7,7 +7,7 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 
 const containerStyle = tva({ base: 'mx-4 mb-3 items-center justify-center rounded-xl py-10' });
-const titleStyle = tva({ base: 'text-base font-bold text-typography-400' });
+const titleStyle = tva({ base: 'mt-3 text-base font-bold text-typography-400' });
 const subtitleStyle = tva({ base: 'mt-1 text-sm text-typography-300' });
 
 function CalendarIllustration() {
@@ -28,9 +28,7 @@ export const EmptyDayCard = memo(function EmptyDayCard() {
     <Box className={containerStyle({})}>
       <VStack className="items-center">
         <CalendarIllustration />
-        <Text className={titleStyle({})} style={{ marginTop: 12 }}>
-          Nothing on the schedule
-        </Text>
+        <Text className={titleStyle({})}>Nothing on the schedule</Text>
         <Text className={subtitleStyle({})}>Hit + to add something</Text>
       </VStack>
     </Box>

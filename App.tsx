@@ -31,6 +31,9 @@ const loadingContainerStyle = tva({
   base: 'flex-1 items-center justify-center bg-background-0',
 });
 const loadingTextStyle = tva({ base: 'mt-4 text-base text-typography-600' });
+// GestureHandlerRootView is not NativeWind-interop'd; a module-level style
+// constant keeps the inline-style lint rule satisfied without a className.
+const rootStyle = { flex: 1 } as const;
 const errorTextStyle = tva({ base: 'p-5 text-center text-base text-error-500' });
 
 /**
@@ -103,7 +106,7 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={rootStyle}>
       <GluestackUIProvider mode="light">
         <ClerkProvider {...(tokenCache ? { tokenCache } : {})}>
           <PowerSyncContext.Provider value={database}>

@@ -1,7 +1,7 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { useRef } from 'react';
-import { View } from 'react-native';
+import { useRef, type ComponentRef } from 'react';
 
+import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 
 const hintStyle = tva({ base: 'text-center text-xs italic text-typography-400' });
@@ -19,10 +19,10 @@ interface DropZoneProps {
 }
 
 export function DropZone({ groupId, isActive, onLayout }: DropZoneProps) {
-  const viewRef = useRef<View>(null);
+  const viewRef = useRef<ComponentRef<typeof Box>>(null);
 
   return (
-    <View
+    <Box
       ref={viewRef}
       className={containerStyle({ active: isActive })}
       onLayout={() => {
@@ -34,6 +34,6 @@ export function DropZone({ groupId, isActive, onLayout }: DropZoneProps) {
       }}
     >
       <Text className={hintStyle({})}>{isActive ? 'Drop here' : 'Drag calendars here'}</Text>
-    </View>
+    </Box>
   );
 }

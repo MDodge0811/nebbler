@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react';
 import {
   FlatList,
-  View,
   useWindowDimensions,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
 
+import { Box } from '@/components/ui/box';
 import { WeekStripDayCell } from '@components/schedule/week-strip/WeekStripDayCell';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { isDateInMonth, getMonthStart } from '@utils/monthUtils';
@@ -86,9 +86,9 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
 
   const renderMonthPage = useCallback(
     ({ item }: { item: MonthPage }) => (
-      <View style={{ width: screenWidth }}>
+      <Box style={{ width: screenWidth }}>
         {item.grid.rows.map((row, rowIdx) => (
-          <View
+          <Box
             key={rowIdx}
             style={{ flexDirection: 'row', height: ROW_HEIGHT, paddingHorizontal: 8 }}
           >
@@ -110,9 +110,9 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
                 />
               );
             })}
-          </View>
+          </Box>
         ))}
-      </View>
+      </Box>
     ),
     [screenWidth, selectedDate, today, markedDates, handleDayPress]
   );
