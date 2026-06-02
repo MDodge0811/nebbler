@@ -1,6 +1,8 @@
-import { Modal, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
+import { Modal } from 'react-native';
 
-import { calendarsUIColors } from '@constants/calendarsUI';
+import { Box } from '@/components/ui/box';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 
 interface Props {
   visible: boolean;
@@ -13,69 +15,30 @@ export function DeleteCalendarConfirmModal({ visible, calendarName, onCancel, on
   if (!visible) return null;
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <RNText style={styles.title}>Delete {calendarName}?</RNText>
-          <RNText style={styles.body}>
+      <Box className="flex-1 items-center justify-center bg-brand-scrim/40 p-6">
+        <Box className="w-full max-w-[320px] rounded-[20px] bg-background-0 p-6">
+          <Text className="mb-2 text-center text-lg font-bold text-brand-text">
+            Delete {calendarName}?
+          </Text>
+          <Text className="mb-5 text-center text-sm leading-[21px] text-brand-text-secondary">
             This will remove all events and members. This can't be undone.
-          </RNText>
-          <View style={styles.actions}>
-            <Pressable style={[styles.btn, styles.cancelBtn]} onPress={onCancel}>
-              <RNText style={styles.cancelText}>Cancel</RNText>
+          </Text>
+          <Box className="flex-row gap-2.5">
+            <Pressable
+              className="flex-1 items-center rounded-xl border border-brand-border bg-typography-50 px-4 py-3"
+              onPress={onCancel}
+            >
+              <Text className="text-[15px] font-semibold text-brand-text">Cancel</Text>
             </Pressable>
-            <Pressable style={[styles.btn, styles.deleteBtn]} onPress={onConfirm}>
-              <RNText style={styles.deleteText}>Delete</RNText>
+            <Pressable
+              className="flex-1 items-center rounded-xl bg-brand-danger px-4 py-3"
+              onPress={onConfirm}
+            >
+              <Text className="text-[15px] font-bold text-typography-white">Delete</Text>
             </Pressable>
-          </View>
-        </View>
-      </View>
+          </Box>
+        </Box>
+      </Box>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 320,
-    backgroundColor: calendarsUIColors.surface,
-    borderRadius: 20,
-    padding: 24,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: calendarsUIColors.text,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  body: {
-    fontSize: 14,
-    color: calendarsUIColors.textSecondary,
-    lineHeight: 21,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  actions: { flexDirection: 'row', gap: 10 },
-  btn: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  cancelBtn: {
-    backgroundColor: calendarsUIColors.surfaceHover,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-  },
-  cancelText: { fontSize: 15, fontWeight: '600', color: calendarsUIColors.text },
-  deleteBtn: { backgroundColor: calendarsUIColors.danger },
-  deleteText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-});

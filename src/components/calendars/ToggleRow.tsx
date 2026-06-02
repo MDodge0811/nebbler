@@ -1,5 +1,7 @@
-import { StyleSheet, Switch, Text as RNText, View } from 'react-native';
+import { Switch } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { Text } from '@/components/ui/text';
 import { calendarsUIColors } from '@constants/calendarsUI';
 
 interface ToggleRowProps {
@@ -11,40 +13,21 @@ interface ToggleRowProps {
 
 export function ToggleRow({ checked, onChange, label, description }: ToggleRowProps) {
   return (
-    <View style={styles.row}>
-      <View style={styles.text}>
-        <RNText style={styles.label}>{label}</RNText>
-        {description ? <RNText style={styles.description}>{description}</RNText> : null}
-      </View>
+    <Box className="flex-row items-center justify-between gap-[14px] rounded-[14px] border border-brand-border bg-background-0 px-4 py-3.5">
+      <Box className="flex-1">
+        <Text className="text-[15px] font-semibold text-brand-text">{label}</Text>
+        {description ? (
+          <Text className="mt-[3px] text-[13px] leading-[18px] text-brand-text-secondary">
+            {description}
+          </Text>
+        ) : null}
+      </Box>
       <Switch
         value={checked}
         onValueChange={onChange}
         trackColor={{ false: calendarsUIColors.border, true: calendarsUIColors.primary }}
         thumbColor="#FFFFFF"
       />
-    </View>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 14,
-    backgroundColor: calendarsUIColors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-  },
-  text: { flex: 1 },
-  label: { fontSize: 15, fontWeight: '600', color: calendarsUIColors.text },
-  description: {
-    fontSize: 13,
-    color: calendarsUIColors.textSecondary,
-    marginTop: 3,
-    lineHeight: 18,
-  },
-});

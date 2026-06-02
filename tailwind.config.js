@@ -17,7 +17,7 @@ module.exports = {
     },
     {
       pattern:
-        /(bg|border|text|stroke|fill)-brand-(primary-light|primary-mid|primary-border|primary|danger-light|danger-border|danger-text|danger|surface-muted|surface-subtle|divider|text-secondary|text-muted|text|border|background|pending-bg|pending-border|pending-dot|pending-text)/,
+        /(bg|border|text|stroke|fill)-brand-(primary-light|primary-mid|primary-border|primary|danger-light|danger-border|danger-text|danger|surface-muted|surface-subtle|divider|text-secondary|text-muted|text|border|background|pending-bg|pending-border|pending-dot|pending-text|success-text|role-admin-bg|role-admin-text|role-admin-border|type-social-bg|type-social-text|type-public-bg|type-public-text|rsvp-maybe-bg|rsvp-maybe-text|rsvp-maybe-border|scrim)/,
     },
   ],
   theme: {
@@ -198,6 +198,18 @@ module.exports = {
           'pending-border': 'rgb(var(--color-brand-pending-border)/<alpha-value>)',
           'pending-dot': 'rgb(var(--color-brand-pending-dot)/<alpha-value>)',
           'pending-text': 'rgb(var(--color-brand-pending-text)/<alpha-value>)',
+          'success-text': 'rgb(var(--color-brand-success-text)/<alpha-value>)',
+          'role-admin-bg': 'rgb(var(--color-brand-role-admin-bg)/<alpha-value>)',
+          'role-admin-text': 'rgb(var(--color-brand-role-admin-text)/<alpha-value>)',
+          'role-admin-border': 'rgb(var(--color-brand-role-admin-border)/<alpha-value>)',
+          'type-social-bg': 'rgb(var(--color-brand-type-social-bg)/<alpha-value>)',
+          'type-social-text': 'rgb(var(--color-brand-type-social-text)/<alpha-value>)',
+          'type-public-bg': 'rgb(var(--color-brand-type-public-bg)/<alpha-value>)',
+          'type-public-text': 'rgb(var(--color-brand-type-public-text)/<alpha-value>)',
+          'rsvp-maybe-bg': 'rgb(var(--color-brand-rsvp-maybe-bg)/<alpha-value>)',
+          'rsvp-maybe-text': 'rgb(var(--color-brand-rsvp-maybe-text)/<alpha-value>)',
+          'rsvp-maybe-border': 'rgb(var(--color-brand-rsvp-maybe-border)/<alpha-value>)',
+          scrim: 'rgb(var(--color-brand-scrim)/<alpha-value>)',
         },
       },
       fontFamily: {

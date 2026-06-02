@@ -1,7 +1,16 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useState } from 'react';
-import { StyleSheet, TextInput } from 'react-native';
+import { TextInput } from 'react-native';
 
-import { calendarsUIColors } from '@constants/calendarsUI';
+const inputStyle = tva({
+  base: 'flex-1 rounded-lg border-[1.5px] px-2.5 py-1.5 text-[15px] font-semibold tracking-[-0.2px] text-brand-text',
+  variants: {
+    focused: {
+      true: 'border-brand-primary bg-background-0',
+      false: 'border-brand-border bg-typography-50',
+    },
+  },
+});
 
 interface EditableGroupNameProps {
   value: string;
@@ -30,27 +39,7 @@ export function EditableGroupName({
       onSubmitEditing={onSubmit}
       returnKeyType="done"
       autoFocus={autoFocus}
-      style={[
-        styles.input,
-        {
-          borderColor: isFocused ? calendarsUIColors.primary : calendarsUIColors.border,
-          backgroundColor: isFocused ? '#FFFFFF' : calendarsUIColors.surfaceHover,
-        },
-      ]}
+      className={inputStyle({ focused: isFocused })}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  input: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1F',
-    letterSpacing: -0.2,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    borderWidth: 1.5,
-  },
-});

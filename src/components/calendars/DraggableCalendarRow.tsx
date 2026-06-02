@@ -1,6 +1,6 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import React, { useCallback } from 'react';
-import { StyleSheet, Vibration, View } from 'react-native';
+import { Vibration } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -9,6 +9,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
+import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { UNGROUPED_DROP_ZONE_ID } from '@constants/calendarsUI';
@@ -21,6 +22,10 @@ import { DragHandle } from './DragHandle';
 import { TypeBadge } from './TypeBadge';
 
 const nameStyle = tva({ base: 'text-[15px] font-medium text-typography-900' });
+const containerStyle = tva({
+  base: 'items-center gap-2.5 rounded-xl py-2.5 pl-4 pr-[14px]',
+  variants: { primary: { true: 'mx-2.5', false: 'mx-3' } },
+});
 
 interface DraggableCalendarRowProps {
   calendar: Calendar;
@@ -127,52 +132,19 @@ export const DraggableCalendarRow = React.memo(function DraggableCalendarRow({
   return (
     <GestureDetector gesture={composed}>
       <Animated.View style={[animatedStyle]}>
-        <HStack
-          style={[
-            styles.container,
-            isInPrimaryGroup ? styles.primaryMargin : styles.standardMargin,
-          ]}
-        >
-          <View style={isDragDisabled ? styles.dragHandleDisabled : undefined}>
+        <HStack className={containerStyle({ primary: isInPrimaryGroup })}>
+          <Box className={isDragDisabled ? 'opacity-30' : ''}>
             <DragHandle />
-          </View>
+          </Box>
           <CalendarIcon calendarName={calendar.name ?? ''} calendarId={calendar.id} color={color} />
-          <View style={styles.info}>
-            <HStack style={styles.nameRow}>
+          <Box className="min-w-0 flex-1">
+            <HStack className="items-center gap-[7px]">
               <Text className={nameStyle({})}>{calendar.name}</Text>
               <TypeBadge type={calendar.type} />
             </HStack>
-          </View>
+          </Box>
         </HStack>
       </Animated.View>
     </GestureDetector>
   );
-});
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingLeft: 16,
-    paddingRight: 14,
-    borderRadius: 12,
-  },
-  primaryMargin: {
-    marginHorizontal: 10,
-  },
-  standardMargin: {
-    marginHorizontal: 12,
-  },
-  info: {
-    flex: 1,
-    minWidth: 0,
-  },
-  nameRow: {
-    alignItems: 'center',
-    gap: 7,
-  },
-  dragHandleDisabled: {
-    opacity: 0.3,
-  },
 });

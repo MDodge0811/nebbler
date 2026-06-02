@@ -1,6 +1,4 @@
-import { StyleSheet, View } from 'react-native';
-
-import { Text } from '@/components/ui/text';
+import { DynamicColorText, DynamicColorView } from '@/components/ui/dynamic';
 import { getCalendarColor } from '@utils/calendarColor';
 
 interface CalendarIconProps {
@@ -14,31 +12,14 @@ export function CalendarIcon({ calendarName, calendarId, color }: CalendarIconPr
   const letter = calendarName.charAt(0).toUpperCase();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: `${resolvedColor}14`,
-          borderColor: `${resolvedColor}30`,
-        },
-      ]}
+    <DynamicColorView
+      className="h-[38px] w-[38px] items-center justify-center rounded-[10px] border-[1.5px]"
+      backgroundColor={`${resolvedColor}14`}
+      borderColor={`${resolvedColor}30`}
     >
-      <Text style={[styles.letter, { color: resolvedColor }]}>{letter}</Text>
-    </View>
+      <DynamicColorText className="text-lg font-semibold" color={resolvedColor}>
+        {letter}
+      </DynamicColorText>
+    </DynamicColorView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  letter: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-});

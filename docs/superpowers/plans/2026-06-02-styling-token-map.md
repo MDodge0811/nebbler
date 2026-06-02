@@ -112,17 +112,29 @@ modules (`calendarDetail`, `eventDetail`) carried a few hard-coded chrome hexes
 with no exact palette match. Per the established pattern, each got a `brand-*`
 token (exact RGB, light+dark mirrored, safelisted):
 
-| Token                  | CSS var                        | RGB           | Hex       | Origin                            |
-| ---------------------- | ------------------------------ | ------------- | --------- | --------------------------------- |
-| `brand-surface-muted`  | `--color-brand-surface-muted`  | `243 244 246` | `#F3F4F6` | eventDetail busy-badge bg         |
-| `brand-danger-border`  | `--color-brand-danger-border`  | `255 212 212` | `#FFD4D4` | calendarDetail danger-card border |
-| `brand-danger-text`    | `--color-brand-danger-text`    | `204 68 68`   | `#CC4444` | calendarDetail danger copy text   |
-| `brand-surface-subtle` | `--color-brand-surface-subtle` | `250 250 250` | `#FAFAFA` | ProfileScreen screen container bg |
-| `brand-divider`        | `--color-brand-divider`        | `240 240 243` | `#F0F0F3` | ProfileScreen row divider         |
-| `brand-pending-bg`     | `--color-brand-pending-bg`     | `255 246 224` | `#FFF6E0` | PersonProfile StatusPill bg       |
-| `brand-pending-border` | `--color-brand-pending-border` | `244 213 141` | `#F4D58D` | PersonProfile StatusPill border   |
-| `brand-pending-dot`    | `--color-brand-pending-dot`    | `255 179 71`  | `#FFB347` | PersonProfile StatusPill dot      |
-| `brand-pending-text`   | `--color-brand-pending-text`   | `160 115 0`   | `#A07300` | PersonProfile StatusPill text     |
+| Token                     | CSS var                           | RGB           | Hex       | Origin                                 |
+| ------------------------- | --------------------------------- | ------------- | --------- | -------------------------------------- |
+| `brand-surface-muted`     | `--color-brand-surface-muted`     | `243 244 246` | `#F3F4F6` | eventDetail busy-badge bg              |
+| `brand-danger-border`     | `--color-brand-danger-border`     | `255 212 212` | `#FFD4D4` | calendarDetail danger-card border      |
+| `brand-danger-text`       | `--color-brand-danger-text`       | `204 68 68`   | `#CC4444` | calendarDetail danger copy text        |
+| `brand-surface-subtle`    | `--color-brand-surface-subtle`    | `250 250 250` | `#FAFAFA` | ProfileScreen screen container bg      |
+| `brand-divider`           | `--color-brand-divider`           | `240 240 243` | `#F0F0F3` | ProfileScreen row divider              |
+| `brand-pending-bg`        | `--color-brand-pending-bg`        | `255 246 224` | `#FFF6E0` | PersonProfile StatusPill bg            |
+| `brand-pending-border`    | `--color-brand-pending-border`    | `244 213 141` | `#F4D58D` | PersonProfile StatusPill border        |
+| `brand-pending-dot`       | `--color-brand-pending-dot`       | `255 179 71`  | `#FFB347` | PersonProfile StatusPill dot           |
+| `brand-pending-text`      | `--color-brand-pending-text`      | `160 115 0`   | `#A07300` | PersonProfile StatusPill text          |
+| `brand-success-text`      | `--color-brand-success-text`      | `10 143 79`   | `#0A8F4F` | RoleBadge owner / RsvpBadge going text |
+| `brand-role-admin-bg`     | `--color-brand-role-admin-bg`     | `237 233 254` | `#EDE9FE` | RoleBadge admin bg                     |
+| `brand-role-admin-text`   | `--color-brand-role-admin-text`   | `124 58 237`  | `#7C3AED` | RoleBadge admin text                   |
+| `brand-role-admin-border` | `--color-brand-role-admin-border` | `221 214 254` | `#DDD6FE` | RoleBadge admin border                 |
+| `brand-type-social-bg`    | `--color-brand-type-social-bg`    | `232 247 252` | `#E8F7FC` | TypeBadge social bg                    |
+| `brand-type-social-text`  | `--color-brand-type-social-text`  | `0 144 176`   | `#0090B0` | TypeBadge social text                  |
+| `brand-type-public-bg`    | `--color-brand-type-public-bg`    | `240 235 255` | `#F0EBFF` | TypeBadge public bg                    |
+| `brand-type-public-text`  | `--color-brand-type-public-text`  | `124 92 196`  | `#7C5CC4` | TypeBadge public text                  |
+| `brand-rsvp-maybe-bg`     | `--color-brand-rsvp-maybe-bg`     | `255 248 235` | `#FFF8EB` | RsvpBadge maybe bg                     |
+| `brand-rsvp-maybe-text`   | `--color-brand-rsvp-maybe-text`   | `184 134 11`  | `#B8860B` | RsvpBadge maybe text                   |
+| `brand-rsvp-maybe-border` | `--color-brand-rsvp-maybe-border` | `255 228 160` | `#FFE4A0` | RsvpBadge maybe border                 |
+| `brand-scrim`             | `--color-brand-scrim`             | `0 0 0`       | `#000000` | DeleteCalendarConfirmModal backdrop    |
 
 Other screen-local hexes resolved to **existing** tokens (byte-identical):
 `#262627`→`typography-900`, `#E5E5E5`→`typography-100`, `#FEE2E2`→`error-50`,

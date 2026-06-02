@@ -1,37 +1,41 @@
-import { StyleSheet, View } from 'react-native';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
+import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 
-const BADGE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  social: { bg: '#E8F7FC', color: '#0090B0', label: 'Social' },
-  public: { bg: '#F0EBFF', color: '#7C5CC4', label: 'Public' },
-};
+type BadgeType = 'social' | 'public';
+
+const LABELS: Record<BadgeType, string> = { social: 'Social', public: 'Public' };
+
+const badgeStyle = tva({
+  base: 'rounded-[5px] px-[7px] py-0.5',
+  variants: {
+    type: {
+      social: 'bg-brand-type-social-bg',
+      public: 'bg-brand-type-public-bg',
+    },
+  },
+});
+
+const labelStyle = tva({
+  base: 'text-[10px] font-semibold tracking-[0.3px]',
+  variants: {
+    type: {
+      social: 'text-brand-type-social-text',
+      public: 'text-brand-type-public-text',
+    },
+  },
+});
 
 interface TypeBadgeProps {
   type: string | null;
 }
 
 export function TypeBadge({ type }: TypeBadgeProps) {
-  if (!type || type === 'private') return null;
-  const config = BADGE_STYLES[type];
-  if (!config) return null;
-
+  if (type !== 'social' && type !== 'public') return null;
   return (
-    <View style={[styles.badge, { backgroundColor: config.bg }]}>
-      <Text style={[styles.label, { color: config.color }]}>{config.label}</Text>
-    </View>
+    <Box className={badgeStyle({ type })}>
+      <Text className={labelStyle({ type })}>{LABELS[type]}</Text>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 5,
-  },
-  label: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-});
