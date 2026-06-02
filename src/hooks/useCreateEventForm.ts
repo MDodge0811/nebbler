@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { ZodError } from 'zod';
 
-import { type PickerTarget } from '@components/EditDateTimeRow';
+import type { PickerTarget } from '@/types/eventForm';
 import { CreateEventSchema } from '@database/schemas';
 import { useEventMutations } from '@hooks/useCalendarEvents';
 import { useCurrentUser } from '@hooks/useCurrentUser';

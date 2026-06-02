@@ -1,4 +1,3 @@
-import { usePowerSync } from '@powersync/react';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
@@ -18,7 +17,7 @@ import { AvatarCircle } from '@components/ui/AvatarCircle';
 import { ColorSwatchGrid } from '@components/ui/ColorSwatchGrid';
 import { useAuth } from '@hooks/useAuth';
 import { useConnections, useUserProfile } from '@hooks/useConnections';
-import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useCurrentUser, useCurrentUserMutations } from '@hooks/useCurrentUser';
 import type { RootStackParamList } from '@navigation/types';
 import { displayName } from '@utils/displayName';
 
@@ -72,7 +71,7 @@ export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
   const { user: me } = useCurrentUser();
   const { signOut, user: authUser } = useAuth();
-  const powersync = usePowerSync();
+  const { updateAvatarColor } = useCurrentUserMutations();
   const profile = useUserProfile(me?.id);
   const { pendingIncoming, accepted } = useConnections(me?.id);
 
@@ -85,11 +84,7 @@ export function ProfileScreen() {
 
   const handleColorChange = async (hex: string) => {
     if (!me?.id) return;
-    await powersync.execute('UPDATE users SET avatar_color = ?, updated_at = ? WHERE id = ?', [
-      hex.toUpperCase(),
-      new Date().toISOString(),
-      me.id,
-    ]);
+    await updateAvatarColor(me.id, hex);
   };
 
   const handleLogOut = () => {

@@ -1,4 +1,5 @@
-import { useQuery } from '@powersync/react';
+import { useQuery, usePowerSync } from '@powersync/react';
+import { useCallback } from 'react';
 
 import type { User as DbUser } from '@database/schema';
 import { useAuth } from '@hooks/useAuth';
@@ -25,4 +26,25 @@ export function useCurrentUser() {
     isLoading,
     error,
   };
+}
+
+/**
+ * Mutations for the current user's `users` row. Keeps PowerSync writes in the
+ * hook layer so screens never call `usePowerSync().execute()` directly.
+ */
+export function useCurrentUserMutations() {
+  const powerSync = usePowerSync();
+
+  const updateAvatarColor = useCallback(
+    async (userId: string, hex: string): Promise<void> => {
+      await powerSync.execute('UPDATE users SET avatar_color = ?, updated_at = ? WHERE id = ?', [
+        hex.toUpperCase(),
+        new Date().toISOString(),
+        userId,
+      ]);
+    },
+    [powerSync]
+  );
+
+  return { updateAvatarColor };
 }

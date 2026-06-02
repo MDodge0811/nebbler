@@ -1,4 +1,3 @@
-import { useSignUp } from '@clerk/clerk-expo';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
@@ -17,8 +16,8 @@ import {
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { useSignUpFlow } from '@hooks/useAuthFlows';
 import type { AuthStackScreenProps } from '@navigation/types';
-import { extractClerkError } from '@utils/clerkError';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const scrollContentStyle = tva({ base: 'flex-grow justify-center p-6' });
@@ -44,7 +43,7 @@ interface FormErrors {
 }
 
 export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
-  const { signUp, isLoaded } = useSignUp();
+  const { isReady, register } = useSignUpFlow();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -55,7 +54,7 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
   const [genericError, setGenericError] = useState<string | undefined>();
 
   const submit = useCallback(async () => {
-    if (!isLoaded || submitting) return;
+    if (!isReady || submitting) return;
 
     const fieldErrors: FormErrors = {};
     if (!firstName.trim()) fieldErrors.firstName = 'First name is required';
@@ -74,20 +73,21 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
     setSubmitting(true);
 
     try {
-      await signUp.create({
-        emailAddress: email.trim(),
+      await register({
+        email: email.trim(),
         password,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
       });
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       navigation.navigate('VerifyCode', { email: email.trim(), mode: 'sign-up' });
     } catch (err) {
-      setGenericError(extractClerkError(err, 'Could not create your account. Try again.'));
+      setGenericError(
+        err instanceof Error ? err.message : 'Could not create your account. Try again.'
+      );
     } finally {
       setSubmitting(false);
     }
-  }, [email, firstName, isLoaded, lastName, navigation, password, signUp, submitting]);
+  }, [email, firstName, isReady, lastName, navigation, password, register, submitting]);
 
   return (
     <KeyboardAvoidingView
@@ -188,9 +188,7 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
                 </FormControlError>
               ) : (
                 <FormControlHelper>
-                  <FormControlHelperText>
-                    Clerk enforces a minimum of 8 characters by default.
-                  </FormControlHelperText>
+                  <FormControlHelperText>Use at least 8 characters.</FormControlHelperText>
                 </FormControlHelper>
               )}
             </FormControl>
@@ -199,7 +197,7 @@ export function SignUpScreen({ navigation }: AuthStackScreenProps<'SignUp'>) {
               onPress={() => {
                 void submit();
               }}
-              isDisabled={submitting || !isLoaded}
+              isDisabled={submitting || !isReady}
             >
               {submitting && <ButtonSpinner />}
               <ButtonText>{submitting ? 'Creating account…' : 'Create account'}</ButtonText>

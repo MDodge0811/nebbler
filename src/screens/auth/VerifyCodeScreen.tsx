@@ -1,4 +1,3 @@
-import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
@@ -15,8 +14,8 @@ import {
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { useSignInFlow, useSignUpFlow } from '@hooks/useAuthFlows';
 import type { AuthStackScreenProps } from '@navigation/types';
-import { extractClerkError } from '@utils/clerkError';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const scrollContentStyle = tva({ base: 'flex-grow justify-center p-6' });
@@ -34,31 +33,13 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1 },
 });
 
-type SignUpResource = NonNullable<ReturnType<typeof useSignUp>['signUp']>;
-type SignInResource = NonNullable<ReturnType<typeof useSignIn>['signIn']>;
-type SetActiveSignUp = ReturnType<typeof useSignUp>['setActive'];
-type SetActiveSignIn = ReturnType<typeof useSignIn>['setActive'];
-
-async function completeSignUp(signUp: SignUpResource, setActive: SetActiveSignUp, code: string) {
-  const result = await signUp.attemptEmailAddressVerification({ code });
-  if (result.status === 'complete' && setActive) {
-    await setActive({ session: result.createdSessionId });
-  }
-}
-
-async function completeSignIn(signIn: SignInResource, setActive: SetActiveSignIn, code: string) {
-  const result = await signIn.attemptFirstFactor({ strategy: 'email_code', code });
-  if (result.status === 'complete' && setActive) {
-    await setActive({ session: result.createdSessionId });
-  }
-}
-
 export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'VerifyCode'>) {
   const { email, mode } = route.params;
   const isSignUp = mode === 'sign-up';
 
-  const { signIn, setActive: setActiveSignIn, isLoaded: signInLoaded } = useSignIn();
-  const { signUp, setActive: setActiveSignUp, isLoaded: signUpLoaded } = useSignUp();
+  const { isReady: signInReady, verifyEmailCode: verifySignIn } = useSignInFlow();
+  const { isReady: signUpReady, verifyEmailCode: verifySignUp } = useSignUpFlow();
+  const isReady = isSignUp ? signUpReady : signInReady;
 
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -71,35 +52,21 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
       setCodeError('Verification code is required');
       return;
     }
-    if (isSignUp ? !signUpLoaded || !signUp : !signInLoaded || !signIn) return;
-    if (submitting) return;
+    if (!isReady || submitting) return;
 
     setCodeError(undefined);
     setGenericError(undefined);
     setSubmitting(true);
 
     try {
-      if (isSignUp) {
-        await completeSignUp(signUp!, setActiveSignUp, trimmed);
-      } else {
-        await completeSignIn(signIn!, setActiveSignIn, trimmed);
-      }
+      // On 'complete', ClerkPowerSyncBridge picks up the new session.
+      await (isSignUp ? verifySignUp(trimmed) : verifySignIn(trimmed));
     } catch (err) {
-      setGenericError(extractClerkError(err, 'Could not verify the code. Try again.'));
+      setGenericError(err instanceof Error ? err.message : 'Could not verify the code. Try again.');
     } finally {
       setSubmitting(false);
     }
-  }, [
-    code,
-    isSignUp,
-    setActiveSignIn,
-    setActiveSignUp,
-    signIn,
-    signInLoaded,
-    signUp,
-    signUpLoaded,
-    submitting,
-  ]);
+  }, [code, isReady, isSignUp, submitting, verifySignIn, verifySignUp]);
 
   return (
     <KeyboardAvoidingView

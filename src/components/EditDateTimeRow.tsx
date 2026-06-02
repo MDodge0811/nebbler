@@ -6,9 +6,8 @@ import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import type { PickerTarget } from '@/types/eventForm';
 import { formatDateShort, formatTime } from '@utils/formatTime';
-
-export type PickerTarget = 'startDate' | 'startTime' | 'endDate' | 'endTime' | null;
 
 const sectionLabelStyle = tva({ base: 'text-sm text-typography-500' });
 const dateTimeTextStyle = tva({ base: 'text-base text-typography-900' });

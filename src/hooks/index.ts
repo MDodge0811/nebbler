@@ -2,12 +2,15 @@
 export { useSyncStatus, useHasPendingChanges } from './useSyncStatus';
 export type { SyncState, SyncStatusInfo } from './useSyncStatus';
 
-// Auth hooks — for sign-in/sign-up flows use Clerk's hooks directly:
-//   useSignIn, useSignUp, useSSO, useUser (from `@clerk/clerk-expo`).
+// Auth hooks. These are the ONLY adapters over the identity provider —
+// screens must not import `@clerk/*` directly (enforced in eslint.config.js).
+// `useAuth` reads session/identity; the *Flow hooks drive sign-in/sign-up/OAuth.
 export { useAuth } from './useAuth';
+export { useSignInFlow, useSignUpFlow, useOAuthSignIn } from './useAuthFlows';
+export type { PasswordSignInResult, RegisterParams } from './useAuthFlows';
 
 // User hooks
-export { useCurrentUser } from './useCurrentUser';
+export { useCurrentUser, useCurrentUserMutations } from './useCurrentUser';
 
 // Calendar hooks
 export {
