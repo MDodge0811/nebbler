@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { View, Pressable, Text, StyleSheet } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { AvatarCircle } from '@components/ui/AvatarCircle';
 import { displayName } from '@utils/displayName';
 
@@ -27,13 +29,17 @@ export function PersonRow({ user, trailing, onPress }: PersonRowProps) {
   });
 
   const content = (
-    <View testID="person-row" style={styles.row}>
+    <Box testID="person-row" className="flex-row items-center gap-3 px-4 py-2.5">
       <AvatarCircle user={user} size={40} />
-      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.name}>
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        className="flex-1 text-[15px] font-medium text-brand-text"
+      >
         {name}
       </Text>
-      <View style={styles.trailing}>{trailing}</View>
-    </View>
+      <Box className="shrink-0">{trailing}</Box>
+    </Box>
   );
 
   if (onPress) {
@@ -45,22 +51,3 @@ export function PersonRow({ user, trailing, onPress }: PersonRowProps) {
   }
   return content;
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  name: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#1A1A1F',
-  },
-  trailing: {
-    flexShrink: 0,
-  },
-});

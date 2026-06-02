@@ -1,18 +1,12 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-  ActivityIndicator,
-} from 'react-native';
+import { ScrollView, LayoutAnimation, Platform, UIManager, ActivityIndicator } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { PersonRow } from '@components/people/PersonRow';
 import { useConnections, type HydratedConnection } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
@@ -22,6 +16,17 @@ import { acceptConnection, declineConnection, cancelSentRequest } from '@utils/c
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
+
+const sectionHeaderStyle =
+  'px-4 pb-2 text-[13px] font-semibold uppercase tracking-[0.3px] text-brand-text-secondary';
+const primaryBtnStyle = tva({
+  base: 'rounded-lg bg-brand-primary px-[14px] py-[7px]',
+  variants: { disabled: { true: 'opacity-50' } },
+});
+const iconBtnStyle = tva({
+  base: 'h-8 w-8 items-center justify-center rounded-full bg-typography-50',
+  variants: { disabled: { true: 'opacity-50' } },
+});
 
 type Nav = NativeStackNavigationProp<PeopleStackParamList, 'Connections'>;
 
@@ -52,11 +57,15 @@ export function ConnectionsScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <Box className="flex-1 bg-brand-surface-subtle">
         {[0, 1, 2].map((i) => (
-          <View key={i} testID="person-row-skeleton" style={styles.skeleton} />
+          <Box
+            key={i}
+            testID="person-row-skeleton"
+            className="mx-4 my-1.5 h-14 rounded-lg bg-brand-divider"
+          />
         ))}
-      </View>
+      </Box>
     );
   }
 
@@ -65,72 +74,77 @@ export function ConnectionsScreen() {
 
   if (isEmpty) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyTitle}>No connections yet</Text>
-        <Text style={styles.emptySubtitle}>Tap + to find people you know.</Text>
-        <Pressable style={styles.cta} onPress={() => navigation.navigate('AddConnection')}>
-          <Text style={styles.ctaText}>Add People</Text>
+      <Box className="flex-1 items-center justify-center gap-2 p-6">
+        <Text className="text-lg font-semibold text-brand-text">No connections yet</Text>
+        <Text className="mb-4 text-sm text-brand-text-secondary">
+          Tap + to find people you know.
+        </Text>
+        <Pressable
+          className="rounded-xl bg-brand-primary px-6 py-3"
+          onPress={() => navigation.navigate('AddConnection')}
+        >
+          <Text className="font-semibold text-typography-white">Add People</Text>
         </Pressable>
-      </View>
+      </Box>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView className="flex-1 bg-brand-surface-subtle" contentContainerClassName="py-3">
       {pendingIncoming.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Requests ({pendingIncoming.length})</Text>
+        <Box className="mb-4">
+          <Text className={sectionHeaderStyle}>Requests ({pendingIncoming.length})</Text>
           {pendingIncoming.map((c) => (
             <PersonRow
               key={c.id}
               user={hydratedToUser(c)}
               trailing={
-                <View style={styles.rowActions}>
+                <Box className="flex-row items-center gap-2">
                   <Pressable
-                    style={[styles.primaryBtn, submittingId === c.id && styles.btnDisabled]}
+                    className={primaryBtnStyle({ disabled: submittingId === c.id })}
                     disabled={submittingId === c.id}
                     onPress={() => {
                       void runMutation(c.id, acceptConnection);
                     }}
                   >
-                    <Text style={styles.primaryBtnText}>Accept</Text>
+                    <Text className="text-[13px] font-semibold text-typography-white">Accept</Text>
                   </Pressable>
                   <Pressable
-                    style={[styles.iconBtn, submittingId === c.id && styles.btnDisabled]}
+                    className={iconBtnStyle({ disabled: submittingId === c.id })}
                     disabled={submittingId === c.id}
                     accessibilityLabel="Decline"
                     onPress={() => {
                       void runMutation(c.id, declineConnection);
                     }}
                   >
-                    <Text style={styles.iconBtnText}>✕</Text>
+                    <Text className="text-base text-brand-text-secondary">✕</Text>
                   </Pressable>
-                </View>
+                </Box>
               }
             />
           ))}
-        </View>
+        </Box>
       )}
 
       {accepted.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Connected ({accepted.length})</Text>
+        <Box className="mb-4">
+          <Text className={sectionHeaderStyle}>Connected ({accepted.length})</Text>
           {accepted.map((c) => (
             <PersonRow
               key={c.id}
               user={hydratedToUser(c)}
-              trailing={<Text style={styles.chevron}>›</Text>}
+              trailing={<Text className="text-base text-brand-text-muted">›</Text>}
               onPress={() => navigation.navigate('PersonProfile', { userId: c.other_user_id })}
             />
           ))}
-        </View>
+        </Box>
       )}
 
       {pendingOutgoing.length > 0 && (
-        <View style={styles.section}>
-          <Pressable onPress={toggleSent} style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionHeader}>Sent ({pendingOutgoing.length})</Text>
-            <Text style={styles.chevron}>{sentExpanded ? '▾' : '▸'}</Text>
+        <Box className="mb-4">
+          <Pressable onPress={toggleSent} className="flex-row items-center justify-between pr-4">
+            <Text className={sectionHeaderStyle}>Sent ({pendingOutgoing.length})</Text>
+            <Text className="text-base text-brand-text-muted">{sentExpanded ? '▾' : '▸'}</Text>
           </Pressable>
           {sentExpanded &&
             pendingOutgoing.map((c) => (
@@ -138,26 +152,30 @@ export function ConnectionsScreen() {
                 key={c.id}
                 user={hydratedToUser(c)}
                 trailing={
-                  <View style={styles.rowActions}>
-                    <Text style={styles.pendingLabel}>Pending</Text>
+                  <Box className="flex-row items-center gap-2">
+                    <Text className="text-[13px] text-brand-text-muted">Pending</Text>
                     <Pressable
-                      style={[styles.iconBtn, submittingId === c.id && styles.btnDisabled]}
+                      className={iconBtnStyle({ disabled: submittingId === c.id })}
                       disabled={submittingId === c.id}
                       accessibilityLabel="Cancel"
                       onPress={() => {
                         void runMutation(c.id, cancelSentRequest);
                       }}
                     >
-                      <Text style={styles.iconBtnText}>✕</Text>
+                      <Text className="text-base text-brand-text-secondary">✕</Text>
                     </Pressable>
-                  </View>
+                  </Box>
                 }
               />
             ))}
-        </View>
+        </Box>
       )}
 
-      {submittingId && <ActivityIndicator size="small" style={styles.submittingSpinner} />}
+      {submittingId && (
+        <Box className="mt-4">
+          <ActivityIndicator size="small" />
+        </Box>
+      )}
     </ScrollView>
   );
 }
@@ -171,68 +189,3 @@ function hydratedToUser(c: HydratedConnection) {
     avatar_color: c.avatar_color,
   };
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
-  content: { paddingVertical: 12 },
-  section: { marginBottom: 16 },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B6B78',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingRight: 16,
-  },
-  rowActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  primaryBtn: {
-    backgroundColor: '#00DB74',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-  },
-  primaryBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  iconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconBtnText: { color: '#6B6B78', fontSize: 16 },
-  btnDisabled: { opacity: 0.5 },
-  pendingLabel: { color: '#9B9BA8', fontSize: 13 },
-  chevron: { color: '#9B9BA8', fontSize: 16 },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    gap: 8,
-  },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1F' },
-  emptySubtitle: { fontSize: 14, color: '#6B6B78', marginBottom: 16 },
-  cta: {
-    backgroundColor: '#00DB74',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  ctaText: { color: '#fff', fontWeight: '600' },
-  skeleton: {
-    height: 56,
-    backgroundColor: '#F0F0F3',
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginVertical: 6,
-  },
-  submittingSpinner: { marginTop: 16 },
-});

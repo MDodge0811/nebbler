@@ -119,6 +119,10 @@ token (exact RGB, light+dark mirrored, safelisted):
 | `brand-danger-text`    | `--color-brand-danger-text`    | `204 68 68`   | `#CC4444` | calendarDetail danger copy text   |
 | `brand-surface-subtle` | `--color-brand-surface-subtle` | `250 250 250` | `#FAFAFA` | ProfileScreen screen container bg |
 | `brand-divider`        | `--color-brand-divider`        | `240 240 243` | `#F0F0F3` | ProfileScreen row divider         |
+| `brand-pending-bg`     | `--color-brand-pending-bg`     | `255 246 224` | `#FFF6E0` | PersonProfile StatusPill bg       |
+| `brand-pending-border` | `--color-brand-pending-border` | `244 213 141` | `#F4D58D` | PersonProfile StatusPill border   |
+| `brand-pending-dot`    | `--color-brand-pending-dot`    | `255 179 71`  | `#FFB347` | PersonProfile StatusPill dot      |
+| `brand-pending-text`   | `--color-brand-pending-text`   | `160 115 0`   | `#A07300` | PersonProfile StatusPill text     |
 
 Other screen-local hexes resolved to **existing** tokens (byte-identical):
 `#262627`→`typography-900`, `#E5E5E5`→`typography-100`, `#FEE2E2`→`error-50`,
