@@ -2,8 +2,7 @@ import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
 import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
 import { VStack } from '@/components/ui/vstack';
-
-export type OAuthStrategy = 'oauth_google' | 'oauth_apple' | 'oauth_facebook';
+import type { OAuthStrategy } from '@/types/auth';
 
 const socialStyle = tva({ base: 'gap-3' });
 

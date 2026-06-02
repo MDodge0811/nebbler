@@ -15,8 +15,10 @@ jest.mock('@hooks/useAuth', () => ({
   useAuth: () => ({ signOut: mockSignOut, user: { id: 'me', email: 'me@example.com' } }),
 }));
 
+const mockUpdateAvatarColor = jest.fn();
 jest.mock('@hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({ user: { id: 'me' } }),
+  useCurrentUserMutations: () => ({ updateAvatarColor: mockUpdateAvatarColor }),
 }));
 
 const mockUseUserProfile = jest.fn();
@@ -24,11 +26,6 @@ const mockUseConnections = jest.fn();
 jest.mock('@hooks/useConnections', () => ({
   useUserProfile: (...args: unknown[]): unknown => mockUseUserProfile(...args),
   useConnections: (...args: unknown[]): unknown => mockUseConnections(...args),
-}));
-
-const mockExecute = jest.fn();
-jest.mock('@powersync/react', () => ({
-  usePowerSync: () => ({ execute: mockExecute }),
 }));
 
 beforeEach(() => {
@@ -61,15 +58,12 @@ describe('ProfileScreen', () => {
     expect(queryAllByTestId(/color-swatch-/).length).toBeGreaterThan(0);
   });
 
-  it('writes uppercase hex to PowerSync when a swatch is tapped', async () => {
+  it('updates avatar color via the mutation hook when a swatch is tapped', async () => {
     const { getByText, getByTestId } = render(<ProfileScreen />);
     fireEvent.press(getByText('Mal Dodge'));
     fireEvent.press(getByTestId(`color-swatch-${CALENDAR_PALETTE[3].hex}`));
     await waitFor(() =>
-      expect(mockExecute).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE users'),
-        expect.arrayContaining([CALENDAR_PALETTE[3].hex.toUpperCase()])
-      )
+      expect(mockUpdateAvatarColor).toHaveBeenCalledWith('me', CALENDAR_PALETTE[3].hex)
     );
   });
 
