@@ -15,6 +15,10 @@ module.exports = {
       pattern:
         /(bg|border|text|stroke|fill)-(primary|secondary|tertiary|error|success|warning|info|typography|outline|background|indicator)-(0|50|100|200|300|400|500|600|700|800|900|950|white|gray|black|error|warning|muted|success|info|light|dark|primary)/,
     },
+    {
+      pattern:
+        /(bg|border|text|stroke|fill)-brand-(primary-light|primary-mid|primary-border|primary|danger-light|danger|text-secondary|text-muted|text|border|background)/,
+    },
   ],
   theme: {
     extend: {
@@ -172,6 +176,19 @@ module.exports = {
           primary: 'rgb(var(--color-indicator-primary)/<alpha-value>)',
           info: 'rgb(var(--color-indicator-info)/<alpha-value>)',
           error: 'rgb(var(--color-indicator-error)/<alpha-value>)',
+        },
+        brand: {
+          primary: 'rgb(var(--color-brand-primary)/<alpha-value>)',
+          'primary-light': 'rgb(var(--color-brand-primary-light)/<alpha-value>)',
+          'primary-mid': 'rgb(var(--color-brand-primary-mid)/<alpha-value>)',
+          'primary-border': 'rgb(var(--color-brand-primary-border)/<alpha-value>)',
+          border: 'rgb(var(--color-brand-border)/<alpha-value>)',
+          background: 'rgb(var(--color-brand-background)/<alpha-value>)',
+          danger: 'rgb(var(--color-brand-danger)/<alpha-value>)',
+          'danger-light': 'rgb(var(--color-brand-danger-light)/<alpha-value>)',
+          text: 'rgb(var(--color-brand-text)/<alpha-value>)',
+          'text-secondary': 'rgb(var(--color-brand-text-secondary)/<alpha-value>)',
+          'text-muted': 'rgb(var(--color-brand-text-muted)/<alpha-value>)',
         },
       },
       fontFamily: {

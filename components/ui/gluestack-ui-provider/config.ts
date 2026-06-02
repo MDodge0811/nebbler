@@ -153,6 +153,20 @@ export const config = {
     '--color-indicator-primary': '55 55 55',
     '--color-indicator-info': '83 153 236',
     '--color-indicator-error': '185 28 28',
+
+    /* Brand — exact Nebbler chrome hexes migrated from src/constants.
+       Only hexes with NO exact match in the palettes above live here. */
+    '--color-brand-primary': '0 219 116' /* #00DB74 */,
+    '--color-brand-primary-light': '232 251 241' /* #E8FBF1 */,
+    '--color-brand-primary-mid': '208 245 227' /* #D0F5E3 */,
+    '--color-brand-primary-border': '168 237 203' /* #A8EDCB */,
+    '--color-brand-border': '232 232 236' /* #E8E8EC */,
+    '--color-brand-background': '245 245 247' /* #F5F5F7 */,
+    '--color-brand-danger': '255 107 107' /* #FF6B6B */,
+    '--color-brand-danger-light': '255 240 240' /* #FFF0F0 */,
+    '--color-brand-text': '26 26 31' /* #1A1A1F */,
+    '--color-brand-text-secondary': '107 107 120' /* #6B6B78 */,
+    '--color-brand-text-muted': '155 155 168' /* #9B9BA8 */,
   }),
   dark: vars({
     '--color-primary-0': '166 166 166',
@@ -305,5 +319,20 @@ export const config = {
     '--color-indicator-primary': '247 247 247',
     '--color-indicator-info': '161 199 245',
     '--color-indicator-error': '232 70 69',
+
+    /* Brand — dark mirrors light. The app renders light-only
+       (<GluestackUIProvider mode="light">), so these are never displayed;
+       mirroring avoids inventing undesigned dark brand colors. */
+    '--color-brand-primary': '0 219 116' /* #00DB74 */,
+    '--color-brand-primary-light': '232 251 241' /* #E8FBF1 */,
+    '--color-brand-primary-mid': '208 245 227' /* #D0F5E3 */,
+    '--color-brand-primary-border': '168 237 203' /* #A8EDCB */,
+    '--color-brand-border': '232 232 236' /* #E8E8EC */,
+    '--color-brand-background': '245 245 247' /* #F5F5F7 */,
+    '--color-brand-danger': '255 107 107' /* #FF6B6B */,
+    '--color-brand-danger-light': '255 240 240' /* #FFF0F0 */,
+    '--color-brand-text': '26 26 31' /* #1A1A1F */,
+    '--color-brand-text-secondary': '107 107 120' /* #6B6B78 */,
+    '--color-brand-text-muted': '155 155 168' /* #9B9BA8 */,
   }),
 };
