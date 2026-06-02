@@ -1,14 +1,15 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { FlatList, Modal, StyleSheet, View } from 'react-native';
+import { FlatList, Modal } from 'react-native';
 
 import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import type { WritableCalendar } from '@hooks/useWritableCalendars';
 import { getCalendarColor } from '@utils/calendarColor';
 
-const overlayStyle = tva({ base: 'flex-1 justify-end' });
+const overlayStyle = tva({ base: 'flex-1 justify-end bg-brand-scrim/40' });
 const sheetStyle = tva({
   base: 'rounded-t-2xl bg-background-0 pb-8 pt-4',
 });
@@ -17,12 +18,7 @@ const rowStyle = tva({ base: 'items-center px-4 py-3' });
 const calendarNameStyle = tva({ base: 'flex-1 text-base text-typography-900' });
 const badgeStyle = tva({ base: 'text-xs text-typography-400' });
 const emptyStyle = tva({ base: 'px-4 py-8 text-center text-base text-typography-400' });
-
-const styles = StyleSheet.create({
-  overlay: { backgroundColor: 'rgba(0,0,0,0.4)' },
-  dot: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
-  checkmark: { fontSize: 16, color: '#00DB74', marginLeft: 8 },
-});
+const checkmarkStyle = tva({ base: 'ml-2 text-base text-brand-primary' });
 
 function getTypeBadge(type: string | null): string {
   switch (type) {
@@ -62,10 +58,10 @@ export function CalendarPickerSheet({
     return (
       <Pressable onPress={() => onSelect(item)}>
         <HStack className={rowStyle({})}>
-          <View style={[styles.dot, { backgroundColor: color }]} />
+          <DynamicColorView className="mr-3 h-3 w-3 rounded-full" backgroundColor={color} />
           <Text className={calendarNameStyle({})}>{item.name}</Text>
           {badge ? <Text className={badgeStyle({})}>{badge}</Text> : null}
-          {isSelected ? <Text style={styles.checkmark}>&#x2713;</Text> : null}
+          {isSelected ? <Text className={checkmarkStyle({})}>&#x2713;</Text> : null}
         </HStack>
       </Pressable>
     );
@@ -73,7 +69,7 @@ export function CalendarPickerSheet({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable className={overlayStyle({})} style={styles.overlay} onPress={onClose}>
+      <Pressable className={overlayStyle({})} onPress={onClose}>
         <Box className={sheetStyle({})}>
           <Text className={titleStyle({})}>Select Calendar</Text>
           {calendars.length === 0 ? (

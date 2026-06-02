@@ -81,6 +81,22 @@ describe('DynamicColorView', () => {
     const flat = StyleSheet.flatten(getByTestId('dyn-view').props.style) ?? {};
     expect('paddingTop' in flat).toBe(false);
   });
+
+  it('applies paddingBottom via inline style for safe-area insets', () => {
+    const { getByTestId } = render(
+      <DynamicColorView testID="dyn-view" paddingBottom={34} className="flex-row" />
+    );
+    const flat = StyleSheet.flatten(getByTestId('dyn-view').props.style);
+    expect(flat).toMatchObject({ paddingBottom: 34 });
+  });
+
+  it('omits paddingBottom when not provided', () => {
+    const { getByTestId } = render(
+      <DynamicColorView testID="dyn-view" backgroundColor="#00DB74" />
+    );
+    const flat = StyleSheet.flatten(getByTestId('dyn-view').props.style) ?? {};
+    expect('paddingBottom' in flat).toBe(false);
+  });
 });
 
 describe('DynamicColorText', () => {
