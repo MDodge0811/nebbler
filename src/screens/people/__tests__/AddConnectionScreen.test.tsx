@@ -43,7 +43,7 @@ jest.mock('@utils/connections', () => ({
 }));
 
 const mockShowToast = jest.fn();
-jest.mock('@/components/ui/toast', () => ({
+jest.mock('@hooks/useToast', () => ({
   useToast: () => ({ show: (opts: unknown): unknown => mockShowToast(opts) }),
 }));
 

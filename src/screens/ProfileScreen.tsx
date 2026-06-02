@@ -72,7 +72,7 @@ export function ProfileScreen() {
   const { user: me } = useCurrentUser();
   const { signOut, user: authUser } = useAuth();
   const { updateAvatarColor } = useCurrentUserMutations();
-  const profile = useUserProfile(me?.id);
+  const { user: profile } = useUserProfile(me?.id);
   const { pendingIncoming, accepted } = useConnections(me?.id);
 
   const [expanded, setExpanded] = useState(false);

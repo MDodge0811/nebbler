@@ -86,18 +86,22 @@ export function useConnections(currentUserId: string | undefined) {
  * Active connection row between current user and `otherUserId`, either direction.
  * Filters explicitly by both parties so behavior does not depend on sync-rule scope.
  */
+export type ActiveConnection = {
+  id: string;
+  status: 'pending' | 'accepted' | 'declined' | 'blocked';
+  requester_id: string;
+  addressee_id: string;
+  /** ISO 8601 — used by PersonProfileScreen to render the "Since {month year}" tile. */
+  updated_at: string;
+};
+
 export function useConnectionWith(
   currentUserId: string | undefined,
   otherUserId: string | undefined
-) {
-  const { data } = useQuery<{
-    id: string;
-    status: 'pending' | 'accepted' | 'declined' | 'blocked';
-    requester_id: string;
-    addressee_id: string;
-  }>(
+): ActiveConnection | null {
+  const { data } = useQuery<ActiveConnection>(
     currentUserId && otherUserId
-      ? `SELECT id, status, requester_id, addressee_id
+      ? `SELECT id, status, requester_id, addressee_id, updated_at
          FROM user_connections
          WHERE ((requester_id = ? AND addressee_id = ?)
              OR (requester_id = ? AND addressee_id = ?))
@@ -162,22 +166,31 @@ export function useSharedCalendars(
   return data;
 }
 
+export type UserProfile = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_color: string | null;
+};
+
 /**
  * Minimal user profile (id + name + avatar_color) for any user the client
  * has synced (own row or connected user).
+ *
+ * `isLoading` lets consumers distinguish "still loading" from "row genuinely
+ * absent" — a fresh visit to PersonProfileScreen would otherwise flash the
+ * "not available" empty state before the local SQLite query resolves.
  */
-export function useUserProfile(userId: string | undefined) {
-  const { data } = useQuery<{
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    avatar_color: string | null;
-  }>(
+export function useUserProfile(userId: string | undefined): {
+  user: UserProfile | null;
+  isLoading: boolean;
+} {
+  const { data, isLoading } = useQuery<UserProfile>(
     userId
       ? `SELECT id, first_name, last_name, avatar_color FROM users WHERE id = ? AND deleted_at IS NULL`
       : `SELECT 1 WHERE 0`,
     userId ? [userId] : []
   );
 
-  return data[0] ?? null;
+  return { user: data[0] ?? null, isLoading: !!userId && isLoading };
 }

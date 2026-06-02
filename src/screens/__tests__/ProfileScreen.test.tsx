@@ -31,10 +31,13 @@ jest.mock('@hooks/useConnections', () => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseUserProfile.mockReturnValue({
-    id: 'me',
-    first_name: 'Mal',
-    last_name: 'Dodge',
-    avatar_color: CALENDAR_PALETTE[0].hex,
+    user: {
+      id: 'me',
+      first_name: 'Mal',
+      last_name: 'Dodge',
+      avatar_color: CALENDAR_PALETTE[0].hex,
+    },
+    isLoading: false,
   });
   mockUseConnections.mockReturnValue({
     pendingIncoming: [],

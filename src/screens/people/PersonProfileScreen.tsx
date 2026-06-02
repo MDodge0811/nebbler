@@ -3,7 +3,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Alert, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { useToast } from '@/components/ui/toast';
 import { AvatarCircle } from '@components/ui/AvatarCircle';
 import {
   useUserProfile,
@@ -12,6 +11,7 @@ import {
   useSharedCalendarCount,
 } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useToast } from '@hooks/useToast';
 import type { PeopleStackParamList, RootStackParamList } from '@navigation/types';
 import { removeConnection, blockUser } from '@utils/connections';
 import { displayName } from '@utils/displayName';
@@ -47,7 +47,7 @@ export function PersonProfileScreen() {
   const userId = route.params.userId;
   const toast = useToast();
 
-  const user = useUserProfile(userId);
+  const { user } = useUserProfile(userId);
   const connection = useConnectionWith(currentUserId, userId);
   const sharedCalendars = useSharedCalendars(currentUserId, userId);
   const sharedCount = useSharedCalendarCount(currentUserId, userId);
@@ -135,9 +135,7 @@ export function PersonProfileScreen() {
               <View style={styles.metaDivider} />
               <View style={styles.metaTile}>
                 <Text style={styles.metaSmallLabel}>Since</Text>
-                <Text style={styles.metaSmallValue}>
-                  {formatMonthYear((connection as { updated_at?: string }).updated_at ?? '')}
-                </Text>
+                <Text style={styles.metaSmallValue}>{formatMonthYear(connection.updated_at)}</Text>
               </View>
             </>
           )}

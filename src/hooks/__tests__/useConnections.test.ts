@@ -165,9 +165,60 @@ describe('useSharedCalendars', () => {
 });
 
 describe('useUserProfile', () => {
-  it('returns null when not found', () => {
-    (useQuery as jest.Mock).mockReturnValue({ data: [] });
+  it('returns { user: null, isLoading: false } when not found and sync settled', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false });
     const { result } = renderHook(() => useUserProfile('missing'));
-    expect(result.current).toBeNull();
+    expect(result.current.user).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('returns { isLoading: true } while the local query has not resolved yet', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: true });
+    const { result } = renderHook(() => useUserProfile('u1'));
+    expect(result.current.user).toBeNull();
+    expect(result.current.isLoading).toBe(true);
+  });
+
+  it('returns the row when found', () => {
+    (useQuery as jest.Mock).mockReturnValue({
+      data: [{ id: 'u1', first_name: 'A', last_name: 'B', avatar_color: '#00DB74' }],
+      isLoading: false,
+    });
+    const { result } = renderHook(() => useUserProfile('u1'));
+    expect(result.current.user?.id).toBe('u1');
+  });
+
+  it('does not flag isLoading when no userId is provided (no query was issued)', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: true });
+    const { result } = renderHook(() => useUserProfile(undefined));
+    expect(result.current.isLoading).toBe(false);
+  });
+});
+
+describe('useConnectionWith updated_at', () => {
+  it('returns updated_at on the active row', () => {
+    (useQuery as jest.Mock).mockReturnValue({
+      data: [
+        {
+          id: 'c1',
+          status: 'accepted',
+          requester_id: 'me',
+          addressee_id: 'them',
+          updated_at: '2026-01-15T00:00:00Z',
+        },
+      ],
+      isLoading: false,
+    });
+    const { result } = renderHook(() => useConnectionWith('me', 'them'));
+    expect(result.current?.updated_at).toBe('2026-01-15T00:00:00Z');
+  });
+
+  it('SELECT includes updated_at', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false });
+    renderHook(() => useConnectionWith('me', 'them'));
+    expect(useQuery as jest.Mock).toHaveBeenCalledWith(
+      expect.stringContaining('updated_at'),
+      expect.any(Array)
+    );
   });
 });

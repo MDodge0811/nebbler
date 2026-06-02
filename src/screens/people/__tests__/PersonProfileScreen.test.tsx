@@ -33,17 +33,20 @@ jest.mock('@utils/connections', () => ({
 }));
 
 const mockShowToast = jest.fn();
-jest.mock('@/components/ui/toast', () => ({
+jest.mock('@hooks/useToast', () => ({
   useToast: () => ({ show: (opts: unknown): unknown => mockShowToast(opts) }),
 }));
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseUserProfile.mockReturnValue({
-    id: 'them',
-    first_name: 'Sarah',
-    last_name: 'Chen',
-    avatar_color: '#A78BFA',
+    user: {
+      id: 'them',
+      first_name: 'Sarah',
+      last_name: 'Chen',
+      avatar_color: '#A78BFA',
+    },
+    isLoading: false,
   });
   mockUseConnectionWith.mockReturnValue({
     id: 'c1',
@@ -145,7 +148,7 @@ describe('PersonProfileScreen', () => {
   });
 
   it('shows the unavailable empty state when user is null', () => {
-    mockUseUserProfile.mockReturnValue(null);
+    mockUseUserProfile.mockReturnValue({ user: null, isLoading: false });
     const { getByText } = render(<PersonProfileScreen />);
     expect(getByText(/This person isn't available/i)).toBeTruthy();
   });

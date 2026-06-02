@@ -13,11 +13,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import { useToast } from '@/components/ui/toast';
 import { PersonRow } from '@components/people/PersonRow';
 import { useConnections } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useDebouncedValue } from '@hooks/useDebouncedValue';
+import { useToast } from '@hooks/useToast';
 import type { PeopleStackParamList } from '@navigation/types';
 import { sendConnectionRequest, acceptConnection } from '@utils/connections';
 import { searchUsers, RateLimitedError } from '@utils/userSearch';
