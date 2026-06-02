@@ -112,11 +112,13 @@ modules (`calendarDetail`, `eventDetail`) carried a few hard-coded chrome hexes
 with no exact palette match. Per the established pattern, each got a `brand-*`
 token (exact RGB, light+dark mirrored, safelisted):
 
-| Token                 | CSS var                       | RGB           | Hex       | Origin                            |
-| --------------------- | ----------------------------- | ------------- | --------- | --------------------------------- |
-| `brand-surface-muted` | `--color-brand-surface-muted` | `243 244 246` | `#F3F4F6` | eventDetail busy-badge bg         |
-| `brand-danger-border` | `--color-brand-danger-border` | `255 212 212` | `#FFD4D4` | calendarDetail danger-card border |
-| `brand-danger-text`   | `--color-brand-danger-text`   | `204 68 68`   | `#CC4444` | calendarDetail danger copy text   |
+| Token                  | CSS var                        | RGB           | Hex       | Origin                            |
+| ---------------------- | ------------------------------ | ------------- | --------- | --------------------------------- |
+| `brand-surface-muted`  | `--color-brand-surface-muted`  | `243 244 246` | `#F3F4F6` | eventDetail busy-badge bg         |
+| `brand-danger-border`  | `--color-brand-danger-border`  | `255 212 212` | `#FFD4D4` | calendarDetail danger-card border |
+| `brand-danger-text`    | `--color-brand-danger-text`    | `204 68 68`   | `#CC4444` | calendarDetail danger copy text   |
+| `brand-surface-subtle` | `--color-brand-surface-subtle` | `250 250 250` | `#FAFAFA` | ProfileScreen screen container bg |
+| `brand-divider`        | `--color-brand-divider`        | `240 240 243` | `#F0F0F3` | ProfileScreen row divider         |
 
 Other screen-local hexes resolved to **existing** tokens (byte-identical):
 `#262627`→`typography-900`, `#E5E5E5`→`typography-100`, `#FEE2E2`→`error-50`,

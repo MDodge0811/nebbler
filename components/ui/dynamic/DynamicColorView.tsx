@@ -14,6 +14,10 @@ export interface DynamicColorViewProps extends IBoxProps {
   shadowColor?: string;
   /** Runtime stacking order. Applied via inline style for index-driven layering. */
   zIndex?: number;
+  /** Runtime absolute top offset (px). Applied via inline style for drag/gesture-driven positioning. */
+  top?: number;
+  /** Runtime top padding (px). Applied via inline style for safe-area-inset-driven spacing. */
+  paddingTop?: number;
 }
 
 /**
@@ -28,7 +32,10 @@ export interface DynamicColorViewProps extends IBoxProps {
 export const DynamicColorView = React.forwardRef<
   React.ComponentRef<typeof Box>,
   DynamicColorViewProps
->(function DynamicColorView({ backgroundColor, borderColor, shadowColor, zIndex, style, ...props }, ref) {
+>(function DynamicColorView(
+  { backgroundColor, borderColor, shadowColor, zIndex, top, paddingTop, style, ...props },
+  ref
+) {
   const dynamicStyle: ViewStyle = {};
   if (backgroundColor !== undefined) {
     dynamicStyle.backgroundColor = backgroundColor;
@@ -41,6 +48,12 @@ export const DynamicColorView = React.forwardRef<
   }
   if (zIndex !== undefined) {
     dynamicStyle.zIndex = zIndex;
+  }
+  if (top !== undefined) {
+    dynamicStyle.top = top;
+  }
+  if (paddingTop !== undefined) {
+    dynamicStyle.paddingTop = paddingTop;
   }
 
   return <Box ref={ref} style={[dynamicStyle, style]} {...props} />;

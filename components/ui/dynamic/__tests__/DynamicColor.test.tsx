@@ -49,6 +49,38 @@ describe('DynamicColorView', () => {
     expect('shadowColor' in flat).toBe(false);
     expect('zIndex' in flat).toBe(false);
   });
+
+  it('applies top via inline style for drag positioning', () => {
+    const { getByTestId } = render(
+      <DynamicColorView testID="dyn-view" top={120} className="absolute" />
+    );
+    const flat = StyleSheet.flatten(getByTestId('dyn-view').props.style);
+    expect(flat).toMatchObject({ top: 120 });
+  });
+
+  it('omits top when not provided', () => {
+    const { getByTestId } = render(
+      <DynamicColorView testID="dyn-view" backgroundColor="#00DB74" />
+    );
+    const flat = StyleSheet.flatten(getByTestId('dyn-view').props.style) ?? {};
+    expect('top' in flat).toBe(false);
+  });
+
+  it('applies paddingTop via inline style for safe-area insets', () => {
+    const { getByTestId } = render(
+      <DynamicColorView testID="dyn-view" paddingTop={47} className="flex-1" />
+    );
+    const flat = StyleSheet.flatten(getByTestId('dyn-view').props.style);
+    expect(flat).toMatchObject({ paddingTop: 47 });
+  });
+
+  it('omits paddingTop when not provided', () => {
+    const { getByTestId } = render(
+      <DynamicColorView testID="dyn-view" backgroundColor="#00DB74" />
+    );
+    const flat = StyleSheet.flatten(getByTestId('dyn-view').props.style) ?? {};
+    expect('paddingTop' in flat).toBe(false);
+  });
 });
 
 describe('DynamicColorText', () => {

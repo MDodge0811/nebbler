@@ -17,7 +17,7 @@ module.exports = {
     },
     {
       pattern:
-        /(bg|border|text|stroke|fill)-brand-(primary-light|primary-mid|primary-border|primary|danger-light|danger-border|danger-text|danger|surface-muted|text-secondary|text-muted|text|border|background)/,
+        /(bg|border|text|stroke|fill)-brand-(primary-light|primary-mid|primary-border|primary|danger-light|danger-border|danger-text|danger|surface-muted|surface-subtle|divider|text-secondary|text-muted|text|border|background)/,
     },
   ],
   theme: {
@@ -190,6 +190,8 @@ module.exports = {
           'text-secondary': 'rgb(var(--color-brand-text-secondary)/<alpha-value>)',
           'text-muted': 'rgb(var(--color-brand-text-muted)/<alpha-value>)',
           'surface-muted': 'rgb(var(--color-brand-surface-muted)/<alpha-value>)',
+          'surface-subtle': 'rgb(var(--color-brand-surface-subtle)/<alpha-value>)',
+          divider: 'rgb(var(--color-brand-divider)/<alpha-value>)',
           'danger-border': 'rgb(var(--color-brand-danger-border)/<alpha-value>)',
           'danger-text': 'rgb(var(--color-brand-danger-text)/<alpha-value>)',
         },
