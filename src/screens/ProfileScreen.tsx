@@ -18,7 +18,7 @@ import { AvatarCircle } from '@components/ui/AvatarCircle';
 import { ColorSwatchGrid } from '@components/ui/ColorSwatchGrid';
 import { calendarsUIColors } from '@constants/calendarsUI';
 import { useAuth } from '@hooks/useAuth';
-import { useConnections, useUserProfile } from '@hooks/useConnections';
+import { useConnections } from '@hooks/useConnections';
 import { useCurrentUser, useCurrentUserMutations } from '@hooks/useCurrentUser';
 import type { RootStackParamList } from '@navigation/types';
 import { displayName } from '@utils/displayName';
@@ -35,6 +35,41 @@ type AvatarProfile = {
   last_name: string | null;
   avatar_color: string | null;
 };
+
+function syntheticProfile(userId: string): AvatarProfile {
+  return { id: userId, first_name: null, last_name: null, avatar_color: null };
+}
+
+interface ResolvedProfile {
+  profile: AvatarProfile | null;
+  /** id of the writable PowerSync `users` row; null when synced row isn't here yet */
+  writableUserId: string | null;
+  /** true ONLY when we have nothing to show at all (no Clerk auth + still loading) */
+  screenLoading: boolean;
+}
+
+/**
+ * Resolve which "profile" to render: prefer the synced PowerSync row, fall
+ * back to a synthetic shape derived from Clerk's `authUser`. Lets the screen
+ * stay useful (email visible, log-out works) before the local users row
+ * arrives — and lets us disable the color picker until it's writable.
+ */
+function useResolvedProfile(): ResolvedProfile & {
+  authUserEmail: string | null;
+  connectionsUserId: string | undefined;
+} {
+  const { user: me, isLoading: meLoading } = useCurrentUser();
+  const { user: authUser } = useAuth();
+  const authUserId = authUser?.id;
+  const profile = me ?? (authUserId ? syntheticProfile(authUserId) : null);
+  return {
+    profile,
+    writableUserId: me?.id ?? null,
+    screenLoading: !authUser && meLoading,
+    authUserEmail: authUser?.email ?? null,
+    connectionsUserId: me?.id ?? authUserId,
+  };
+}
 
 function ChevronRight() {
   return (
@@ -69,11 +104,21 @@ interface AvatarCardProps {
   name: string;
   email: string | null | undefined;
   expanded: boolean;
+  /** When false, the color swatch grid is hidden — the synced row hasn't arrived yet. */
+  canEditColor: boolean;
   onToggle: () => void;
   onColorChange: (hex: string) => Promise<void>;
 }
 
-function AvatarCard({ profile, name, email, expanded, onToggle, onColorChange }: AvatarCardProps) {
+function AvatarCard({
+  profile,
+  name,
+  email,
+  expanded,
+  canEditColor,
+  onToggle,
+  onColorChange,
+}: AvatarCardProps) {
   return (
     <View style={styles.card}>
       <Pressable style={styles.avatarRow} onPress={onToggle}>
@@ -84,7 +129,7 @@ function AvatarCard({ profile, name, email, expanded, onToggle, onColorChange }:
         </View>
         <ChevronToggle expanded={expanded} />
       </Pressable>
-      {expanded && (
+      {expanded && canEditColor ? (
         <>
           <View style={styles.dividerInset} />
           <View style={styles.swatchWrap}>
@@ -96,18 +141,24 @@ function AvatarCard({ profile, name, email, expanded, onToggle, onColorChange }:
             />
           </View>
         </>
-      )}
+      ) : null}
+      {expanded && !canEditColor ? (
+        <>
+          <View style={styles.dividerInset} />
+          <Text style={styles.swatchPending}>Avatar color sync pending…</Text>
+        </>
+      ) : null}
     </View>
   );
 }
 
 export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
-  const { user: me } = useCurrentUser();
-  const { signOut, user: authUser } = useAuth();
+  const { signOut } = useAuth();
   const { updateAvatarColor } = useCurrentUserMutations();
-  const { user: profile } = useUserProfile(me?.id);
-  const { pendingIncoming, accepted } = useConnections(me?.id);
+  const { profile, writableUserId, screenLoading, authUserEmail, connectionsUserId } =
+    useResolvedProfile();
+  const { pendingIncoming, accepted } = useConnections(connectionsUserId);
 
   const [expanded, setExpanded] = useState(false);
 
@@ -117,8 +168,8 @@ export function ProfileScreen() {
   };
 
   const handleColorChange = async (hex: string) => {
-    if (!me?.id) return;
-    await updateAvatarColor(me.id, hex);
+    if (!writableUserId) return;
+    await updateAvatarColor(writableUserId, hex);
   };
 
   const handleLogOut = () => {
@@ -141,10 +192,18 @@ export function ProfileScreen() {
     });
   };
 
-  if (!profile || !me) {
+  if (screenLoading) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyTitle}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyTitle}>You're not signed in.</Text>
       </View>
     );
   }
@@ -153,7 +212,7 @@ export function ProfileScreen() {
     id: profile.id,
     first_name: profile.first_name,
     last_name: profile.last_name,
-    email: authUser?.email ?? null,
+    email: authUserEmail,
   });
 
   return (
@@ -161,8 +220,9 @@ export function ProfileScreen() {
       <AvatarCard
         profile={profile}
         name={name}
-        email={authUser?.email}
+        email={authUserEmail}
         expanded={expanded}
+        canEditColor={!!writableUserId}
         onToggle={toggleExpanded}
         onColorChange={handleColorChange}
       />
@@ -217,6 +277,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   swatchWrap: { padding: 12 },
+  swatchPending: {
+    padding: 16,
+    fontSize: 13,
+    color: calendarsUIColors.textMuted,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
 
   // Connections row
   connectionsRow: {

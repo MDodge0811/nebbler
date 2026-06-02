@@ -16,21 +16,20 @@ jest.mock('@hooks/useAuth', () => ({
 }));
 
 const mockUpdateAvatarColor = jest.fn();
+const mockUseCurrentUser = jest.fn();
 jest.mock('@hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: { id: 'me' } }),
+  useCurrentUser: (): unknown => mockUseCurrentUser(),
   useCurrentUserMutations: () => ({ updateAvatarColor: mockUpdateAvatarColor }),
 }));
 
-const mockUseUserProfile = jest.fn();
 const mockUseConnections = jest.fn();
 jest.mock('@hooks/useConnections', () => ({
-  useUserProfile: (...args: unknown[]): unknown => mockUseUserProfile(...args),
   useConnections: (...args: unknown[]): unknown => mockUseConnections(...args),
 }));
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockUseUserProfile.mockReturnValue({
+  mockUseCurrentUser.mockReturnValue({
     user: {
       id: 'me',
       first_name: 'Mal',
@@ -101,5 +100,24 @@ describe('ProfileScreen', () => {
     expect(alertSpy).toHaveBeenCalled();
     expect(mockSignOut).toHaveBeenCalled();
     alertSpy.mockRestore();
+  });
+
+  it('renders from authUser fallback when the synced users row is missing', () => {
+    // PowerSync row not yet available — should still render email + log out.
+    mockUseCurrentUser.mockReturnValue({ user: null, isLoading: false });
+    const { getByText, queryByText } = render(<ProfileScreen />);
+    expect(queryByText(/Loading/)).toBeNull();
+    expect(getByText('me@example.com')).toBeTruthy();
+    expect(getByText('Log Out')).toBeTruthy();
+  });
+
+  it('hides the color swatch grid when the writable user row is unavailable', () => {
+    mockUseCurrentUser.mockReturnValue({ user: null, isLoading: false });
+    const { getByText, queryAllByTestId } = render(<ProfileScreen />);
+    fireEvent.press(getByText('me@example.com'));
+    // Swatches NOT shown — there's no row to write to.
+    expect(queryAllByTestId(/color-swatch-/).length).toBe(0);
+    // Pending message shown instead.
+    expect(getByText(/Avatar color sync pending/)).toBeTruthy();
   });
 });
