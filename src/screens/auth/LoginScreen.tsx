@@ -1,6 +1,4 @@
-import { useSignIn, useSSO } from '@clerk/clerk-expo';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
@@ -18,10 +16,11 @@ import {
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import type { OAuthStrategy } from '@/types/auth';
+import { useOAuthSignIn, useSignInFlow } from '@hooks/useAuthFlows';
 import type { AuthStackScreenProps } from '@navigation/types';
-import { extractClerkError } from '@utils/clerkError';
 
-import { SocialSignInButtons, type OAuthStrategy } from './SocialSignInButtons';
+import { SocialSignInButtons } from './SocialSignInButtons';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const scrollContentStyle = tva({ base: 'flex-grow justify-center p-6' });
@@ -43,17 +42,14 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1 },
 });
 
-// Required so OAuth redirects complete on iOS.
-WebBrowser.maybeCompleteAuthSession();
-
 interface FormErrors {
   email?: string;
   password?: string;
 }
 
 export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
-  const { signIn, setActive, isLoaded } = useSignIn();
-  const { startSSOFlow } = useSSO();
+  const { isReady, signInWithPassword, sendEmailCode } = useSignInFlow();
+  const { signInWith } = useOAuthSignIn();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +59,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
   const [oauthInFlight, setOauthInFlight] = useState<OAuthStrategy | null>(null);
 
   const passwordSignIn = useCallback(async () => {
-    if (!isLoaded || submitting) return;
+    if (!isReady || submitting) return;
 
     const trimmed = email.trim();
     const errors: FormErrors = {};
@@ -79,26 +75,22 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
     setSubmitting('password');
 
     try {
-      const result = await signIn.create({ identifier: trimmed, password });
-
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
-        // ClerkPowerSyncBridge will pick up the new session.
-        return;
+      // On 'complete', ClerkPowerSyncBridge picks up the new session.
+      const result = await signInWithPassword(trimmed, password);
+      if (result === 'needs_more_steps') {
+        // Multi-factor or other intermediate states — surface a message and
+        // let the user choose the code path.
+        setGenericError('Additional verification is required. Try the email code option.');
       }
-
-      // Multi-factor or other intermediate states — surface a message and
-      // let the user choose the code path.
-      setGenericError('Additional verification is required. Try the email code option.');
     } catch (err) {
-      setGenericError(extractClerkError(err));
+      setGenericError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
     } finally {
       setSubmitting(null);
     }
-  }, [email, isLoaded, password, setActive, signIn, submitting]);
+  }, [email, isReady, password, signInWithPassword, submitting]);
 
   const sendCode = useCallback(async () => {
-    if (!isLoaded || submitting) return;
+    if (!isReady || submitting) return;
 
     const trimmed = email.trim();
     if (!trimmed) {
@@ -111,14 +103,14 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
     setSubmitting('code');
 
     try {
-      await signIn.create({ strategy: 'email_code', identifier: trimmed });
+      await sendEmailCode(trimmed);
       navigation.navigate('VerifyCode', { email: trimmed, mode: 'sign-in' });
     } catch (err) {
-      setGenericError(extractClerkError(err));
+      setGenericError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
     } finally {
       setSubmitting(null);
     }
-  }, [email, isLoaded, navigation, signIn, submitting]);
+  }, [email, isReady, navigation, sendEmailCode, submitting]);
 
   const oauth = useCallback(
     async (strategy: OAuthStrategy) => {
@@ -127,17 +119,14 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
       setGenericError(undefined);
 
       try {
-        const { createdSessionId, setActive: ssoSetActive } = await startSSOFlow({ strategy });
-        if (createdSessionId && ssoSetActive) {
-          await ssoSetActive({ session: createdSessionId });
-        }
+        await signInWith(strategy);
       } catch (err) {
-        setGenericError(extractClerkError(err));
+        setGenericError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
       } finally {
         setOauthInFlight(null);
       }
     },
-    [oauthInFlight, startSSOFlow]
+    [oauthInFlight, signInWith]
   );
 
   return (
@@ -211,7 +200,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
                 onPress={() => {
                   void passwordSignIn();
                 }}
-                isDisabled={!isLoaded || submitting !== null}
+                isDisabled={!isReady || submitting !== null}
               >
                 {submitting === 'password' && <ButtonSpinner />}
                 <ButtonText>
@@ -223,7 +212,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
                 onPress={() => {
                   void sendCode();
                 }}
-                isDisabled={!isLoaded || submitting !== null}
+                isDisabled={!isReady || submitting !== null}
               >
                 {submitting === 'code' && <ButtonSpinner />}
                 <ButtonText>

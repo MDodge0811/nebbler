@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { ZodError } from 'zod';
 
-import { type PickerTarget } from '@components/EditDateTimeRow';
+import type { PickerTarget } from '@/types/eventForm';
 import type { Event } from '@database/schema';
 import { CreateEventSchema } from '@database/schemas';
 import { useEventMutations } from '@hooks/useCalendarEvents';
@@ -214,4 +214,3 @@ export function useEventEditForm(event: Event | null) {
 }
 
 export type EventEditForm = ReturnType<typeof useEventEditForm>;
-export type { PickerTarget };

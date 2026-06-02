@@ -100,18 +100,35 @@ chore: update dependencies
 - No start-case, pascal-case, or upper-case subjects
 - Multi-line bodies and footers (like `Co-Authored-By:`) are allowed
 
+## Architecture Boundaries (enforced)
+
+`eslint.config.js` is the **authoritative** architecture contract — these rules fail `npm run lint` (and the pre-commit hook), so they are hard checks, not conventions.
+
+**Vendor containment (`no-restricted-imports`).** Each paid/swappable SDK has one "home"; importing it elsewhere is an error pointing at the adapter to use. This is what keeps swapping a provider a single-file change.
+
+| SDK                                                                                     | Only importable in                                             |
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `@clerk/**`                                                                             | `src/hooks/useAuth.ts`, `src/hooks/useAuthFlows.ts`, `App.tsx` |
+| `@powersync/op-sqlite`, `@powersync/react-native`, `@op-engineering/op-sqlite` (engine) | `src/database/**`, `App.tsx`                                   |
+| `@powersync/react` (`useQuery`/`usePowerSync`/`useStatus`)                              | `src/hooks/**`, `src/database/**`, `App.tsx`                   |
+| `expo-secure-store`                                                                     | `src/utils/secureStorage.ts`                                   |
+
+Everything else reaches these through an adapter: `useAuth()` / `useSignInFlow()` / … for auth, a hook for PowerSync, `secureStorage` for storage.
+
+**Layer direction (`eslint-plugin-boundaries`, default-disallow).** `src/` is tagged into element types (`type`, `constant`, `util`, `store`, `data`, `hook`, `component`, `screen`, `nav`) with an allow-list in `eslint.config.js`. Anything not allowed errors; a new file in an unclassified location errors (`no-unknown-files`). Notable prohibitions: `component`↛`screen`/`nav`, `util`↛`hook`/`component`/`screen`, `type`↛anything, `data`↛anything but `constant`/`type`. To add a new layer or edge, edit the allow-list — that file is the source of truth; the prose here just summarizes it.
+
 ## Domain-Specific Rules
 
 Detailed patterns are in `.claude/rules/` — auto-loaded when you work on matching files:
 
-| Domain        | Files scoped to                                        | What it covers                                                                             |
-| ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| PowerSync     | `src/database/`, `src/hooks/`                          | Schema, connector, sync, offline-first patterns                                            |
-| Auth          | `src/screens/auth/`, `src/hooks/useAuth.ts`, `App.tsx` | Clerk integration, sign-up / sign-in / OAuth flows, two-layer user model, PowerSync bridge |
-| Testing       | `__tests__/`, `jest.setup.js`                          | Jest config, mocking patterns, gotchas                                                     |
-| Navigation    | `src/navigation/`, `src/screens/`                      | Nav hierarchy, routing, adding screens                                                     |
-| UI Components | `src/components/`                                      | Icons, Gluestack UI, calendars, colors                                                     |
-| State Mgmt    | `src/stores/`                                          | Zustand stores                                                                             |
-| Code Quality  | config files, `src/database/schemas/`                  | ESLint, Prettier, TS, Knip, Zod, CI/CD                                                     |
+| Domain        | Files scoped to                                                                     | What it covers                                                                         |
+| ------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| PowerSync     | `src/database/`, `src/hooks/`                                                       | Schema, connector, sync, offline-first patterns                                        |
+| Auth          | `src/screens/auth/`, `src/hooks/useAuth.ts`, `src/hooks/useAuthFlows.ts`, `App.tsx` | Clerk adapter, sign-up / sign-in / OAuth flows, two-layer user model, PowerSync bridge |
+| Testing       | `__tests__/`, `jest.setup.js`                                                       | Jest config, mocking patterns, gotchas                                                 |
+| Navigation    | `src/navigation/`, `src/screens/`                                                   | Nav hierarchy, routing, adding screens                                                 |
+| UI Components | `src/components/`                                                                   | Icons, Gluestack UI, calendars, colors                                                 |
+| State Mgmt    | `src/stores/`                                                                       | Zustand stores                                                                         |
+| Code Quality  | config files, `src/database/schemas/`                                               | ESLint, Prettier, TS, Knip, Zod, CI/CD                                                 |
 
 See `.claude/rules/rules.md` for the full index.
