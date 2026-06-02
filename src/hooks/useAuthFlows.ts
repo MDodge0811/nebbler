@@ -117,8 +117,8 @@ export function useSignUpFlow() {
     async ({ email, password, firstName, lastName }: RegisterParams): Promise<void> => {
       if (!isLoaded) throw new AuthError(REGISTER_ERROR);
       try {
-        await signUp.create({ emailAddress: email, password, firstName, lastName });
-        await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+        const attempt = await signUp.create({ emailAddress: email, password, firstName, lastName });
+        await attempt.prepareEmailAddressVerification({ strategy: 'email_code' });
       } catch (err) {
         throw toAuthError(err, REGISTER_ERROR);
       }

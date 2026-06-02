@@ -91,11 +91,11 @@ describe('useSignInFlow', () => {
 
 describe('useSignUpFlow', () => {
   it('register creates the account and prepares email verification', async () => {
-    const create = jest.fn().mockResolvedValue({});
     const prepareEmailAddressVerification = jest.fn().mockResolvedValue({});
+    const create = jest.fn().mockResolvedValue({ prepareEmailAddressVerification });
     mockUseSignUp.mockReturnValue({
       isLoaded: true,
-      signUp: { create, prepareEmailAddressVerification },
+      signUp: { create },
       setActive: jest.fn(),
     });
 
