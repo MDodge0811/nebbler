@@ -201,9 +201,9 @@ function SectionHeader({
 }: {
   title: string;
   count: number;
-  collapsible?: boolean;
+  collapsible?: boolean | undefined;
   expanded: boolean;
-  onToggle?: () => void;
+  onToggle?: (() => void) | undefined;
 }) {
   const content = (
     <View style={styles.sectionHeaderRow}>
