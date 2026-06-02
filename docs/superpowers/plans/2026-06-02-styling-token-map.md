@@ -104,3 +104,24 @@ and mapped in `tailwind.config.js` under `colors.brand` + a `safelist` entry:
 
 No `UNMAPPED` rows. No `approx` rows. Every color either resolves to an
 exact-RGB token or is explicitly "keep as constant (runtime/animated/config)."
+
+### Tokens added during migration (screen-local hexes Task 0 missed)
+
+Task 0 catalogued only the `src/constants/*` files; the dedicated `styles.ts`
+modules (`calendarDetail`, `eventDetail`) carried a few hard-coded chrome hexes
+with no exact palette match. Per the established pattern, each got a `brand-*`
+token (exact RGB, light+dark mirrored, safelisted):
+
+| Token                 | CSS var                       | RGB           | Hex       | Origin                            |
+| --------------------- | ----------------------------- | ------------- | --------- | --------------------------------- |
+| `brand-surface-muted` | `--color-brand-surface-muted` | `243 244 246` | `#F3F4F6` | eventDetail busy-badge bg         |
+| `brand-danger-border` | `--color-brand-danger-border` | `255 212 212` | `#FFD4D4` | calendarDetail danger-card border |
+| `brand-danger-text`   | `--color-brand-danger-text`   | `204 68 68`   | `#CC4444` | calendarDetail danger copy text   |
+
+Other screen-local hexes resolved to **existing** tokens (byte-identical):
+`#262627`→`typography-900`, `#E5E5E5`→`typography-100`, `#FEE2E2`→`error-50`,
+`#DC2626`→`error-600`, `#FFFFFF`→`background-0`.
+
+`placeholderTextColor` props (e.g. `#A3A3A3`, `calendarsUIColors.textMuted`) are
+runtime string props, not style literals — they stay as hex/constant (no className
+equivalent), like the other "keep as constant" runtime values.

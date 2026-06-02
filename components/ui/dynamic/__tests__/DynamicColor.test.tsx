@@ -32,6 +32,23 @@ describe('DynamicColorView', () => {
     );
     expect(getByTestId('dyn-view').props.className).toContain('rounded-2xl');
   });
+
+  it('applies shadowColor and zIndex via inline style', () => {
+    const { getByTestId } = render(
+      <DynamicColorView testID="dyn-view" backgroundColor="#00DB74" shadowColor="#00DB74" zIndex={3} />
+    );
+    const flat = StyleSheet.flatten(getByTestId('dyn-view').props.style);
+    expect(flat).toMatchObject({ backgroundColor: '#00DB74', shadowColor: '#00DB74', zIndex: 3 });
+  });
+
+  it('omits shadowColor and zIndex when not provided', () => {
+    const { getByTestId } = render(
+      <DynamicColorView testID="dyn-view" backgroundColor="#00DB74" />
+    );
+    const flat = StyleSheet.flatten(getByTestId('dyn-view').props.style) ?? {};
+    expect('shadowColor' in flat).toBe(false);
+    expect('zIndex' in flat).toBe(false);
+  });
 });
 
 describe('DynamicColorText', () => {

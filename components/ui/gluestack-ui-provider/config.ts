@@ -167,6 +167,9 @@ export const config = {
     '--color-brand-text': '26 26 31' /* #1A1A1F */,
     '--color-brand-text-secondary': '107 107 120' /* #6B6B78 */,
     '--color-brand-text-muted': '155 155 168' /* #9B9BA8 */,
+    '--color-brand-surface-muted': '243 244 246' /* #F3F4F6 */,
+    '--color-brand-danger-border': '255 212 212' /* #FFD4D4 */,
+    '--color-brand-danger-text': '204 68 68' /* #CC4444 */,
   }),
   dark: vars({
     '--color-primary-0': '166 166 166',
@@ -334,5 +337,8 @@ export const config = {
     '--color-brand-text': '26 26 31' /* #1A1A1F */,
     '--color-brand-text-secondary': '107 107 120' /* #6B6B78 */,
     '--color-brand-text-muted': '155 155 168' /* #9B9BA8 */,
+    '--color-brand-surface-muted': '243 244 246' /* #F3F4F6 */,
+    '--color-brand-danger-border': '255 212 212' /* #FFD4D4 */,
+    '--color-brand-danger-text': '204 68 68' /* #CC4444 */,
   }),
 };
