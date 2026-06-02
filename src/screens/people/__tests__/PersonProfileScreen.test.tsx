@@ -5,9 +5,15 @@ import { PersonProfileScreen } from '../PersonProfileScreen';
 
 const mockGoBack = jest.fn();
 const mockNavigate = jest.fn();
+const mockSetOptions = jest.fn();
+const mockNavObject = {
+  goBack: mockGoBack,
+  navigate: mockNavigate,
+  setOptions: mockSetOptions,
+};
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ goBack: mockGoBack, navigate: mockNavigate }),
-  useRoute: () => ({ params: { userId: 'them' } }),
+  useNavigation: (): typeof mockNavObject => mockNavObject,
+  useRoute: (): { params: { userId: string } } => ({ params: { userId: 'them' } }),
 }));
 
 jest.mock('@hooks/useCurrentUser', () => ({
@@ -33,8 +39,10 @@ jest.mock('@utils/connections', () => ({
 }));
 
 const mockShowToast = jest.fn();
+// Stable `show` reference — see AddConnectionScreen test for rationale.
+const mockUseToastReturn = { show: mockShowToast };
 jest.mock('@hooks/useToast', () => ({
-  useToast: () => ({ show: (opts: unknown): unknown => mockShowToast(opts) }),
+  useToast: (): { show: jest.Mock } => mockUseToastReturn,
 }));
 
 beforeEach(() => {

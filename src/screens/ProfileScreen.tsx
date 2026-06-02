@@ -12,9 +12,11 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { AvatarCircle } from '@components/ui/AvatarCircle';
 import { ColorSwatchGrid } from '@components/ui/ColorSwatchGrid';
+import { calendarsUIColors } from '@constants/calendarsUI';
 import { useAuth } from '@hooks/useAuth';
 import { useConnections, useUserProfile } from '@hooks/useConnections';
 import { useCurrentUser, useCurrentUserMutations } from '@hooks/useCurrentUser';
@@ -27,19 +29,49 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
-type AvatarCardProps = {
-  profile: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    avatar_color: string | null;
-  };
+type AvatarProfile = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_color: string | null;
+};
+
+function ChevronRight() {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <Path
+        d="M6 4L10 8L6 12"
+        stroke={calendarsUIColors.textMuted}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function ChevronToggle({ expanded }: { expanded: boolean }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <Path
+        d={expanded ? 'M4 10L8 6L12 10' : 'M6 4L10 8L6 12'}
+        stroke={calendarsUIColors.textMuted}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+interface AvatarCardProps {
+  profile: AvatarProfile;
   name: string;
   email: string | null | undefined;
   expanded: boolean;
   onToggle: () => void;
   onColorChange: (hex: string) => Promise<void>;
-};
+}
 
 function AvatarCard({ profile, name, email, expanded, onToggle, onColorChange }: AvatarCardProps) {
   return (
@@ -50,17 +82,19 @@ function AvatarCard({ profile, name, email, expanded, onToggle, onColorChange }:
           <Text style={styles.avatarName}>{name}</Text>
           {email ? <Text style={styles.avatarEmail}>{email}</Text> : null}
         </View>
-        <Text style={styles.chevron}>{expanded ? '▾' : '▸'}</Text>
+        <ChevronToggle expanded={expanded} />
       </Pressable>
       {expanded && (
         <>
-          <View style={styles.divider} />
-          <ColorSwatchGrid
-            value={profile.avatar_color ?? '#00DB74'}
-            onChange={(hex) => {
-              void onColorChange(hex);
-            }}
-          />
+          <View style={styles.dividerInset} />
+          <View style={styles.swatchWrap}>
+            <ColorSwatchGrid
+              value={profile.avatar_color ?? calendarsUIColors.primary}
+              onChange={(hex) => {
+                void onColorChange(hex);
+              }}
+            />
+          </View>
         </>
       )}
     </View>
@@ -123,7 +157,7 @@ export function ProfileScreen() {
   });
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <AvatarCard
         profile={profile}
         name={name}
@@ -134,14 +168,14 @@ export function ProfileScreen() {
       />
 
       <Pressable style={styles.card} onPress={handleConnectionsRowTap}>
-        <View style={styles.row}>
+        <View style={styles.connectionsRow}>
           <Text style={styles.rowLabel}>Connections</Text>
           {pendingIncoming.length > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{pendingIncoming.length}</Text>
             </View>
           )}
-          <Text style={styles.chevron}>›</Text>
+          <ChevronRight />
         </View>
         <Text style={styles.rowSub}>{accepted.length} connected</Text>
       </Pressable>
@@ -154,27 +188,38 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
+  screen: { flex: 1, backgroundColor: calendarsUIColors.background },
   content: { paddingVertical: 12, gap: 12 },
+
+  // Card
   card: {
     marginHorizontal: 12,
-    backgroundColor: '#fff',
+    backgroundColor: calendarsUIColors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E8E8EC',
+    borderColor: calendarsUIColors.border,
+    overflow: 'hidden',
   },
+
+  // Avatar row
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     padding: 16,
   },
-  avatarMeta: { flex: 1 },
-  avatarName: { fontSize: 16, fontWeight: '600', color: '#1A1A1F' },
-  avatarEmail: { fontSize: 13, color: '#9B9BA8', marginTop: 2 },
-  chevron: { color: '#9B9BA8', fontSize: 18 },
-  divider: { height: 1, backgroundColor: '#F0F0F3', marginHorizontal: 16 },
-  row: {
+  avatarMeta: { flex: 1, gap: 2 },
+  avatarName: { fontSize: 16, fontWeight: '600', color: calendarsUIColors.text },
+  avatarEmail: { fontSize: 13, color: calendarsUIColors.textMuted },
+  dividerInset: {
+    height: 1,
+    backgroundColor: calendarsUIColors.border,
+    marginHorizontal: 16,
+  },
+  swatchWrap: { padding: 12 },
+
+  // Connections row
+  connectionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -182,19 +227,33 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     gap: 8,
   },
-  rowLabel: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1A1A1F' },
-  rowSub: { paddingHorizontal: 16, paddingBottom: 14, fontSize: 13, color: '#9B9BA8' },
+  rowLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: calendarsUIColors.text },
+  rowSub: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    fontSize: 13,
+    color: calendarsUIColors.textMuted,
+  },
   badge: {
     minWidth: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: calendarsUIColors.danger,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  badgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  logout: { padding: 16, color: '#FF6B6B', fontSize: 15, fontWeight: '500' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontSize: 16, color: '#9B9BA8' },
+  badgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+
+  // Log out
+  logout: { padding: 16, color: calendarsUIColors.danger, fontSize: 15, fontWeight: '600' },
+
+  // Empty
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: calendarsUIColors.background,
+  },
+  emptyTitle: { fontSize: 16, color: calendarsUIColors.textMuted },
 });

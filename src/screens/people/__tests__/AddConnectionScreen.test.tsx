@@ -43,8 +43,13 @@ jest.mock('@utils/connections', () => ({
 }));
 
 const mockShowToast = jest.fn();
+// `show` must be a stable reference across renders — the real adapter uses
+// useCallback. Return the jest.fn() directly so identity stays stable across
+// the many `useToast()` calls a single test makes (otherwise the effect that
+// depends on `show` re-fires every render → infinite loop → OOM).
+const mockUseToastReturn = { show: mockShowToast };
 jest.mock('@hooks/useToast', () => ({
-  useToast: () => ({ show: (opts: unknown): unknown => mockShowToast(opts) }),
+  useToast: (): { show: jest.Mock } => mockUseToastReturn,
 }));
 
 beforeEach(() => {

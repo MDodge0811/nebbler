@@ -69,7 +69,7 @@ describe('ConnectionsScreen', () => {
       isLoading: false,
     });
     const { getByText } = render(<ConnectionsScreen />);
-    expect(getByText(/Requests/)).toBeTruthy();
+    expect(getByText(/REQUESTS/)).toBeTruthy();
     expect(getByText('Sarah Chen')).toBeTruthy();
     expect(getByText('Accept')).toBeTruthy();
   });
@@ -94,7 +94,7 @@ describe('ConnectionsScreen', () => {
       isLoading: false,
     });
     const { getByText } = render(<ConnectionsScreen />);
-    expect(getByText('Connected (1)')).toBeTruthy();
+    expect(getByText('CONNECTED (1)')).toBeTruthy();
     fireEvent.press(getByText('Alex Park'));
     expect(mockNavigate).toHaveBeenCalledWith('PersonProfile', { userId: 'them2' });
   });
@@ -107,9 +107,9 @@ describe('ConnectionsScreen', () => {
       isLoading: false,
     });
     const { getByText, queryByText } = render(<ConnectionsScreen />);
-    expect(getByText('Sent (1)')).toBeTruthy();
+    expect(getByText('SENT (1)')).toBeTruthy();
     expect(queryByText('Riley Stone')).toBeNull(); // collapsed
-    fireEvent.press(getByText('Sent (1)'));
+    fireEvent.press(getByText('SENT (1)'));
     expect(queryByText('Riley Stone')).toBeTruthy(); // expanded
   });
 

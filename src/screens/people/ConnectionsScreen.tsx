@@ -1,29 +1,39 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  StyleSheet,
   LayoutAnimation,
   Platform,
+  Pressable,
+  SectionList,
+  StyleSheet,
+  Text,
   UIManager,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 
 import { PersonRow } from '@components/people/PersonRow';
+import { calendarsUIColors } from '@constants/calendarsUI';
 import { useConnections, type HydratedConnection } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import type { PeopleStackParamList } from '@navigation/types';
-import { acceptConnection, declineConnection, cancelSentRequest } from '@utils/connections';
+import { acceptConnection, cancelSentRequest, declineConnection } from '@utils/connections';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 type Nav = NativeStackNavigationProp<PeopleStackParamList, 'Connections'>;
+
+type SectionKey = 'requests' | 'connected' | 'sent';
+
+interface Section {
+  key: SectionKey;
+  title: string;
+  count: number;
+  data: HydratedConnection[];
+  collapsible?: boolean;
+}
 
 export function ConnectionsScreen() {
   const navigation = useNavigation<Nav>();
@@ -45,14 +55,39 @@ export function ConnectionsScreen() {
     [submittingId]
   );
 
-  const toggleSent = () => {
+  const toggleSent = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSentExpanded((v) => !v);
-  };
+  }, []);
+
+  const sections = useMemo<Section[]>(() => {
+    const out: Section[] = [];
+    if (pendingIncoming.length > 0) {
+      out.push({
+        key: 'requests',
+        title: 'Requests',
+        count: pendingIncoming.length,
+        data: pendingIncoming,
+      });
+    }
+    if (accepted.length > 0) {
+      out.push({ key: 'connected', title: 'Connected', count: accepted.length, data: accepted });
+    }
+    if (pendingOutgoing.length > 0) {
+      out.push({
+        key: 'sent',
+        title: 'Sent',
+        count: pendingOutgoing.length,
+        data: sentExpanded ? pendingOutgoing : [],
+        collapsible: true,
+      });
+    }
+    return out;
+  }, [pendingIncoming, accepted, pendingOutgoing, sentExpanded]);
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.screen}>
         {[0, 1, 2].map((i) => (
           <View key={i} testID="person-row-skeleton" style={styles.skeleton} />
         ))}
@@ -60,12 +95,9 @@ export function ConnectionsScreen() {
     );
   }
 
-  const isEmpty =
-    pendingIncoming.length === 0 && accepted.length === 0 && pendingOutgoing.length === 0;
-
-  if (isEmpty) {
+  if (sections.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
+      <View style={styles.empty}>
         <Text style={styles.emptyTitle}>No connections yet</Text>
         <Text style={styles.emptySubtitle}>Tap + to find people you know.</Text>
         <Pressable style={styles.cta} onPress={() => navigation.navigate('AddConnection')}>
@@ -76,31 +108,46 @@ export function ConnectionsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {pendingIncoming.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Requests ({pendingIncoming.length})</Text>
-          {pendingIncoming.map((c) => (
+    <SectionList
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      sections={sections}
+      keyExtractor={(item) => item.id}
+      stickySectionHeadersEnabled={false}
+      ItemSeparatorComponent={ItemDivider}
+      renderSectionHeader={({ section }) => (
+        <SectionHeader
+          title={section.title}
+          count={section.count}
+          collapsible={section.collapsible}
+          expanded={section.key === 'sent' ? sentExpanded : true}
+          onToggle={section.collapsible ? toggleSent : undefined}
+        />
+      )}
+      renderSectionFooter={() => <View style={styles.sectionFooter} />}
+      renderItem={({ section, item }) => {
+        const otherUser = hydratedToUser(item);
+        if (section.key === 'requests') {
+          return (
             <PersonRow
-              key={c.id}
-              user={hydratedToUser(c)}
+              user={otherUser}
               trailing={
                 <View style={styles.rowActions}>
                   <Pressable
-                    style={[styles.primaryBtn, submittingId === c.id && styles.btnDisabled]}
-                    disabled={submittingId === c.id}
+                    style={[styles.primaryBtn, submittingId === item.id && styles.btnDisabled]}
+                    disabled={submittingId === item.id}
                     onPress={() => {
-                      void runMutation(c.id, acceptConnection);
+                      void runMutation(item.id, acceptConnection);
                     }}
                   >
                     <Text style={styles.primaryBtnText}>Accept</Text>
                   </Pressable>
                   <Pressable
-                    style={[styles.iconBtn, submittingId === c.id && styles.btnDisabled]}
-                    disabled={submittingId === c.id}
+                    style={[styles.iconBtn, submittingId === item.id && styles.btnDisabled]}
+                    disabled={submittingId === item.id}
                     accessibilityLabel="Decline"
                     onPress={() => {
-                      void runMutation(c.id, declineConnection);
+                      void runMutation(item.id, declineConnection);
                     }}
                   >
                     <Text style={styles.iconBtnText}>✕</Text>
@@ -108,58 +155,87 @@ export function ConnectionsScreen() {
                 </View>
               }
             />
-          ))}
-        </View>
-      )}
-
-      {accepted.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Connected ({accepted.length})</Text>
-          {accepted.map((c) => (
+          );
+        }
+        if (section.key === 'connected') {
+          return (
             <PersonRow
-              key={c.id}
-              user={hydratedToUser(c)}
+              user={otherUser}
               trailing={<Text style={styles.chevron}>›</Text>}
-              onPress={() => navigation.navigate('PersonProfile', { userId: c.other_user_id })}
+              onPress={() => navigation.navigate('PersonProfile', { userId: item.other_user_id })}
             />
-          ))}
-        </View>
-      )}
-
-      {pendingOutgoing.length > 0 && (
-        <View style={styles.section}>
-          <Pressable onPress={toggleSent} style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionHeader}>Sent ({pendingOutgoing.length})</Text>
-            <Text style={styles.chevron}>{sentExpanded ? '▾' : '▸'}</Text>
-          </Pressable>
-          {sentExpanded &&
-            pendingOutgoing.map((c) => (
-              <PersonRow
-                key={c.id}
-                user={hydratedToUser(c)}
-                trailing={
-                  <View style={styles.rowActions}>
-                    <Text style={styles.pendingLabel}>Pending</Text>
-                    <Pressable
-                      style={[styles.iconBtn, submittingId === c.id && styles.btnDisabled]}
-                      disabled={submittingId === c.id}
-                      accessibilityLabel="Cancel"
-                      onPress={() => {
-                        void runMutation(c.id, cancelSentRequest);
-                      }}
-                    >
-                      <Text style={styles.iconBtnText}>✕</Text>
-                    </Pressable>
-                  </View>
-                }
-              />
-            ))}
-        </View>
-      )}
-
-      {submittingId && <ActivityIndicator size="small" style={styles.submittingSpinner} />}
-    </ScrollView>
+          );
+        }
+        // sent
+        return (
+          <PersonRow
+            user={otherUser}
+            trailing={
+              <View style={styles.rowActions}>
+                <StatusChip label="Pending" tone="warning" />
+                <Pressable
+                  style={[styles.iconBtn, submittingId === item.id && styles.btnDisabled]}
+                  disabled={submittingId === item.id}
+                  accessibilityLabel="Cancel"
+                  onPress={() => {
+                    void runMutation(item.id, cancelSentRequest);
+                  }}
+                >
+                  <Text style={styles.iconBtnText}>✕</Text>
+                </Pressable>
+              </View>
+            }
+          />
+        );
+      }}
+    />
   );
+}
+
+function SectionHeader({
+  title,
+  count,
+  collapsible,
+  expanded,
+  onToggle,
+}: {
+  title: string;
+  count: number;
+  collapsible?: boolean;
+  expanded: boolean;
+  onToggle?: () => void;
+}) {
+  const content = (
+    <View style={styles.sectionHeaderRow}>
+      <Text style={styles.sectionLabel}>
+        {title.toUpperCase()} ({count})
+      </Text>
+      {collapsible ? <Text style={styles.sectionChevron}>{expanded ? '▾' : '▸'}</Text> : null}
+    </View>
+  );
+  if (onToggle) {
+    return (
+      <Pressable onPress={onToggle} accessibilityRole="button">
+        {content}
+      </Pressable>
+    );
+  }
+  return content;
+}
+
+function StatusChip({ label, tone }: { label: string; tone: 'warning' | 'muted' }) {
+  const color = tone === 'warning' ? '#A07300' : calendarsUIColors.textMuted;
+  const bg = tone === 'warning' ? '#FFF6E0' : calendarsUIColors.surfaceHover;
+  const border = tone === 'warning' ? '#F4D58D' : calendarsUIColors.border;
+  return (
+    <View style={[styles.chip, { backgroundColor: bg, borderColor: border }]}>
+      <Text style={[styles.chipText, { color }]}>{label}</Text>
+    </View>
+  );
+}
+
+function ItemDivider() {
+  return <View style={styles.itemDivider} />;
 }
 
 function hydratedToUser(c: HydratedConnection) {
@@ -173,66 +249,96 @@ function hydratedToUser(c: HydratedConnection) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
-  content: { paddingVertical: 12 },
-  section: { marginBottom: 16 },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B6B78',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
+  screen: { flex: 1, backgroundColor: calendarsUIColors.background },
+  content: { paddingBottom: 24 },
+
+  // Section header
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingRight: 16,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: calendarsUIColors.textMuted,
+    letterSpacing: 0.3,
+  },
+  sectionChevron: {
+    color: calendarsUIColors.textMuted,
+    fontSize: 14,
+  },
+  sectionFooter: { height: 0 },
+  itemDivider: {
+    height: 1,
+    backgroundColor: calendarsUIColors.border,
+    marginLeft: 68, // align with avatar trailing edge (16 padding + 40 avatar + 12 gap)
+  },
+
+  // Row trailing widgets
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   primaryBtn: {
-    backgroundColor: '#00DB74',
+    backgroundColor: calendarsUIColors.primary,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 8,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  primaryBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13, letterSpacing: 0.1 },
   iconBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: calendarsUIColors.surfaceHover,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconBtnText: { color: '#6B6B78', fontSize: 16 },
+  iconBtnText: { color: calendarsUIColors.textSecondary, fontSize: 16 },
   btnDisabled: { opacity: 0.5 },
-  pendingLabel: { color: '#9B9BA8', fontSize: 13 },
-  chevron: { color: '#9B9BA8', fontSize: 16 },
-  emptyContainer: {
+  chevron: { color: calendarsUIColors.textMuted, fontSize: 20 },
+
+  // Status chip (Pending)
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  chipText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.2 },
+
+  // Empty state
+  empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    gap: 8,
+    gap: 6,
+    backgroundColor: calendarsUIColors.background,
   },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1F' },
-  emptySubtitle: { fontSize: 14, color: '#6B6B78', marginBottom: 16 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: calendarsUIColors.text },
+  emptySubtitle: {
+    fontSize: 14,
+    color: calendarsUIColors.textSecondary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
   cta: {
-    backgroundColor: '#00DB74',
+    backgroundColor: calendarsUIColors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
-  ctaText: { color: '#fff', fontWeight: '600' },
+  ctaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+
+  // Skeleton
   skeleton: {
     height: 56,
-    backgroundColor: '#F0F0F3',
+    backgroundColor: calendarsUIColors.surfaceHover,
     borderRadius: 8,
     marginHorizontal: 16,
     marginVertical: 6,
   },
-  submittingSpinner: { marginTop: 16 },
 });

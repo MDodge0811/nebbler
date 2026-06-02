@@ -1,19 +1,21 @@
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Alert, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useLayoutEffect } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { AvatarCircle } from '@components/ui/AvatarCircle';
+import { calendarsUIColors } from '@constants/calendarsUI';
 import {
-  useUserProfile,
   useConnectionWith,
-  useSharedCalendars,
   useSharedCalendarCount,
+  useSharedCalendars,
+  useUserProfile,
 } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useToast } from '@hooks/useToast';
 import type { PeopleStackParamList, RootStackParamList } from '@navigation/types';
-import { removeConnection, blockUser } from '@utils/connections';
+import { blockUser, removeConnection } from '@utils/connections';
 import { displayName } from '@utils/displayName';
 
 type ScreenRoute = RouteProp<PeopleStackParamList, 'PersonProfile'>;
@@ -24,16 +26,58 @@ function formatMonthYear(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-function ClockIcon({ color = '#fff' }: { color?: string }) {
+function ClockIcon() {
   return (
     <Svg width={18} height={18} viewBox="0 0 18 18" fill="none">
-      <Circle cx="9" cy="9" r="7" stroke={color} strokeWidth="1.5" />
+      <Circle cx="9" cy="9" r="7" stroke="#FFFFFF" strokeWidth={1.5} />
       <Path
         d="M9 5V9L12 11"
-        stroke={color}
-        strokeWidth="1.5"
+        stroke="#FFFFFF"
+        strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function ChevronRight() {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <Path
+        d="M6 4L10 8L6 12"
+        stroke={calendarsUIColors.textMuted}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function RemoveIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+      <Circle cx={10} cy={10} r={7.5} stroke={calendarsUIColors.danger} strokeWidth={1.5} />
+      <Path
+        d="M6 10H14"
+        stroke={calendarsUIColors.danger}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+function BlockIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+      <Circle cx={10} cy={10} r={7.5} stroke={calendarsUIColors.danger} strokeWidth={1.5} />
+      <Path
+        d="M5 5L15 15"
+        stroke={calendarsUIColors.danger}
+        strokeWidth={1.5}
+        strokeLinecap="round"
       />
     </Svg>
   );
@@ -45,12 +89,30 @@ export function PersonProfileScreen() {
   const { user: me } = useCurrentUser();
   const currentUserId = me?.id;
   const userId = route.params.userId;
-  const toast = useToast();
+  const { show: showToast } = useToast();
 
-  const { user } = useUserProfile(userId);
+  const { user, isLoading: userLoading } = useUserProfile(userId);
   const connection = useConnectionWith(currentUserId, userId);
   const sharedCalendars = useSharedCalendars(currentUserId, userId);
   const sharedCount = useSharedCalendarCount(currentUserId, userId);
+
+  const name = user
+    ? displayName({
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: null,
+      })
+    : '';
+
+  // Show name in the nav header — spec mockup: "[<] Sarah Chen"
+  useLayoutEffect(() => {
+    if (name) navigation.setOptions({ title: name });
+  }, [navigation, name]);
+
+  if (userLoading && !user) {
+    return <ProfileSkeleton />;
+  }
 
   if (user === null) {
     return (
@@ -60,17 +122,11 @@ export function PersonProfileScreen() {
     );
   }
 
-  const name = displayName({
-    id: user.id,
-    first_name: user.first_name,
-    last_name: user.last_name,
-    email: null,
-  });
-
   const handleFindTime = () => {
-    toast.show({
+    showToast({
       id: 'find-a-time-coming-soon',
       placement: 'top',
+      action: 'info',
       title: 'Find a Time is coming soon.',
     });
   };
@@ -117,9 +173,12 @@ export function PersonProfileScreen() {
     );
   };
 
+  const isAccepted = connection?.status === 'accepted';
+  const hasConnection = !!connection;
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <View style={styles.profileCard}>
         <AvatarCircle user={user} size={80} />
         <Text style={styles.name}>{name}</Text>
 
@@ -130,7 +189,7 @@ export function PersonProfileScreen() {
             <Text style={styles.metaValue}>{sharedCount}</Text>
             <Text style={styles.metaLabel}>Shared</Text>
           </View>
-          {connection?.status === 'accepted' && (
+          {isAccepted && (
             <>
               <View style={styles.metaDivider} />
               <View style={styles.metaTile}>
@@ -148,47 +207,75 @@ export function PersonProfileScreen() {
       </Pressable>
 
       <Text style={styles.sectionLabel}>SHARED CALENDARS</Text>
-      <View style={styles.sectionCard}>
+      <View style={styles.card}>
         {sharedCalendars.length > 0 ? (
-          sharedCalendars.map((cal) => (
-            <Pressable
-              key={cal.id}
-              style={styles.calendarRow}
-              onPress={() => navigation.navigate('CalendarDetail', { calendarId: cal.id })}
-            >
-              <View
-                style={[
-                  styles.calIcon,
-                  {
-                    backgroundColor: `${cal.color ?? '#9B9BA8'}15`,
-                    borderColor: `${cal.color ?? '#9B9BA8'}30`,
-                  },
-                ]}
-              />
-              <Text style={styles.calName}>{cal.name}</Text>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
+          sharedCalendars.map((cal, idx) => (
+            <View key={cal.id}>
+              {idx > 0 ? <View style={styles.itemDivider} /> : null}
+              <Pressable
+                style={styles.calendarRow}
+                onPress={() => navigation.navigate('CalendarDetail', { calendarId: cal.id })}
+              >
+                <View
+                  style={[
+                    styles.calIcon,
+                    {
+                      backgroundColor: `${cal.color ?? calendarsUIColors.textMuted}15`,
+                      borderColor: `${cal.color ?? calendarsUIColors.textMuted}30`,
+                    },
+                  ]}
+                />
+                <Text style={styles.calName} numberOfLines={1}>
+                  {cal.name}
+                </Text>
+                <ChevronRight />
+              </Pressable>
+            </View>
           ))
         ) : (
           <Text style={styles.emptyText}>You don't share any calendars with {name} yet.</Text>
         )}
       </View>
 
+      <ConnectionActionsSection
+        hasConnection={hasConnection}
+        onRemove={handleRemove}
+        onBlock={handleBlock}
+      />
+    </ScrollView>
+  );
+}
+
+function ConnectionActionsSection({
+  hasConnection,
+  onRemove,
+  onBlock,
+}: {
+  hasConnection: boolean;
+  onRemove: () => void;
+  onBlock: () => void;
+}) {
+  return (
+    <>
       <Text style={styles.sectionLabel}>CONNECTION</Text>
-      <View style={styles.sectionCard}>
-        <Pressable style={styles.dangerRow} onPress={handleRemove} disabled={!connection}>
+      <View style={styles.card}>
+        {hasConnection ? (
+          <>
+            <Pressable style={styles.dangerRow} onPress={onRemove}>
+              <View style={styles.dangerIconSlot}>
+                <RemoveIcon />
+              </View>
+              <View style={styles.dangerTextSlot}>
+                <Text style={styles.dangerLabel}>Remove Connection</Text>
+                <Text style={styles.dangerSub}>Also removes from shared calendars</Text>
+              </View>
+            </Pressable>
+            <View style={styles.itemDivider} />
+          </>
+        ) : null}
+        <Pressable style={styles.dangerRow} onPress={onBlock}>
           <View style={styles.dangerIconSlot}>
-            <Text style={styles.dangerIcon}>⊖</Text>
-          </View>
-          <View style={styles.dangerTextSlot}>
-            <Text style={styles.dangerLabel}>Remove Connection</Text>
-            <Text style={styles.dangerSub}>Also removes from shared calendars</Text>
-          </View>
-        </Pressable>
-        <View style={styles.divider} />
-        <Pressable style={styles.dangerRow} onPress={handleBlock}>
-          <View style={styles.dangerIconSlot}>
-            <Text style={styles.dangerIcon}>⊘</Text>
+            <BlockIcon />
           </View>
           <View style={styles.dangerTextSlot}>
             <Text style={styles.dangerLabel}>Block</Text>
@@ -196,22 +283,22 @@ export function PersonProfileScreen() {
           </View>
         </Pressable>
       </View>
-    </ScrollView>
+    </>
   );
 }
 
 function StatusPill({ status }: { status: string | null }) {
   if (status === 'accepted') {
     return (
-      <View style={[styles.pill, { backgroundColor: '#E8FBF1', borderColor: '#A8EDCB' }]}>
-        <View style={[styles.pillDot, { backgroundColor: '#00DB74' }]} />
-        <Text style={[styles.pillText, { color: '#00DB74' }]}>Connected</Text>
+      <View style={[styles.pill, styles.pillConnected]}>
+        <View style={[styles.pillDot, { backgroundColor: calendarsUIColors.primary }]} />
+        <Text style={[styles.pillText, { color: calendarsUIColors.primary }]}>Connected</Text>
       </View>
     );
   }
   if (status === 'pending') {
     return (
-      <View style={[styles.pill, { backgroundColor: '#FFF6E0', borderColor: '#F4D58D' }]}>
+      <View style={[styles.pill, styles.pillPending]}>
         <View style={[styles.pillDot, { backgroundColor: '#FFB347' }]} />
         <Text style={[styles.pillText, { color: '#A07300' }]}>Request Pending</Text>
       </View>
@@ -220,77 +307,117 @@ function StatusPill({ status }: { status: string | null }) {
   return <Text style={styles.notConnected}>Not connected</Text>;
 }
 
+function ProfileSkeleton() {
+  return (
+    <View style={styles.screen}>
+      <View style={[styles.profileCard, styles.skeletonCard]}>
+        <View style={styles.skeletonAvatar} />
+        <View style={styles.skeletonNameLine} />
+        <View style={styles.skeletonPill} />
+      </View>
+      <View style={styles.skeletonCta} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
-  content: { paddingVertical: 12 },
-  card: {
+  screen: { flex: 1, backgroundColor: calendarsUIColors.background },
+  content: { paddingVertical: 12, paddingBottom: 32 },
+
+  // Profile hero card
+  profileCard: {
     margin: 12,
     padding: 24,
     borderRadius: 16,
-    backgroundColor: '#fff',
+    backgroundColor: calendarsUIColors.surface,
     borderWidth: 1,
-    borderColor: '#E8E8EC',
+    borderColor: calendarsUIColors.border,
     alignItems: 'center',
     gap: 8,
   },
-  name: { fontSize: 22, fontWeight: '700', color: '#1A1A1F' },
+  name: { fontSize: 22, fontWeight: '700', color: calendarsUIColors.text, marginTop: 4 },
+
+  // Status pill
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
     marginTop: 8,
   },
+  pillConnected: {
+    backgroundColor: calendarsUIColors.primaryLight,
+    borderColor: calendarsUIColors.primaryBorder,
+  },
+  pillPending: { backgroundColor: '#FFF6E0', borderColor: '#F4D58D' },
   pillDot: { width: 7, height: 7, borderRadius: 4 },
   pillText: { fontSize: 13, fontWeight: '600' },
-  notConnected: { color: '#9B9BA8', fontSize: 13, marginTop: 8 },
+  notConnected: { color: calendarsUIColors.textMuted, fontSize: 13, marginTop: 8 },
+
+  // Meta tiles
   metaRow: {
     flexDirection: 'row',
     gap: 20,
     marginTop: 16,
-    paddingTop: 12,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F3',
+    borderTopColor: calendarsUIColors.border,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
   },
-  metaTile: { alignItems: 'center', minWidth: 60 },
-  metaDivider: { width: 1, backgroundColor: '#F0F0F3' },
-  metaValue: { fontSize: 16, fontWeight: '700', color: '#1A1A1F' },
-  metaLabel: { fontSize: 12, color: '#9B9BA8', marginTop: 2 },
-  metaSmallLabel: { fontSize: 12, color: '#6B6B78', fontWeight: '500' },
-  metaSmallValue: { fontSize: 12, color: '#9B9BA8', marginTop: 2 },
+  metaTile: { alignItems: 'center', minWidth: 80 },
+  metaDivider: { width: 1, backgroundColor: calendarsUIColors.border },
+  metaValue: { fontSize: 18, fontWeight: '700', color: calendarsUIColors.text },
+  metaLabel: {
+    fontSize: 12,
+    color: calendarsUIColors.textMuted,
+    marginTop: 4,
+    letterSpacing: 0.2,
+  },
+  metaSmallLabel: { fontSize: 12, color: calendarsUIColors.textSecondary, fontWeight: '600' },
+  metaSmallValue: { fontSize: 13, color: calendarsUIColors.textMuted, marginTop: 4 },
+
+  // Find a Time CTA
   cta: {
-    margin: 12,
+    marginHorizontal: 12,
+    marginTop: 8,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#00DB74',
+    backgroundColor: calendarsUIColors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
   },
   ctaDisabled: { opacity: 0.5 },
-  ctaText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  ctaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16, letterSpacing: 0.1 },
+
+  // Section label
   sectionLabel: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 6,
+    paddingTop: 20,
+    paddingBottom: 8,
     fontSize: 13,
     fontWeight: '600',
-    color: '#9B9BA8',
+    color: calendarsUIColors.textMuted,
     letterSpacing: 0.3,
   },
-  sectionCard: {
+
+  // Card (Shared Calendars, Connection)
+  card: {
     marginHorizontal: 12,
-    marginBottom: 12,
     borderRadius: 14,
-    backgroundColor: '#fff',
+    backgroundColor: calendarsUIColors.surface,
     borderWidth: 1,
-    borderColor: '#E8E8EC',
+    borderColor: calendarsUIColors.border,
     overflow: 'hidden',
   },
+  itemDivider: { height: 1, backgroundColor: calendarsUIColors.border, marginLeft: 56 },
+
+  // Calendar row
   calendarRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -299,10 +426,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   calIcon: { width: 36, height: 36, borderRadius: 10, borderWidth: 1.5 },
-  calName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1A1A1F' },
-  chevron: { color: '#9B9BA8', fontSize: 16 },
-  emptyText: { padding: 20, color: '#9B9BA8', textAlign: 'center', fontSize: 14 },
-  divider: { height: 1, backgroundColor: '#F0F0F3', marginLeft: 44 },
+  calName: { flex: 1, fontSize: 15, fontWeight: '500', color: calendarsUIColors.text },
+  emptyText: {
+    padding: 20,
+    color: calendarsUIColors.textMuted,
+    textAlign: 'center',
+    fontSize: 14,
+  },
+
+  // Destructive row
   dangerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,11 +442,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
   },
-  dangerIconSlot: { width: 16, alignItems: 'center' },
-  dangerIcon: { color: '#FF6B6B', fontSize: 16 },
+  dangerIconSlot: { width: 28, alignItems: 'center', justifyContent: 'center' },
   dangerTextSlot: { flex: 1 },
-  dangerLabel: { fontSize: 15, fontWeight: '500', color: '#FF6B6B' },
-  dangerSub: { fontSize: 12, color: '#9B9BA8', marginTop: 2 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  emptyTitle: { fontSize: 16, color: '#6B6B78' },
+  dangerLabel: { fontSize: 15, fontWeight: '600', color: calendarsUIColors.danger },
+  dangerSub: { fontSize: 12, color: calendarsUIColors.textMuted, marginTop: 2 },
+
+  // Empty / loading
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: calendarsUIColors.background,
+  },
+  emptyTitle: { fontSize: 16, color: calendarsUIColors.textSecondary },
+
+  // Skeleton
+  skeletonCard: { alignItems: 'center' },
+  skeletonAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: calendarsUIColors.surfaceHover,
+  },
+  skeletonNameLine: {
+    height: 22,
+    width: 160,
+    borderRadius: 6,
+    backgroundColor: calendarsUIColors.surfaceHover,
+    marginTop: 8,
+  },
+  skeletonPill: {
+    height: 26,
+    width: 110,
+    borderRadius: 13,
+    backgroundColor: calendarsUIColors.surfaceHover,
+    marginTop: 8,
+  },
+  skeletonCta: {
+    marginHorizontal: 12,
+    marginTop: 8,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: calendarsUIColors.surfaceHover,
+  },
 });

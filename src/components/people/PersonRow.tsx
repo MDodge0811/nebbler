@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { View, Pressable, Text, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AvatarCircle } from '@components/ui/AvatarCircle';
+import { calendarsUIColors } from '@constants/calendarsUI';
 import { displayName } from '@utils/displayName';
 
 type PersonRowUser = {
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: '#1A1A1F',
+    color: calendarsUIColors.text,
   },
   trailing: {
     flexShrink: 0,

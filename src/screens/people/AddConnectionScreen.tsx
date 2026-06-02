@@ -1,26 +1,28 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
+  ActivityIndicator,
   FlatList,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { PersonRow } from '@components/people/PersonRow';
+import { calendarsUIColors } from '@constants/calendarsUI';
 import { useConnections } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useDebouncedValue } from '@hooks/useDebouncedValue';
 import { useToast } from '@hooks/useToast';
 import type { PeopleStackParamList } from '@navigation/types';
-import { sendConnectionRequest, acceptConnection } from '@utils/connections';
-import { searchUsers, RateLimitedError } from '@utils/userSearch';
+import { acceptConnection, sendConnectionRequest } from '@utils/connections';
+import { RateLimitedError, searchUsers } from '@utils/userSearch';
 
 type Nav = NativeStackNavigationProp<PeopleStackParamList, 'AddConnection'>;
 
@@ -36,13 +38,25 @@ type SearchUser = {
   avatar_color: string | null;
 };
 
+function SearchIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 18 18" fill="none">
+      <Circle cx={8} cy={8} r={5.5} stroke={calendarsUIColors.textMuted} strokeWidth={1.5} />
+      <Path
+        d="M12 12L16 16"
+        stroke={calendarsUIColors.textMuted}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 export function AddConnectionScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useCurrentUser();
   const currentUserId = user?.id;
-  const { show } = useToast();
-  const showToastRef = useRef(show);
-  showToastRef.current = show;
+  const { show: showToast } = useToast();
   const { pendingIncoming, accepted, pendingOutgoing } = useConnections(currentUserId);
 
   const [query, setQuery] = useState('');
@@ -80,15 +94,17 @@ export function AddConnectionScreen() {
       .catch((err: unknown) => {
         if (cancelled) return;
         if (err instanceof RateLimitedError) {
-          showToastRef.current({
+          showToast({
             id: 'rate-limited',
             placement: 'top',
+            action: 'warning',
             title: 'Slow down a moment — try again in a few seconds.',
           });
         } else {
-          showToastRef.current({
+          showToast({
             id: 'search-error',
             placement: 'top',
+            action: 'error',
             title: "Couldn't reach the server. Check your connection.",
           });
         }
@@ -100,7 +116,7 @@ export function AddConnectionScreen() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery]);
+  }, [debouncedQuery, showToast]);
 
   const handleConnect = useCallback(
     async (addresseeId: string) => {
@@ -158,29 +174,38 @@ export function AddConnectionScreen() {
       );
     }
     if (state.kind === 'outgoing') {
-      return <Text style={styles.pendingChip}>Pending</Text>;
+      return (
+        <View style={[styles.chip, styles.chipMuted]}>
+          <Text style={[styles.chipText, styles.chipTextMuted]}>Pending</Text>
+        </View>
+      );
     }
-    return <Text style={styles.connectedChip}>Connected</Text>;
+    return (
+      <View style={[styles.chip, styles.chipConnected]}>
+        <Text style={[styles.chipText, styles.chipTextConnected]}>Connected</Text>
+      </View>
+    );
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+      style={styles.screen}
     >
       <View style={styles.searchBox}>
+        <SearchIcon />
         <TextInput
           autoFocus
           value={query}
           onChangeText={setQuery}
           placeholder="Search by name or email"
-          placeholderTextColor="#9B9BA8"
+          placeholderTextColor={calendarsUIColors.textMuted}
           returnKeyType="search"
           style={styles.searchInput}
         />
-        {searching ? <ActivityIndicator size="small" /> : null}
+        {searching ? <ActivityIndicator size="small" color={calendarsUIColors.textMuted} /> : null}
         {query.length > 0 && !searching && (
-          <Pressable accessibilityLabel="Clear" onPress={() => setQuery('')}>
+          <Pressable accessibilityLabel="Clear" hitSlop={8} onPress={() => setQuery('')}>
             <Text style={styles.clear}>✕</Text>
           </Pressable>
         )}
@@ -216,31 +241,61 @@ export function AddConnectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
+  screen: { flex: 1, backgroundColor: calendarsUIColors.background },
+
+  // Search input
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     margin: 12,
-    padding: 10,
-    backgroundColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: calendarsUIColors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E8E8EC',
-    gap: 8,
+    borderColor: calendarsUIColors.border,
+    gap: 10,
   },
-  searchInput: { flex: 1, fontSize: 15, color: '#1A1A1F' },
-  clear: { color: '#9B9BA8', fontSize: 16, paddingHorizontal: 4 },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: calendarsUIColors.text,
+    paddingVertical: 0, // RN adds default vertical padding on Android
+  },
+  clear: { color: calendarsUIColors.textMuted, fontSize: 16 },
+
+  // Hint / empty
   hintBox: { padding: 24, alignItems: 'center', gap: 4 },
-  hintTitle: { color: '#6B6B78', fontSize: 14, textAlign: 'center' },
-  hintSub: { color: '#9B9BA8', fontSize: 12, textAlign: 'center' },
+  hintTitle: { color: calendarsUIColors.textSecondary, fontSize: 14, textAlign: 'center' },
+  hintSub: { color: calendarsUIColors.textMuted, fontSize: 12, textAlign: 'center' },
+
+  // Primary button (Connect / Accept)
   primaryBtn: {
-    backgroundColor: '#00DB74',
+    backgroundColor: calendarsUIColors.primary,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 8,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  primaryBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13, letterSpacing: 0.1 },
   btnDisabled: { opacity: 0.5 },
-  pendingChip: { color: '#9B9BA8', fontSize: 13, fontWeight: '500' },
-  connectedChip: { color: '#00DB74', fontSize: 13, fontWeight: '600' },
+
+  // Status chips (Pending, Connected)
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  chipText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.2 },
+  chipMuted: {
+    backgroundColor: calendarsUIColors.surfaceHover,
+    borderColor: calendarsUIColors.border,
+  },
+  chipTextMuted: { color: calendarsUIColors.textMuted },
+  chipConnected: {
+    backgroundColor: calendarsUIColors.primaryLight,
+    borderColor: calendarsUIColors.primaryBorder,
+  },
+  chipTextConnected: { color: calendarsUIColors.primary },
 });
