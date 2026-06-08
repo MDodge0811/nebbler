@@ -1,11 +1,16 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useRef, type ComponentRef } from 'react';
 
+import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
-import { calendarsUIColors } from '@constants/calendarsUI';
 
-const hintStyle = tva({ base: 'text-xs italic text-typography-400 text-center' });
+const hintStyle = tva({ base: 'text-center text-xs italic text-typography-400' });
+const containerStyle = tva({
+  base: 'mx-2 mb-1.5 mt-1 items-center justify-center rounded-[10px] border-[1.5px] border-dashed border-brand-border py-3',
+  variants: {
+    active: { true: 'border-brand-primary-border bg-brand-primary-light' },
+  },
+});
 
 interface DropZoneProps {
   groupId: string;
@@ -14,12 +19,12 @@ interface DropZoneProps {
 }
 
 export function DropZone({ groupId, isActive, onLayout }: DropZoneProps) {
-  const viewRef = useRef<View>(null);
+  const viewRef = useRef<ComponentRef<typeof Box>>(null);
 
   return (
-    <View
+    <Box
       ref={viewRef}
-      style={[styles.container, isActive && styles.activeContainer]}
+      className={containerStyle({ active: isActive })}
       onLayout={() => {
         if (onLayout) {
           viewRef.current?.measureInWindow((_x, y, _w, h) => {
@@ -29,25 +34,6 @@ export function DropZone({ groupId, isActive, onLayout }: DropZoneProps) {
       }}
     >
       <Text className={hintStyle({})}>{isActive ? 'Drop here' : 'Drag calendars here'}</Text>
-    </View>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 8,
-    marginTop: 4,
-    marginBottom: 6,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: calendarsUIColors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeContainer: {
-    borderColor: calendarsUIColors.primaryBorder,
-    backgroundColor: calendarsUIColors.primaryLight,
-  },
-});

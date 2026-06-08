@@ -1,9 +1,10 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, type ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -52,19 +53,19 @@ export const EventCardFull = memo(function EventCardFull({
     >
       <Box className={cardStyle({})}>
         {/* Gradient header */}
-        <View style={styles.headerContainer}>
+        <Box className="relative min-h-9">
           <LinearGradient
             colors={[color, adjustAlpha(color, 0.6)]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.gradient}
+            style={StyleSheet.absoluteFill}
           />
           {onMeatballPress && (
-            <View style={styles.meatball}>
+            <Box className="absolute right-2 top-2">
               <MeatballMenuButton onPress={onMeatballPress} />
-            </View>
+            </Box>
           )}
-        </View>
+        </Box>
 
         {/* Body */}
         <VStack className={bodyStyle({})}>
@@ -77,10 +78,11 @@ export const EventCardFull = memo(function EventCardFull({
           ) : null}
 
           <HStack className={calendarRowStyle({})}>
-            {attendees.length > 0 ? <AttendeeRow attendees={attendees} size={24} /> : <View />}
+            {attendees.length > 0 ? <AttendeeRow attendees={attendees} size={24} /> : <Box />}
             <HStack className={calendarIndicatorStyle({})}>
-              <View
-                style={[styles.calendarDot, { backgroundColor: color }]}
+              <DynamicColorView
+                className="h-2 w-2 rounded-full"
+                backgroundColor={color}
                 accessibilityLabel="Calendar color"
               />
               <Text className={calendarNameStyle({})}>{event.calendar_name}</Text>
@@ -99,23 +101,3 @@ function adjustAlpha(hex: string, alpha: number): string {
     .padStart(2, '0');
   return hex + alphaHex;
 }
-
-const styles = StyleSheet.create({
-  headerContainer: {
-    minHeight: 36,
-    position: 'relative',
-  },
-  gradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  meatball: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-  },
-  calendarDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-});

@@ -2,7 +2,6 @@ import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { memo, useCallback, useMemo, forwardRef } from 'react';
-import { StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Box } from '@/components/ui/box';
@@ -13,7 +12,10 @@ import { VStack } from '@/components/ui/vstack';
 import type { FeedEvent } from '@hooks/useScheduleFeed';
 
 const actionStyle = tva({ base: 'items-center px-4 py-3' });
-const labelStyle = tva({ base: 'ml-3 text-base text-typography-800' });
+const labelStyle = tva({
+  base: 'ml-3 text-base text-typography-800',
+  variants: { danger: { true: 'text-error-400', false: '' } },
+});
 const separatorStyle = tva({ base: 'mx-4 border-b border-outline-200' });
 
 interface EventMeatballSheetProps {
@@ -103,8 +105,8 @@ export const EventMeatballSheet = memo(
         enableDynamicSizing={false}
         backdropComponent={renderBackdrop}
       >
-        <BottomSheetView style={styles.container}>
-          <VStack>
+        <BottomSheetView>
+          <VStack className="pb-4">
             <Pressable onPress={handleEdit} accessibilityRole="button" accessibilityLabel="Edit">
               <HStack className={actionStyle({})}>
                 <EditIcon />
@@ -119,9 +121,7 @@ export const EventMeatballSheet = memo(
             >
               <HStack className={actionStyle({})}>
                 <DeleteIcon />
-                <Text className={labelStyle({})} style={styles.deleteText}>
-                  Delete
-                </Text>
+                <Text className={labelStyle({ danger: true })}>Delete</Text>
               </HStack>
             </Pressable>
             <Box className={separatorStyle({})} />
@@ -137,12 +137,3 @@ export const EventMeatballSheet = memo(
     );
   })
 );
-
-const styles = StyleSheet.create({
-  container: {
-    paddingBottom: 16,
-  },
-  deleteText: {
-    color: '#EF4444',
-  },
-});

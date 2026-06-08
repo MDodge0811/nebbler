@@ -1,45 +1,47 @@
-import { StyleSheet, Text as RNText, View } from 'react-native';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
-import { calendarsUIColors } from '@constants/calendarsUI';
+import { Box } from '@/components/ui/box';
+import { Text } from '@/components/ui/text';
 
 export type CalendarRole = 'owner' | 'admin' | 'member';
 
-const CONFIGS: Record<CalendarRole, { label: string; bg: string; color: string; border: string }> =
-  {
-    owner: {
-      label: 'Owner',
-      bg: calendarsUIColors.primaryLight,
-      color: '#0A8F4F',
-      border: calendarsUIColors.primaryBorder,
+const LABELS: Record<CalendarRole, string> = {
+  owner: 'Owner',
+  admin: 'Admin',
+  member: 'Member',
+};
+
+const badgeStyle = tva({
+  base: 'rounded-md border px-2 py-0.5',
+  variants: {
+    role: {
+      owner: 'border-brand-primary-border bg-brand-primary-light',
+      admin: 'border-brand-role-admin-border bg-brand-role-admin-bg',
+      member: 'border-brand-border bg-typography-50',
     },
-    admin: {
-      label: 'Admin',
-      bg: '#EDE9FE',
-      color: '#7C3AED',
-      border: '#DDD6FE',
+  },
+});
+
+const labelStyle = tva({
+  base: 'text-[11px] font-semibold tracking-[0.2px]',
+  variants: {
+    role: {
+      owner: 'text-brand-success-text',
+      admin: 'text-brand-role-admin-text',
+      member: 'text-brand-text-secondary',
     },
-    member: {
-      label: 'Member',
-      bg: calendarsUIColors.surfaceHover,
-      color: calendarsUIColors.textSecondary,
-      border: calendarsUIColors.border,
-    },
-  };
+  },
+});
 
 interface RoleBadgeProps {
   role: CalendarRole | string;
 }
 
 export function RoleBadge({ role }: RoleBadgeProps) {
-  const c = (CONFIGS as Record<string, (typeof CONFIGS)[CalendarRole]>)[role] ?? CONFIGS.member;
+  const resolved: CalendarRole = role === 'owner' || role === 'admin' ? role : 'member';
   return (
-    <View style={[styles.badge, { backgroundColor: c.bg, borderColor: c.border }]}>
-      <RNText style={[styles.label, { color: c.color }]}>{c.label}</RNText>
-    </View>
+    <Box className={badgeStyle({ role: resolved })}>
+      <Text className={labelStyle({ role: resolved })}>{LABELS[resolved]}</Text>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 1 },
-  label: { fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
-});

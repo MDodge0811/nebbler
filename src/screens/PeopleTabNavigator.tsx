@@ -1,7 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { Pressable } from '@/components/ui/pressable';
 import type { PeopleStackParamList } from '@navigation/types';
 import { ConnectionsScreen, AddConnectionScreen, PersonProfileScreen } from '@screens/people';
 
@@ -29,7 +29,7 @@ export function PeopleTabNavigator() {
               accessibilityRole="button"
               accessibilityLabel="Add connection"
               hitSlop={12}
-              style={styles.headerButton}
+              className="p-1"
             >
               <PlusIcon />
             </Pressable>
@@ -49,7 +49,3 @@ export function PeopleTabNavigator() {
     </PeopleStack.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  headerButton: { padding: 4 },
-});

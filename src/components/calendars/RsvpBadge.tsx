@@ -1,29 +1,37 @@
-import { StyleSheet, Text as RNText, View } from 'react-native';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
-import { calendarsUIColors } from '@constants/calendarsUI';
+import { Box } from '@/components/ui/box';
+import { Text } from '@/components/ui/text';
 
 export type RsvpStatus = 'going' | 'maybe' | 'not_going';
 
-const CONFIGS: Record<RsvpStatus, { label: string; bg: string; color: string; border: string }> = {
-  going: {
-    label: 'Going',
-    bg: calendarsUIColors.primaryLight,
-    color: '#0A8F4F',
-    border: calendarsUIColors.primaryBorder,
-  },
-  maybe: {
-    label: 'Maybe',
-    bg: '#FFF8EB',
-    color: '#B8860B',
-    border: '#FFE4A0',
-  },
-  not_going: {
-    label: 'Not Going',
-    bg: calendarsUIColors.dangerLight,
-    color: '#CC4444',
-    border: '#FFD4D4',
-  },
+const LABELS: Record<RsvpStatus, string> = {
+  going: 'Going',
+  maybe: 'Maybe',
+  not_going: 'Not Going',
 };
+
+const badgeStyle = tva({
+  base: 'rounded-md border px-2 py-0.5',
+  variants: {
+    status: {
+      going: 'border-brand-primary-border bg-brand-primary-light',
+      maybe: 'border-brand-rsvp-maybe-border bg-brand-rsvp-maybe-bg',
+      not_going: 'border-brand-danger-border bg-brand-danger-light',
+    },
+  },
+});
+
+const labelStyle = tva({
+  base: 'text-[11px] font-semibold tracking-[0.2px]',
+  variants: {
+    status: {
+      going: 'text-brand-success-text',
+      maybe: 'text-brand-rsvp-maybe-text',
+      not_going: 'text-brand-danger-text',
+    },
+  },
+});
 
 interface RsvpBadgeProps {
   status: RsvpStatus | null | undefined;
@@ -31,15 +39,9 @@ interface RsvpBadgeProps {
 
 export function RsvpBadge({ status }: RsvpBadgeProps) {
   if (!status) return null;
-  const c = CONFIGS[status];
   return (
-    <View style={[styles.badge, { backgroundColor: c.bg, borderColor: c.border }]}>
-      <RNText style={[styles.label, { color: c.color }]}>{c.label}</RNText>
-    </View>
+    <Box className={badgeStyle({ status })}>
+      <Text className={labelStyle({ status })}>{LABELS[status]}</Text>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 1 },
-  label: { fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
-});

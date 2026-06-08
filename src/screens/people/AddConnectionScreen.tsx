@@ -1,18 +1,18 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
   TextInput,
-  Pressable,
   FlatList,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { PersonRow } from '@components/people/PersonRow';
 import { useConnections } from '@hooks/useConnections';
@@ -35,6 +35,11 @@ type SearchUser = {
   last_name: string | null;
   avatar_color: string | null;
 };
+
+const primaryBtnStyle = tva({
+  base: 'rounded-lg bg-brand-primary px-[14px] py-[7px]',
+  variants: { disabled: { true: 'opacity-50' } },
+});
 
 export function AddConnectionScreen() {
   const navigation = useNavigation<Nav>();
@@ -134,41 +139,41 @@ export function AddConnectionScreen() {
     if (!state) {
       return (
         <Pressable
-          style={[styles.primaryBtn, isSubmitting && styles.btnDisabled]}
+          className={primaryBtnStyle({ disabled: !!isSubmitting })}
           disabled={!!isSubmitting}
           onPress={() => {
             void handleConnect(result.id);
           }}
         >
-          <Text style={styles.primaryBtnText}>Connect</Text>
+          <Text className="text-[13px] font-semibold text-typography-white">Connect</Text>
         </Pressable>
       );
     }
     if (state.kind === 'incoming') {
       return (
         <Pressable
-          style={[styles.primaryBtn, isSubmitting && styles.btnDisabled]}
+          className={primaryBtnStyle({ disabled: !!isSubmitting })}
           disabled={!!isSubmitting}
           onPress={() => {
             void handleAccept(state.connectionId);
           }}
         >
-          <Text style={styles.primaryBtnText}>Accept</Text>
+          <Text className="text-[13px] font-semibold text-typography-white">Accept</Text>
         </Pressable>
       );
     }
     if (state.kind === 'outgoing') {
-      return <Text style={styles.pendingChip}>Pending</Text>;
+      return <Text className="text-[13px] font-medium text-brand-text-muted">Pending</Text>;
     }
-    return <Text style={styles.connectedChip}>Connected</Text>;
+    return <Text className="text-[13px] font-semibold text-brand-primary">Connected</Text>;
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+      className="flex-1 bg-brand-surface-subtle"
     >
-      <View style={styles.searchBox}>
+      <Box className="m-3 flex-row items-center gap-2 rounded-xl border border-brand-border bg-background-0 p-2.5">
         <TextInput
           autoFocus
           value={query}
@@ -176,27 +181,33 @@ export function AddConnectionScreen() {
           placeholder="Search by name or email"
           placeholderTextColor="#9B9BA8"
           returnKeyType="search"
-          style={styles.searchInput}
+          className="flex-1 text-[15px] text-brand-text"
         />
         {searching ? <ActivityIndicator size="small" /> : null}
         {query.length > 0 && !searching && (
           <Pressable accessibilityLabel="Clear" onPress={() => setQuery('')}>
-            <Text style={styles.clear}>✕</Text>
+            <Text className="px-1 text-base text-brand-text-muted">✕</Text>
           </Pressable>
         )}
-      </View>
+      </Box>
 
       {debouncedQuery.trim().length < 2 && (
-        <View style={styles.hintBox}>
-          <Text style={styles.hintTitle}>Search by name or email</Text>
-          <Text style={styles.hintSub}>You'll need an exact name match or partial email.</Text>
-        </View>
+        <Box className="items-center gap-1 p-6">
+          <Text className="text-center text-sm text-brand-text-secondary">
+            Search by name or email
+          </Text>
+          <Text className="text-center text-xs text-brand-text-muted">
+            You'll need an exact name match or partial email.
+          </Text>
+        </Box>
       )}
 
       {debouncedQuery.trim().length >= 2 && !searching && results.length === 0 && (
-        <View style={styles.hintBox}>
-          <Text style={styles.hintTitle}>No people found matching "{debouncedQuery}"</Text>
-        </View>
+        <Box className="items-center gap-1 p-6">
+          <Text className="text-center text-sm text-brand-text-secondary">
+            No people found matching "{debouncedQuery}"
+          </Text>
+        </Box>
       )}
 
       <FlatList
@@ -214,33 +225,3 @@ export function AddConnectionScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 12,
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E8E8EC',
-    gap: 8,
-  },
-  searchInput: { flex: 1, fontSize: 15, color: '#1A1A1F' },
-  clear: { color: '#9B9BA8', fontSize: 16, paddingHorizontal: 4 },
-  hintBox: { padding: 24, alignItems: 'center', gap: 4 },
-  hintTitle: { color: '#6B6B78', fontSize: 14, textAlign: 'center' },
-  hintSub: { color: '#9B9BA8', fontSize: 12, textAlign: 'center' },
-  primaryBtn: {
-    backgroundColor: '#00DB74',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-  },
-  primaryBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  btnDisabled: { opacity: 0.5 },
-  pendingChip: { color: '#9B9BA8', fontSize: 13, fontWeight: '500' },
-  connectedChip: { color: '#00DB74', fontSize: 13, fontWeight: '600' },
-});

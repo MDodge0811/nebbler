@@ -1,6 +1,9 @@
-import { Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { calendarsUIColors } from '@constants/calendarsUI';
 import type { Event } from '@database/schema';
 import { formatTimeRange, formatEventDateTime } from '@utils/formatTime';
@@ -45,42 +48,25 @@ export function EventRow({
   const title = isFreeBusy ? 'Busy' : (event.title ?? '');
 
   return (
-    <Pressable onPress={onPress} style={styles.row}>
-      <View
-        style={[
-          styles.colorBar,
-          { backgroundColor: isFreeBusy ? calendarsUIColors.textMuted : calendarColor },
-        ]}
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center gap-3 border-b-[0.5px] border-brand-border bg-background-0 px-4 py-3.5"
+    >
+      <DynamicColorView
+        className="h-11 w-1 rounded-[2px]"
+        backgroundColor={isFreeBusy ? calendarsUIColors.textMuted : calendarColor}
       />
-      <View style={styles.info}>
-        <RNText numberOfLines={1} style={styles.title}>
+      <Box className="min-w-0 flex-1">
+        <Text numberOfLines={1} className="mb-[3px] text-[15px] font-semibold text-brand-text">
           {title}
-        </RNText>
-        <RNText style={styles.time}>{timeText}</RNText>
-      </View>
+        </Text>
+        <Text className="text-[13px] text-brand-text-secondary">{timeText}</Text>
+      </Box>
       {!isFreeBusy && rsvpStatus ? <RsvpBadge status={rsvpStatus} /> : null}
       {!isFreeBusy && goingCount && goingCount > 0 ? (
-        <RNText style={styles.goingCount}>{goingCount} going</RNText>
+        <Text className="text-xs text-brand-text-muted">{goingCount} going</Text>
       ) : null}
       <ChevronRight />
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: calendarsUIColors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: calendarsUIColors.border,
-  },
-  colorBar: { width: 4, height: 44, borderRadius: 2 },
-  info: { flex: 1, minWidth: 0 },
-  title: { fontSize: 15, fontWeight: '600', color: calendarsUIColors.text, marginBottom: 3 },
-  time: { fontSize: 13, color: calendarsUIColors.textSecondary },
-  goingCount: { fontSize: 12, color: calendarsUIColors.textMuted },
-});

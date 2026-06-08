@@ -1,18 +1,22 @@
-import { Pressable as RNPressable, ScrollView, Text as RNText, View } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
 import { HStack } from '@/components/ui/hstack';
+import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import type { Calendar, Event, User } from '@database/schema';
 import { formatEventDateTime } from '@utils/formatTime';
 
 import {
+  calendarDotStyle,
   calendarNameStyle,
   containerStyle,
+  deleteButtonStyle,
+  deleteButtonTextStyle,
   dividerStyle,
   sectionLabelStyle,
-  styles,
   valueStyle,
 } from './styles';
 
@@ -44,22 +48,20 @@ export function EventReadView({
 }: EventReadViewProps) {
   return (
     <Box className={containerStyle({})}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerClassName="grow">
         <VStack className="px-4 pt-4">
           {/* Title */}
           <VStack className="py-4">
             <Text className="text-xl font-bold text-typography-900">{event.title}</Text>
           </VStack>
-          <View className={dividerStyle({})} />
+          <Box className={dividerStyle({})} />
 
           {/* Calendar */}
           <HStack className="items-center py-4">
-            <View
-              style={[styles.calendarDot, { backgroundColor: calendarColor, marginRight: 10 }]}
-            />
+            <DynamicColorView className={calendarDotStyle({})} backgroundColor={calendarColor} />
             <Text className={calendarNameStyle({})}>{calendar?.name ?? 'Calendar'}</Text>
           </HStack>
-          <View className={dividerStyle({})} />
+          <Box className={dividerStyle({})} />
 
           {/* Creator */}
           {creator && (
@@ -68,7 +70,7 @@ export function EventReadView({
                 <Text className={sectionLabelStyle({})}>Created by</Text>
                 <Text className={valueStyle({})}>{formatCreatorName(creator)}</Text>
               </VStack>
-              <View className={dividerStyle({})} />
+              <Box className={dividerStyle({})} />
             </>
           )}
 
@@ -81,7 +83,7 @@ export function EventReadView({
                 : ''}
             </Text>
           </VStack>
-          <View className={dividerStyle({})} />
+          <Box className={dividerStyle({})} />
 
           {/* Description */}
           {event.description ? (
@@ -90,16 +92,16 @@ export function EventReadView({
                 <Text className={sectionLabelStyle({})}>Description</Text>
                 <Text className={valueStyle({})}>{event.description}</Text>
               </VStack>
-              <View className={dividerStyle({})} />
+              <Box className={dividerStyle({})} />
             </>
           ) : null}
         </VStack>
 
         {/* Delete button */}
         {canDelete && (
-          <RNPressable style={styles.deleteButton} onPress={onDelete}>
-            <RNText style={styles.deleteButtonText}>Delete Event</RNText>
-          </RNPressable>
+          <Pressable className={deleteButtonStyle({})} onPress={onDelete}>
+            <Text className={deleteButtonTextStyle({})}>Delete Event</Text>
+          </Pressable>
         )}
       </ScrollView>
     </Box>

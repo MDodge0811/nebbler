@@ -1,5 +1,9 @@
-import { Pressable as RNPressable, ScrollView, Text as RNText, View } from 'react-native';
+import { ScrollView } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { DynamicColorText, DynamicColorView } from '@/components/ui/dynamic';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { CalendarTypeBadge } from '@components/calendars/CalendarTypeBadge';
 import { EventRow } from '@components/calendars/EventRow';
 import { MemberRow } from '@components/calendars/MemberRow';
@@ -7,7 +11,36 @@ import type { Calendar, Event } from '@database/schema';
 import type { CalendarDetailMember, CalendarDetailPermissions } from '@hooks/useCalendarDetail';
 
 import { ChevronRight, PlusIcon } from './icons';
-import { styles } from './styles';
+import {
+  descriptionBubbleStyle,
+  descriptionTextStyle,
+  emptyEventsStyle,
+  emptyEventsTextStyle,
+  eventListStyle,
+  fabPositionStyle,
+  fabSurfaceStyle,
+  headerCardStyle,
+  headerInfoStyle,
+  headerNameStyle,
+  headerRowStyle,
+  inviteBtnStyle,
+  inviteTextStyle,
+  membersCardStyle,
+  membersHeaderLabelStyle,
+  membersHeaderLeftStyle,
+  membersHeaderStyle,
+  metaLinkStyle,
+  metaOwnerNameStyle,
+  metaRowStyle,
+  metaTextStyle,
+  scrollStyle,
+  sectionLabelStyle,
+  stackedAvatarsStyle,
+  stackedAvatarStyle,
+  stackedAvatarTextStyle,
+  tileLetterStyle,
+  tileStyle,
+} from './styles';
 
 interface CalendarDetailViewProps {
   calendar: Calendar;
@@ -41,46 +74,50 @@ export function CalendarDetailView({
 }: CalendarDetailViewProps) {
   return (
     <>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerClassName={scrollStyle({})}>
         {/* Header card */}
-        <View style={styles.headerCard}>
-          <View style={styles.headerRow}>
-            <View
-              style={[styles.tile, { backgroundColor: `${color}14`, borderColor: `${color}30` }]}
+        <Box className={headerCardStyle({})}>
+          <Box className={headerRowStyle({})}>
+            <DynamicColorView
+              className={tileStyle({})}
+              backgroundColor={`${color}14`}
+              borderColor={`${color}30`}
             >
-              <RNText style={[styles.tileLetter, { color }]}>{firstLetter}</RNText>
-            </View>
-            <View style={styles.headerInfo}>
-              <RNText style={styles.headerName}>{calendar.name}</RNText>
+              <DynamicColorText className={tileLetterStyle({})} color={color}>
+                {firstLetter}
+              </DynamicColorText>
+            </DynamicColorView>
+            <Box className={headerInfoStyle({})}>
+              <Text className={headerNameStyle({})}>{calendar.name}</Text>
               <CalendarTypeBadge type={calendar.type ?? 'private'} color={color} />
-            </View>
-          </View>
-          <View style={styles.metaRow}>
-            <RNText style={styles.metaText}>
-              <RNText style={styles.metaOwnerName}>{ownerName || 'You'}</RNText>
+            </Box>
+          </Box>
+          <Box className={metaRowStyle({})}>
+            <Text className={metaTextStyle({})}>
+              <Text className={metaOwnerNameStyle({})}>{ownerName || 'You'}</Text>
               {'  · Owner'}
-            </RNText>
+            </Text>
             {!isPrivate && (
-              <RNPressable onPress={onToggleMembers}>
-                <RNText style={styles.metaLink}>{members.length} members</RNText>
-              </RNPressable>
+              <Pressable onPress={onToggleMembers}>
+                <Text className={metaLinkStyle({})}>{members.length} members</Text>
+              </Pressable>
             )}
-          </View>
+          </Box>
           {calendar.description ? (
-            <View style={styles.descriptionBubble}>
-              <RNText style={styles.descriptionText}>{calendar.description}</RNText>
-            </View>
+            <Box className={descriptionBubbleStyle({})}>
+              <Text className={descriptionTextStyle({})}>{calendar.description}</Text>
+            </Box>
           ) : null}
-        </View>
+        </Box>
 
         {/* Upcoming events */}
-        <RNText style={styles.sectionLabel}>UPCOMING EVENTS ({upcomingEvents.length})</RNText>
+        <Text className={sectionLabelStyle({})}>UPCOMING EVENTS ({upcomingEvents.length})</Text>
         {upcomingEvents.length === 0 ? (
-          <View style={styles.emptyEvents}>
-            <RNText style={styles.emptyEventsText}>No upcoming events.</RNText>
-          </View>
+          <Box className={emptyEventsStyle({})}>
+            <Text className={emptyEventsTextStyle({})}>No upcoming events.</Text>
+          </Box>
         ) : (
-          <View style={styles.eventList}>
+          <Box className={eventListStyle({})}>
             {upcomingEvents.map((event) => (
               <EventRow
                 key={event.id}
@@ -90,68 +127,65 @@ export function CalendarDetailView({
                 onPress={() => onEventPress(event.id)}
               />
             ))}
-          </View>
+          </Box>
         )}
 
         {/* Members (social/public only) */}
         {!isPrivate && (
           <>
-            <RNText style={styles.sectionLabel}>MEMBERS</RNText>
-            <View style={styles.membersCard}>
-              <RNPressable onPress={onToggleMembers} style={styles.membersHeader}>
-                <View style={styles.membersHeaderLeft}>
-                  <View style={styles.stackedAvatars}>
+            <Text className={sectionLabelStyle({})}>MEMBERS</Text>
+            <Box className={membersCardStyle({})}>
+              <Pressable onPress={onToggleMembers} className={membersHeaderStyle({})}>
+                <Box className={membersHeaderLeftStyle({})}>
+                  <Box className={stackedAvatarsStyle({})}>
                     {members.slice(0, 3).map((m, i) => (
-                      <View
+                      <DynamicColorView
                         key={m.id}
-                        style={[
-                          styles.stackedAvatar,
-                          {
-                            backgroundColor: `${color}20`,
-                            marginLeft: i > 0 ? -8 : 0,
-                            zIndex: 3 - i,
-                          },
-                        ]}
+                        className={`${stackedAvatarStyle({})}${i > 0 ? ' -ml-2' : ''}`}
+                        backgroundColor={`${color}20`}
+                        zIndex={3 - i}
                       >
-                        <RNText style={[styles.stackedAvatarText, { color }]}>
+                        <DynamicColorText className={stackedAvatarTextStyle({})} color={color}>
                           {m.avatar_initial}
-                        </RNText>
-                      </View>
+                        </DynamicColorText>
+                      </DynamicColorView>
                     ))}
-                  </View>
-                  <RNText style={styles.membersHeaderLabel}>{members.length} members</RNText>
-                </View>
-                <View style={{ transform: [{ rotate: membersExpanded ? '90deg' : '0deg' }] }}>
+                  </Box>
+                  <Text className={membersHeaderLabelStyle({})}>{members.length} members</Text>
+                </Box>
+                <Box className={membersExpanded ? 'rotate-90' : 'rotate-0'}>
                   <ChevronRight />
-                </View>
-              </RNPressable>
+                </Box>
+              </Pressable>
               {membersExpanded && (
                 <>
                   {members.map((m) => (
                     <MemberRow key={m.id} member={m} calendarColor={color} />
                   ))}
-                  <RNPressable
-                    style={styles.inviteBtn}
+                  <Pressable
+                    className={inviteBtnStyle({})}
                     // TODO: NEB-64 — push CalendarMembersScreen for invite flow.
                     onPress={() => {}}
                   >
-                    <RNText style={styles.inviteText}>+ Invite Members</RNText>
-                  </RNPressable>
+                    <Text className={inviteTextStyle({})}>+ Invite Members</Text>
+                  </Pressable>
                 </>
               )}
-            </View>
+            </Box>
           </>
         )}
       </ScrollView>
 
       {permissions.canCreateEvent && (
-        <RNPressable
-          testID="add-event-fab"
-          onPress={onCreateEvent}
-          style={[styles.fab, { backgroundColor: color, shadowColor: color }]}
-        >
-          <PlusIcon />
-        </RNPressable>
+        <Pressable testID="add-event-fab" onPress={onCreateEvent} className={fabPositionStyle({})}>
+          <DynamicColorView
+            className={fabSurfaceStyle({})}
+            backgroundColor={color}
+            shadowColor={color}
+          >
+            <PlusIcon />
+          </DynamicColorView>
+        </Pressable>
       )}
     </>
   );

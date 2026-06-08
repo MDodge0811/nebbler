@@ -1,8 +1,13 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Alert, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Alert, ScrollView } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { AvatarCircle } from '@components/ui/AvatarCircle';
 import {
@@ -18,6 +23,29 @@ import { displayName } from '@utils/displayName';
 
 type ScreenRoute = RouteProp<PeopleStackParamList, 'PersonProfile'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+const sectionLabelStyle =
+  'px-4 pb-1.5 pt-2 text-[13px] font-semibold tracking-[0.3px] text-brand-text-muted';
+const sectionCardStyle =
+  'mx-3 mb-3 overflow-hidden rounded-[14px] border border-brand-border bg-background-0';
+const dangerRowStyle = 'flex-row items-center gap-3 px-4 py-3.5';
+const pillStyle = tva({
+  base: 'mt-2 flex-row items-center gap-1.5 rounded-[20px] border px-[14px] py-[5px]',
+  variants: {
+    status: {
+      accepted: 'border-brand-primary-border bg-brand-primary-light',
+      pending: 'border-brand-pending-border bg-brand-pending-bg',
+    },
+  },
+});
+const pillDotStyle = tva({
+  base: 'h-[7px] w-[7px] rounded-full',
+  variants: { status: { accepted: 'bg-brand-primary', pending: 'bg-brand-pending-dot' } },
+});
+const pillTextStyle = tva({
+  base: 'text-[13px] font-semibold',
+  variants: { status: { accepted: 'text-brand-primary', pending: 'text-brand-pending-text' } },
+});
 
 function formatMonthYear(iso: string): string {
   const d = new Date(iso);
@@ -54,9 +82,9 @@ export function PersonProfileScreen() {
 
   if (user === null) {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>This person isn't available.</Text>
-      </View>
+      <Box className="flex-1 items-center justify-center p-6">
+        <Text className="text-base text-brand-text-secondary">This person isn't available.</Text>
+      </Box>
     );
   }
 
@@ -118,86 +146,91 @@ export function PersonProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
+    <ScrollView className="flex-1 bg-brand-surface-subtle" contentContainerClassName="py-3">
+      <Box className="m-3 items-center gap-2 rounded-2xl border border-brand-border bg-background-0 p-6">
         <AvatarCircle user={user} size={80} />
-        <Text style={styles.name}>{name}</Text>
+        <Text className="text-[22px] font-bold text-brand-text">{name}</Text>
 
         <StatusPill status={connection?.status ?? null} />
 
-        <View style={styles.metaRow}>
-          <View style={styles.metaTile}>
-            <Text style={styles.metaValue}>{sharedCount}</Text>
-            <Text style={styles.metaLabel}>Shared</Text>
-          </View>
+        <Box className="mt-4 flex-row gap-5 border-t border-brand-divider pt-3">
+          <Box className="min-w-[60px] items-center">
+            <Text className="text-base font-bold text-brand-text">{sharedCount}</Text>
+            <Text className="mt-0.5 text-xs text-brand-text-muted">Shared</Text>
+          </Box>
           {connection?.status === 'accepted' && (
             <>
-              <View style={styles.metaDivider} />
-              <View style={styles.metaTile}>
-                <Text style={styles.metaSmallLabel}>Since</Text>
-                <Text style={styles.metaSmallValue}>
+              <Box className="w-px bg-brand-divider" />
+              <Box className="min-w-[60px] items-center">
+                <Text className="text-xs font-medium text-brand-text-secondary">Since</Text>
+                <Text className="mt-0.5 text-xs text-brand-text-muted">
                   {formatMonthYear((connection as { updated_at?: string }).updated_at ?? '')}
                 </Text>
-              </View>
+              </Box>
             </>
           )}
-        </View>
-      </View>
+        </Box>
+      </Box>
 
-      <Pressable style={[styles.cta, styles.ctaDisabled]} onPress={handleFindTime}>
+      <Pressable
+        className="m-3 flex-row items-center justify-center gap-2.5 rounded-[14px] bg-brand-primary py-3.5 opacity-50"
+        onPress={handleFindTime}
+      >
         <ClockIcon />
-        <Text style={styles.ctaText}>Find a Time</Text>
+        <Text className="text-base font-bold text-typography-white">Find a Time</Text>
       </Pressable>
 
-      <Text style={styles.sectionLabel}>SHARED CALENDARS</Text>
-      <View style={styles.sectionCard}>
+      <Text className={sectionLabelStyle}>SHARED CALENDARS</Text>
+      <Box className={sectionCardStyle}>
         {sharedCalendars.length > 0 ? (
           sharedCalendars.map((cal) => (
             <Pressable
               key={cal.id}
-              style={styles.calendarRow}
+              className="flex-row items-center gap-3 px-4 py-3"
               onPress={() => navigation.navigate('CalendarDetail', { calendarId: cal.id })}
             >
-              <View
-                style={[
-                  styles.calIcon,
-                  {
-                    backgroundColor: `${cal.color ?? '#9B9BA8'}15`,
-                    borderColor: `${cal.color ?? '#9B9BA8'}30`,
-                  },
-                ]}
+              <DynamicColorView
+                className="h-9 w-9 rounded-[10px] border-[1.5px]"
+                backgroundColor={`${cal.color ?? '#9B9BA8'}15`}
+                borderColor={`${cal.color ?? '#9B9BA8'}30`}
               />
-              <Text style={styles.calName}>{cal.name}</Text>
-              <Text style={styles.chevron}>›</Text>
+              <Text className="flex-1 text-[15px] font-medium text-brand-text">{cal.name}</Text>
+              <Text className="text-base text-brand-text-muted">›</Text>
             </Pressable>
           ))
         ) : (
-          <Text style={styles.emptyText}>You don't share any calendars with {name} yet.</Text>
+          <Text className="p-5 text-center text-sm text-brand-text-muted">
+            You don't share any calendars with {name} yet.
+          </Text>
         )}
-      </View>
+      </Box>
 
-      <Text style={styles.sectionLabel}>CONNECTION</Text>
-      <View style={styles.sectionCard}>
-        <Pressable style={styles.dangerRow} onPress={handleRemove} disabled={!connection}>
-          <View style={styles.dangerIconSlot}>
-            <Text style={styles.dangerIcon}>⊖</Text>
-          </View>
-          <View style={styles.dangerTextSlot}>
-            <Text style={styles.dangerLabel}>Remove Connection</Text>
-            <Text style={styles.dangerSub}>Also removes from shared calendars</Text>
-          </View>
+      <Text className={sectionLabelStyle}>CONNECTION</Text>
+      <Box className={sectionCardStyle}>
+        <Pressable className={dangerRowStyle} onPress={handleRemove} disabled={!connection}>
+          <Box className="w-4 items-center">
+            <Text className="text-base text-brand-danger">⊖</Text>
+          </Box>
+          <Box className="flex-1">
+            <Text className="text-[15px] font-medium text-brand-danger">Remove Connection</Text>
+            <Text className="mt-0.5 text-xs text-brand-text-muted">
+              Also removes from shared calendars
+            </Text>
+          </Box>
         </Pressable>
-        <View style={styles.divider} />
-        <Pressable style={styles.dangerRow} onPress={handleBlock}>
-          <View style={styles.dangerIconSlot}>
-            <Text style={styles.dangerIcon}>⊘</Text>
-          </View>
-          <View style={styles.dangerTextSlot}>
-            <Text style={styles.dangerLabel}>Block</Text>
-            <Text style={styles.dangerSub}>Prevents all future interaction</Text>
-          </View>
+        <Box className="ml-11 h-px bg-brand-divider" />
+        <Pressable className={dangerRowStyle} onPress={handleBlock}>
+          <Box className="w-4 items-center">
+            <Text className="text-base text-brand-danger">⊘</Text>
+          </Box>
+          <Box className="flex-1">
+            <Text className="text-[15px] font-medium text-brand-danger">Block</Text>
+            <Text className="mt-0.5 text-xs text-brand-text-muted">
+              Prevents all future interaction
+            </Text>
+          </Box>
         </Pressable>
-      </View>
+      </Box>
     </ScrollView>
   );
 }
@@ -205,118 +238,19 @@ export function PersonProfileScreen() {
 function StatusPill({ status }: { status: string | null }) {
   if (status === 'accepted') {
     return (
-      <View style={[styles.pill, { backgroundColor: '#E8FBF1', borderColor: '#A8EDCB' }]}>
-        <View style={[styles.pillDot, { backgroundColor: '#00DB74' }]} />
-        <Text style={[styles.pillText, { color: '#00DB74' }]}>Connected</Text>
-      </View>
+      <Box className={pillStyle({ status: 'accepted' })}>
+        <Box className={pillDotStyle({ status: 'accepted' })} />
+        <Text className={pillTextStyle({ status: 'accepted' })}>Connected</Text>
+      </Box>
     );
   }
   if (status === 'pending') {
     return (
-      <View style={[styles.pill, { backgroundColor: '#FFF6E0', borderColor: '#F4D58D' }]}>
-        <View style={[styles.pillDot, { backgroundColor: '#FFB347' }]} />
-        <Text style={[styles.pillText, { color: '#A07300' }]}>Request Pending</Text>
-      </View>
+      <Box className={pillStyle({ status: 'pending' })}>
+        <Box className={pillDotStyle({ status: 'pending' })} />
+        <Text className={pillTextStyle({ status: 'pending' })}>Request Pending</Text>
+      </Box>
     );
   }
-  return <Text style={styles.notConnected}>Not connected</Text>;
+  return <Text className="mt-2 text-[13px] text-brand-text-muted">Not connected</Text>;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
-  content: { paddingVertical: 12 },
-  card: {
-    margin: 12,
-    padding: 24,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E8E8EC',
-    alignItems: 'center',
-    gap: 8,
-  },
-  name: { fontSize: 22, fontWeight: '700', color: '#1A1A1F' },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  pillDot: { width: 7, height: 7, borderRadius: 4 },
-  pillText: { fontSize: 13, fontWeight: '600' },
-  notConnected: { color: '#9B9BA8', fontSize: 13, marginTop: 8 },
-  metaRow: {
-    flexDirection: 'row',
-    gap: 20,
-    marginTop: 16,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F3',
-  },
-  metaTile: { alignItems: 'center', minWidth: 60 },
-  metaDivider: { width: 1, backgroundColor: '#F0F0F3' },
-  metaValue: { fontSize: 16, fontWeight: '700', color: '#1A1A1F' },
-  metaLabel: { fontSize: 12, color: '#9B9BA8', marginTop: 2 },
-  metaSmallLabel: { fontSize: 12, color: '#6B6B78', fontWeight: '500' },
-  metaSmallValue: { fontSize: 12, color: '#9B9BA8', marginTop: 2 },
-  cta: {
-    margin: 12,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#00DB74',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  ctaDisabled: { opacity: 0.5 },
-  ctaText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  sectionLabel: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 6,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#9B9BA8',
-    letterSpacing: 0.3,
-  },
-  sectionCard: {
-    marginHorizontal: 12,
-    marginBottom: 12,
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E8E8EC',
-    overflow: 'hidden',
-  },
-  calendarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  calIcon: { width: 36, height: 36, borderRadius: 10, borderWidth: 1.5 },
-  calName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1A1A1F' },
-  chevron: { color: '#9B9BA8', fontSize: 16 },
-  emptyText: { padding: 20, color: '#9B9BA8', textAlign: 'center', fontSize: 14 },
-  divider: { height: 1, backgroundColor: '#F0F0F3', marginLeft: 44 },
-  dangerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  dangerIconSlot: { width: 16, alignItems: 'center' },
-  dangerIcon: { color: '#FF6B6B', fontSize: 16 },
-  dangerTextSlot: { flex: 1 },
-  dangerLabel: { fontSize: 15, fontWeight: '500', color: '#FF6B6B' },
-  dangerSub: { fontSize: 12, color: '#9B9BA8', marginTop: 2 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  emptyTitle: { fontSize: 16, color: '#6B6B78' },
-});

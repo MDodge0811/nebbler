@@ -123,8 +123,8 @@ module.exports = tseslint.config(
       'react/jsx-uses-vars': 'error',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error',
-      'react-native/no-inline-styles': 'warn',
-      'react-native/no-color-literals': 'warn',
+      'react-native/no-inline-styles': 'error',
+      'react-native/no-color-literals': 'error',
       'react-native/no-raw-text': 'off',
       'react-native/no-unused-styles': 'error',
       'react-native/split-platform-components': 'error',
@@ -175,6 +175,53 @@ module.exports = tseslint.config(
       // One "home" per SDK; everywhere else must go through the adapter. The
       // per-home overrides below re-allow each SDK in its home.
       'no-restricted-imports': ['error', { patterns: ALL_VENDOR }],
+      // --- Styling contract: NativeWind className + Gluestack only ----------
+      // StyleSheet.create is banned; dynamic runtime styles go through the
+      // named door (components/ui/dynamic/). The four structural reanimated/
+      // dimension files are path-exempted below. Do NOT add eslint-disable or
+      // widen the exempt list — migrate to tva()/DynamicColorView instead.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create']",
+          message:
+            'StyleSheet.create is banned — use tva() + className (NativeWind). See .claude/rules/ui-components.md.',
+        },
+      ],
+      // Distinct rule key from `no-restricted-imports` (vendor containment) so
+      // both stay active without one clobbering the other.
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react-native',
+              importNames: ['View', 'Text', 'Pressable', 'Image', 'TouchableOpacity'],
+              message:
+                'Use Gluestack: View→@/components/ui/box (Box), Text→@/components/ui/text (Text), Pressable→@/components/ui/pressable, Image/TouchableOpacity→Pressable+Box. Animated/ScrollView/FlatList/KeyboardAvoidingView/Platform stay on react-native.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // --- Styling path exemptions ----------------------------------------------
+  // The named door (DynamicColorView/DynamicColorText) and the four structural
+  // reanimated/runtime-dimension files are the ONLY places inline styles and
+  // color literals are allowed. This list is closed — growing it needs explicit
+  // user sign-off (see docs/superpowers/plans + .claude/rules/ui-components.md).
+  {
+    files: [
+      'components/ui/dynamic/**/*.{ts,tsx}',
+      'src/components/calendars/CalendarCheckbox.tsx',
+      'src/components/SyncStatusIndicator.tsx',
+      'src/components/schedule/week-strip/WeekStrip.tsx',
+      'src/components/schedule/month-grid/MonthGrid.tsx',
+    ],
+    rules: {
+      'react-native/no-inline-styles': 'off',
+      'react-native/no-color-literals': 'off',
     },
   },
   // --- Vendor homes: re-allow each SDK only where it belongs ----------------
@@ -278,8 +325,9 @@ module.exports = tseslint.config(
   {
     files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
     rules: {
-      // Tests legitimately import and mock vendor SDKs.
+      // Tests legitimately import and mock vendor SDKs + raw RN primitives.
       'no-restricted-imports': 'off',
+      '@typescript-eslint/no-restricted-imports': 'off',
     },
     languageOptions: {
       globals: {

@@ -11,8 +11,6 @@ export const calendarColors = {
   eventDot: '#00DB74',
   /** Adjacent month dates (grayed out) */
   disabled: '#A3A3A3',
-  /** Calendar background */
-  background: '#FFFFFF',
   /** Primary date number text */
   dayText: '#262627',
   /** Day-of-week header letters (S, M, T, …) */

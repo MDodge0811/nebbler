@@ -1,18 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import {
-  Alert,
-  LayoutAnimation,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  UIManager,
-  View,
-} from 'react-native';
+import { Alert, LayoutAnimation, Platform, ScrollView, UIManager } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { AvatarCircle } from '@components/ui/AvatarCircle';
 import { ColorSwatchGrid } from '@components/ui/ColorSwatchGrid';
 import { useAuth } from '@hooks/useAuth';
@@ -41,20 +34,23 @@ type AvatarCardProps = {
   onColorChange: (hex: string) => Promise<void>;
 };
 
+const cardClass = 'mx-3 rounded-[14px] border border-brand-border bg-background-0';
+const chevronClass = 'text-lg text-brand-text-muted';
+
 function AvatarCard({ profile, name, email, expanded, onToggle, onColorChange }: AvatarCardProps) {
   return (
-    <View style={styles.card}>
-      <Pressable style={styles.avatarRow} onPress={onToggle}>
+    <Box className={cardClass}>
+      <Pressable className="flex-row items-center gap-3 p-4" onPress={onToggle}>
         <AvatarCircle user={profile} size={56} />
-        <View style={styles.avatarMeta}>
-          <Text style={styles.avatarName}>{name}</Text>
-          {email ? <Text style={styles.avatarEmail}>{email}</Text> : null}
-        </View>
-        <Text style={styles.chevron}>{expanded ? '▾' : '▸'}</Text>
+        <Box className="flex-1">
+          <Text className="text-base font-semibold text-brand-text">{name}</Text>
+          {email ? <Text className="mt-0.5 text-[13px] text-brand-text-muted">{email}</Text> : null}
+        </Box>
+        <Text className={chevronClass}>{expanded ? '▾' : '▸'}</Text>
       </Pressable>
       {expanded && (
         <>
-          <View style={styles.divider} />
+          <Box className="mx-4 h-px bg-brand-divider" />
           <ColorSwatchGrid
             value={profile.avatar_color ?? '#00DB74'}
             onChange={(hex) => {
@@ -63,7 +59,7 @@ function AvatarCard({ profile, name, email, expanded, onToggle, onColorChange }:
           />
         </>
       )}
-    </View>
+    </Box>
   );
 }
 
@@ -109,9 +105,9 @@ export function ProfileScreen() {
 
   if (!profile || !me) {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>Loading…</Text>
-      </View>
+      <Box className="flex-1 items-center justify-center">
+        <Text className="text-base text-brand-text-muted">Loading…</Text>
+      </Box>
     );
   }
 
@@ -123,7 +119,7 @@ export function ProfileScreen() {
   });
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView className="flex-1 bg-brand-surface-subtle" contentContainerClassName="gap-3 py-3">
       <AvatarCard
         profile={profile}
         name={name}
@@ -133,68 +129,26 @@ export function ProfileScreen() {
         onColorChange={handleColorChange}
       />
 
-      <Pressable style={styles.card} onPress={handleConnectionsRowTap}>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Connections</Text>
+      <Pressable className={cardClass} onPress={handleConnectionsRowTap}>
+        <Box className="flex-row items-center gap-2 px-4 pb-1 pt-3.5">
+          <Text className="flex-1 text-[15px] font-medium text-brand-text">Connections</Text>
           {pendingIncoming.length > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{pendingIncoming.length}</Text>
-            </View>
+            <Box className="h-[22px] min-w-[22px] items-center justify-center rounded-full bg-brand-danger px-1.5">
+              <Text className="text-xs font-bold text-typography-white">
+                {pendingIncoming.length}
+              </Text>
+            </Box>
           )}
-          <Text style={styles.chevron}>›</Text>
-        </View>
-        <Text style={styles.rowSub}>{accepted.length} connected</Text>
+          <Text className={chevronClass}>›</Text>
+        </Box>
+        <Text className="px-4 pb-3.5 text-[13px] text-brand-text-muted">
+          {accepted.length} connected
+        </Text>
       </Pressable>
 
-      <Pressable style={styles.card} onPress={handleLogOut}>
-        <Text style={styles.logout}>Log Out</Text>
+      <Pressable className={cardClass} onPress={handleLogOut}>
+        <Text className="p-4 text-[15px] font-medium text-brand-danger">Log Out</Text>
       </Pressable>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
-  content: { paddingVertical: 12, gap: 12 },
-  card: {
-    marginHorizontal: 12,
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E8E8EC',
-  },
-  avatarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 16,
-  },
-  avatarMeta: { flex: 1 },
-  avatarName: { fontSize: 16, fontWeight: '600', color: '#1A1A1F' },
-  avatarEmail: { fontSize: 13, color: '#9B9BA8', marginTop: 2 },
-  chevron: { color: '#9B9BA8', fontSize: 18 },
-  divider: { height: 1, backgroundColor: '#F0F0F3', marginHorizontal: 16 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 4,
-    gap: 8,
-  },
-  rowLabel: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1A1A1F' },
-  rowSub: { paddingHorizontal: 16, paddingBottom: 14, fontSize: 13, color: '#9B9BA8' },
-  badge: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FF6B6B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  badgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  logout: { padding: 16, color: '#FF6B6B', fontSize: 15, fontWeight: '500' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontSize: 16, color: '#9B9BA8' },
-});

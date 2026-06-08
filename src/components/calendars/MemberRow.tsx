@@ -1,6 +1,6 @@
-import { StyleSheet, Text as RNText, View } from 'react-native';
-
-import { calendarsUIColors } from '@constants/calendarsUI';
+import { Box } from '@/components/ui/box';
+import { DynamicColorText, DynamicColorView } from '@/components/ui/dynamic';
+import { Text } from '@/components/ui/text';
 import type { CalendarDetailMember } from '@hooks/useCalendarDetail';
 
 import { RoleBadge } from './RoleBadge';
@@ -12,41 +12,18 @@ interface MemberRowProps {
 
 export function MemberRow({ member, calendarColor }: MemberRowProps) {
   return (
-    <View style={styles.row}>
-      <View
-        style={[
-          styles.avatar,
-          { backgroundColor: `${calendarColor}20`, borderColor: `${calendarColor}40` },
-        ]}
+    <Box className="flex-row items-center gap-3 border-b-[0.5px] border-brand-border px-4 py-2.5">
+      <DynamicColorView
+        className="h-9 w-9 items-center justify-center rounded-full border-[1.5px]"
+        backgroundColor={`${calendarColor}20`}
+        borderColor={`${calendarColor}40`}
       >
-        <RNText style={[styles.avatarLetter, { color: calendarColor }]}>
+        <DynamicColorText className="text-sm font-bold" color={calendarColor}>
           {member.avatar_initial}
-        </RNText>
-      </View>
-      <RNText style={styles.name}>{member.display_name}</RNText>
+        </DynamicColorText>
+      </DynamicColorView>
+      <Text className="flex-1 text-[15px] font-medium text-brand-text">{member.display_name}</Text>
       <RoleBadge role={member.role_name} />
-    </View>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: calendarsUIColors.border,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarLetter: { fontSize: 14, fontWeight: '700' },
-  name: { flex: 1, fontSize: 15, fontWeight: '500', color: calendarsUIColors.text },
-});

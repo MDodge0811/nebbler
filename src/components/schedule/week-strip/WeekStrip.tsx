@@ -6,7 +6,6 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
-import { View } from 'react-native';
 
 import { Box } from '@/components/ui/box';
 import { useScheduleStore } from '@stores/useScheduleStore';
@@ -78,7 +77,7 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
 
   const renderWeekPage = useCallback(
     ({ item }: { item: WeekPage }) => (
-      <View style={{ width: screenWidth, flexDirection: 'row', paddingHorizontal: 8 }}>
+      <Box style={{ width: screenWidth, flexDirection: 'row', paddingHorizontal: 8 }}>
         {item.dates.map((dateStr) => {
           const day = parseInt(dateStr.slice(8), 10);
           const mark = markedDates[dateStr];
@@ -95,7 +94,7 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
             />
           );
         })}
-      </View>
+      </Box>
     ),
     [screenWidth, selectedDate, today, markedDates, handleDayPress]
   );

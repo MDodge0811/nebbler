@@ -1,18 +1,35 @@
-import {
-  Pressable as RNPressable,
-  ScrollView,
-  Text as RNText,
-  TextInput,
-  View,
-} from 'react-native';
+import { ScrollView, TextInput } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { DynamicColorText, DynamicColorView } from '@/components/ui/dynamic';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { ToggleRow } from '@components/calendars/ToggleRow';
 import { CALENDAR_PALETTE, calendarsUIColors } from '@constants/calendarsUI';
 import type { Calendar } from '@database/schema';
 import type { CalendarDetailPermissions } from '@hooks/useCalendarDetail';
 import type { CalendarEditForm } from '@hooks/useCalendarEditForm';
 
-import { styles } from './styles';
+import {
+  dangerBtnStyle,
+  dangerBtnTextStyle,
+  dangerCardStyle,
+  dangerCopyStyle,
+  editBodyStyle,
+  editTitleStyle,
+  previewCardStyle,
+  previewLetterStyle,
+  previewNameStyle,
+  previewTileStyle,
+  previewTypeStyle,
+  scrollStyle,
+  sectionLabelStyle,
+  swatchRowStyle,
+  swatchStyle,
+  testAffordanceStyle,
+  textAreaStyle,
+  textInputStyle,
+} from './styles';
 
 interface CalendarDetailEditBodyProps {
   calendar: Calendar;
@@ -29,98 +46,92 @@ export function CalendarDetailEditBody({
   const trimmedName = form.editName.trim();
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
-      <View style={styles.editBody}>
+    <ScrollView contentContainerClassName={scrollStyle({})}>
+      <Box className={editBodyStyle({})}>
         {/* Inline edit title — matches setOptions title; allows tests to find it */}
-        <RNText style={styles.editTitle}>Edit Calendar</RNText>
+        <Text className={editTitleStyle({})}>Edit Calendar</Text>
         {/* Test affordance: mirrors the header X close button for test findability */}
-        <RNPressable
+        <Pressable
           testID="close-edit-btn"
           onPress={form.exitEditMode}
-          style={styles.testAffordance}
+          className={testAffordanceStyle({})}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         />
         {/* Test affordance: mirrors the header Save button for test findability */}
-        <RNPressable
+        <Pressable
           testID="save-edit-btn"
           onPress={() => {
             void form.handleSave();
           }}
-          style={styles.testAffordance}
+          className={testAffordanceStyle({})}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         />
 
         {/* Preview Card */}
-        <View style={styles.previewCard}>
-          <View
-            style={[
-              styles.previewTile,
-              { backgroundColor: `${form.editColor}14`, borderColor: `${form.editColor}30` },
-            ]}
+        <Box className={previewCardStyle({})}>
+          <DynamicColorView
+            className={previewTileStyle({})}
+            backgroundColor={`${form.editColor}14`}
+            borderColor={`${form.editColor}30`}
           >
-            <RNText style={[styles.previewLetter, { color: form.editColor }]}>
+            <DynamicColorText className={previewLetterStyle({})} color={form.editColor}>
               {(trimmedName[0] ?? '?').toUpperCase()}
-            </RNText>
-          </View>
-          <View>
-            <RNText
-              style={[
-                styles.previewName,
-                { color: trimmedName ? calendarsUIColors.text : calendarsUIColors.textMuted },
-              ]}
-            >
+            </DynamicColorText>
+          </DynamicColorView>
+          <Box>
+            <Text className={previewNameStyle({ filled: !!trimmedName })}>
               {trimmedName || 'Calendar name'}
-            </RNText>
-            <RNText style={styles.previewType}>{calendar.type} calendar</RNText>
-          </View>
-        </View>
+            </Text>
+            <Text className={previewTypeStyle({})}>{calendar.type} calendar</Text>
+          </Box>
+        </Box>
 
         {/* Name */}
-        <RNText style={styles.sectionLabel}>NAME</RNText>
+        <Text className={sectionLabelStyle({})}>NAME</Text>
         <TextInput
           value={form.editName}
           onChangeText={form.setEditName}
           placeholder="Calendar name"
           placeholderTextColor={calendarsUIColors.textMuted}
-          style={styles.textInput}
+          className={textInputStyle({})}
           maxLength={100}
         />
 
         {/* Description */}
-        <RNText style={styles.sectionLabel}>DESCRIPTION</RNText>
+        <Text className={sectionLabelStyle({})}>DESCRIPTION</Text>
         <TextInput
           value={form.editDescription}
           onChangeText={form.setEditDescription}
           placeholder="What's this calendar for?"
           placeholderTextColor={calendarsUIColors.textMuted}
-          style={[styles.textInput, styles.textArea]}
+          className={`${textInputStyle({})} ${textAreaStyle({})}`}
           multiline
           numberOfLines={3}
           maxLength={500}
         />
 
         {/* Color */}
-        <RNText style={styles.sectionLabel}>COLOR</RNText>
-        <View style={styles.swatchRow}>
+        <Text className={sectionLabelStyle({})}>COLOR</Text>
+        <Box className={swatchRowStyle({})}>
           {CALENDAR_PALETTE.map((c) => (
-            <RNPressable
+            <Pressable
               key={c.hex}
               onPress={() => form.setEditColor(c.hex)}
               testID={`swatch-${c.hex}`}
-              style={[
-                styles.swatch,
-                { backgroundColor: c.hex },
-                form.editColor === c.hex && styles.swatchSelected,
-              ]}
-            />
+            >
+              <DynamicColorView
+                className={swatchStyle({ selected: form.editColor === c.hex })}
+                backgroundColor={c.hex}
+              />
+            </Pressable>
           ))}
-        </View>
+        </Box>
 
         {/* Settings */}
-        <RNText style={styles.sectionLabel}>SETTINGS</RNText>
-        <View style={{ gap: 8 }}>
+        <Text className={sectionLabelStyle({})}>SETTINGS</Text>
+        <Box className="gap-2">
           <ToggleRow
             checked={form.editRsvp}
             onChange={form.setEditRsvp}
@@ -141,28 +152,28 @@ export function CalendarDetailEditBody({
             label="Show as busy"
             description="Events on this calendar count toward your availability in Find Time."
           />
-        </View>
+        </Box>
 
         {/* Danger Zone */}
         {permissions.canDelete && (
           <>
-            <RNText style={styles.sectionLabel}>DANGER ZONE</RNText>
-            <View style={styles.dangerCard}>
-              <RNText style={styles.dangerCopy}>
+            <Text className={sectionLabelStyle({})}>DANGER ZONE</Text>
+            <Box className={dangerCardStyle({})}>
+              <Text className={dangerCopyStyle({})}>
                 Permanently delete this calendar, all its events, and remove all members. This
                 cannot be undone.
-              </RNText>
-              <RNPressable
+              </Text>
+              <Pressable
                 testID="delete-calendar-btn"
-                style={styles.dangerBtn}
+                className={dangerBtnStyle({})}
                 onPress={() => form.setShowDeleteConfirm(true)}
               >
-                <RNText style={styles.dangerBtnText}>Delete Calendar</RNText>
-              </RNPressable>
-            </View>
+                <Text className={dangerBtnTextStyle({})}>Delete Calendar</Text>
+              </Pressable>
+            </Box>
           </>
         )}
-      </View>
+      </Box>
     </ScrollView>
   );
 }
