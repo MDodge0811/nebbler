@@ -57,15 +57,12 @@ export async function searchUsers(query: string): Promise<UserSearchResult[]> {
   }
 
   if (response.status === 429) {
-    let retryAfter = 60;
-    try {
-      const body = (await response.json()) as { retry_after_seconds?: number };
-      if (typeof body.retry_after_seconds === 'number') {
-        retryAfter = body.retry_after_seconds;
-      }
-    } catch {
-      // Use fallback
-    }
+    // The backend conveys the retry hint via the standard `Retry-After` header
+    // (seconds); the body is the canonical error envelope and no longer carries
+    // `retry_after_seconds`. Fall back to 60s when the header is absent/invalid.
+    const header = response.headers.get('Retry-After');
+    const parsed = header ? Number.parseInt(header, 10) : Number.NaN;
+    const retryAfter = Number.isFinite(parsed) && parsed > 0 ? parsed : 60;
     throw new RateLimitedError(retryAfter);
   }
 

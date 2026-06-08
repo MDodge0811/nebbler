@@ -12,11 +12,24 @@ export const FetchCredentialsResponseSchema = z.object({
 export type FetchCredentialsResponse = z.infer<typeof FetchCredentialsResponseSchema>;
 
 /**
- * Schema for API error responses.
+ * Schema for the canonical API error envelope (NEB-147).
+ *
+ * Every error response from the backend — all status codes, including 401 and
+ * 429 — uses this shape:
+ *   { "error": { "code": "<stable>", "message": "<human>", "details"?: { field: [msg] } } }
+ *
+ * `code` is a stable machine string (e.g. "not_found", "forbidden",
+ * "validation_failed", "rate_limited", "already_connected"). `details` is
+ * present only on "validation_failed" (422) and maps each invalid field to its
+ * messages. For 429, the retry hint is in the `Retry-After` response header,
+ * not in the body.
  */
 export const ApiErrorResponseSchema = z.object({
-  error: z.string(),
-  message: z.string().optional(),
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    details: z.record(z.string(), z.array(z.string())).optional(),
+  }),
 });
 
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
