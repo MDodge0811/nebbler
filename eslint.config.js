@@ -129,7 +129,7 @@ module.exports = tseslint.config(
       'react-native/no-unused-styles': 'error',
       'react-native/split-platform-components': 'error',
       'prettier/prettier': 'error',
-      'no-console': 'off',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-unused-vars': 'off',
       // --- Complexity ceiling (enforced) ---
       // Cyclomatic-complexity cap. Worst-first offenders were refactored
