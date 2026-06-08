@@ -1,4 +1,5 @@
-import { StyleSheet, Text as RNText, View } from 'react-native';
+import { DynamicColorText, DynamicColorView } from '@/components/ui/dynamic';
+import { Text } from '@/components/ui/text';
 
 const ICONS: Record<string, string> = {
   private: '🔒',
@@ -14,24 +15,15 @@ interface CalendarTypeBadgeProps {
 export function CalendarTypeBadge({ type, color }: CalendarTypeBadgeProps) {
   const label = type.charAt(0).toUpperCase() + type.slice(1);
   return (
-    <View style={[styles.badge, { backgroundColor: `${color}14`, borderColor: `${color}30` }]}>
-      <RNText style={styles.icon}>{ICONS[type] ?? ''}</RNText>
-      <RNText style={[styles.label, { color }]}>{label}</RNText>
-    </View>
+    <DynamicColorView
+      className="flex-row items-center gap-[5px] self-start rounded-lg border-[1px] px-2.5 py-[3px]"
+      backgroundColor={`${color}14`}
+      borderColor={`${color}30`}
+    >
+      <Text className="text-[11px]">{ICONS[type] ?? ''}</Text>
+      <DynamicColorText className="text-[12px] font-semibold tracking-[0.2px]" color={color}>
+        {label}
+      </DynamicColorText>
+    </DynamicColorView>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
-  },
-  icon: { fontSize: 11 },
-  label: { fontSize: 12, fontWeight: '600', letterSpacing: 0.2 },
-});

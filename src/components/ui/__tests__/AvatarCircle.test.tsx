@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AvatarCircle } from '../AvatarCircle';
 
@@ -10,15 +11,14 @@ const baseUser = {
   avatar_color: null as string | null,
 };
 
-type CircleStyle = {
-  backgroundColor: string;
-  borderColor: string;
-  width: number;
-  height: number;
-  borderRadius: number;
+const SIZE_CLASS: Record<32 | 40 | 56 | 80, string> = {
+  32: 'h-8 w-8',
+  40: 'h-10 w-10',
+  56: 'h-14 w-14',
+  80: 'h-20 w-20',
 };
 
-type CircleElement = { props: { style: CircleStyle } };
+type CircleElement = { props: { style?: StyleProp<ViewStyle>; className?: string } };
 
 describe('AvatarCircle', () => {
   it('renders the initials from first + last name', () => {
@@ -30,15 +30,16 @@ describe('AvatarCircle', () => {
     const user = { ...baseUser, avatar_color: '#FF6B6B' };
     const { getByTestId } = render(<AvatarCircle user={user} size={56} />);
     const circle = getByTestId('avatar-circle') as unknown as CircleElement;
-    expect(circle.props.style.backgroundColor).toBe('#FF6B6B15');
-    expect(circle.props.style.borderColor).toBe('#FF6B6B30');
+    const flat = StyleSheet.flatten(circle.props.style);
+    expect(flat).toMatchObject({ backgroundColor: '#FF6B6B15', borderColor: '#FF6B6B30' });
   });
 
   it('falls back to deterministic color when avatar_color is null', () => {
     const { getByTestId } = render(<AvatarCircle user={baseUser} size={56} />);
     const circle = getByTestId('avatar-circle') as unknown as CircleElement;
+    const flat = StyleSheet.flatten(circle.props.style);
     // getAvatarColor('u1') is deterministic; just assert it's set to one of the AVATAR_COLORS
-    expect(circle.props.style.backgroundColor).toMatch(/^#[0-9A-F]{6}15$/i);
+    expect(flat.backgroundColor).toMatch(/^#[0-9A-F]{6}15$/i);
   });
 
   it('falls back to email local-part initial when names missing', () => {
@@ -47,13 +48,9 @@ describe('AvatarCircle', () => {
     expect(getByText('S')).toBeTruthy();
   });
 
-  it.each([32, 40, 56, 80])('renders at size %i', (size) => {
-    const { getByTestId } = render(
-      <AvatarCircle user={baseUser} size={size as 32 | 40 | 56 | 80} />
-    );
+  it.each([32, 40, 56, 80] as const)('renders at size %i', (size) => {
+    const { getByTestId } = render(<AvatarCircle user={baseUser} size={size} />);
     const circle = getByTestId('avatar-circle') as unknown as CircleElement;
-    expect(circle.props.style.width).toBe(size);
-    expect(circle.props.style.height).toBe(size);
-    expect(circle.props.style.borderRadius).toBe(size / 2);
+    expect(circle.props.className).toContain(SIZE_CLASS[size]);
   });
 });

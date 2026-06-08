@@ -1,5 +1,7 @@
-import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, TextInput } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -11,12 +13,14 @@ import type { EventEditForm as EventEditFormState } from '@hooks/useEventEditFor
 import { getCalendarColor } from '@utils/calendarColor';
 
 import {
+  calendarDotStyle,
   calendarNameStyle,
   chevronStyle,
   containerStyle,
+  descriptionInputStyle,
   dividerStyle,
   sectionLabelStyle,
-  styles,
+  titleInputStyle,
 } from './styles';
 
 interface EventEditFormProps {
@@ -40,11 +44,11 @@ export function EventEditForm({ form, calendar, calendarColor }: EventEditFormPr
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className={containerStyle({})}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerClassName="grow" keyboardShouldPersistTaps="handled">
         <VStack className="px-4 pt-4">
           {/* Title */}
           <TextInput
-            style={styles.titleInput}
+            className={titleInputStyle({})}
             placeholder="Event title"
             placeholderTextColor="#A3A3A3"
             value={form.editTitle}
@@ -52,17 +56,17 @@ export function EventEditForm({ form, calendar, calendarColor }: EventEditFormPr
             autoFocus
             returnKeyType="done"
           />
-          <View className={dividerStyle({})} />
+          <Box className={dividerStyle({})} />
 
           {/* Calendar row */}
           <Pressable className="py-4" onPress={() => form.setShowCalendarPicker(true)}>
             <HStack className="items-center">
-              <View style={[styles.calendarDot, { backgroundColor: dotColor, marginRight: 10 }]} />
+              <DynamicColorView className={calendarDotStyle({})} backgroundColor={dotColor} />
               <Text className={calendarNameStyle({})}>{calendarName}</Text>
               <Text className={chevronStyle({})}>&#x203A;</Text>
             </HStack>
           </Pressable>
-          <View className={dividerStyle({})} />
+          <Box className={dividerStyle({})} />
 
           {/* Start date/time */}
           <EditDateTimeRow
@@ -74,7 +78,7 @@ export function EventEditForm({ form, calendar, calendarColor }: EventEditFormPr
             setPickerTarget={form.setPickerTarget}
             onChange={form.handleStartChange}
           />
-          <View className={dividerStyle({})} />
+          <Box className={dividerStyle({})} />
 
           {/* End date/time */}
           <EditDateTimeRow
@@ -88,13 +92,14 @@ export function EventEditForm({ form, calendar, calendarColor }: EventEditFormPr
             showError={showEndError}
             errorText={endTimeError}
           />
-          <View className={dividerStyle({})} />
+          <Box className={dividerStyle({})} />
 
           {/* Description */}
           <VStack className="py-4">
             <Text className={sectionLabelStyle({})}>Description</Text>
             <TextInput
-              style={styles.descriptionInput}
+              className={descriptionInputStyle({})}
+              textAlignVertical="top"
               placeholder="Add a description"
               placeholderTextColor="#A3A3A3"
               value={form.editDescription}

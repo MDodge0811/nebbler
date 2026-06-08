@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import { StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { Pressable } from '@/components/ui/pressable';
@@ -24,7 +23,7 @@ export const MeatballMenuButton = memo(function MeatballMenuButton({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="More options"
-      style={styles.button}
+      className="p-1"
       hitSlop={8}
     >
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -34,10 +33,4 @@ export const MeatballMenuButton = memo(function MeatballMenuButton({
       </Svg>
     </Pressable>
   );
-});
-
-const styles = StyleSheet.create({
-  button: {
-    padding: 4,
-  },
 });

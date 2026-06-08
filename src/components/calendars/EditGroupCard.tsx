@@ -1,7 +1,8 @@
 import { type ReactNode } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -55,90 +56,42 @@ export function EditGroupCard({
 
   if (isPrimary) {
     return (
-      <View style={styles.primaryCard}>
-        <HStack style={styles.header}>
+      <Box className="mx-3 mb-2.5 rounded-2xl border-[1.5px] border-brand-primary-border bg-brand-primary-light">
+        <HStack className="items-center gap-2 px-3 pb-2.5 pt-3">
           <EditableGroupName
             value={name}
             onChangeText={onNameChange}
             onSubmit={onNameBlur}
             autoFocus={autoFocusName}
           />
-          <View style={styles.availabilityBadge}>
-            <Text style={styles.availabilityText}>AVAILABILITY</Text>
-          </View>
+          <Box className="shrink-0 rounded-[5px] border border-brand-primary-border bg-background-0 px-[7px] py-0.5">
+            <Text className="text-[9px] font-bold tracking-[0.6px] text-brand-primary">
+              AVAILABILITY
+            </Text>
+          </Box>
         </HStack>
-        <View style={styles.body}>{children}</View>
-      </View>
+        <Box className="pb-1.5">{children}</Box>
+      </Box>
     );
   }
 
   return (
-    <View style={styles.standardCard}>
-      <HStack style={styles.header}>
+    <Box className="mx-3 mb-1.5 rounded-[14px] border border-brand-border bg-background-0">
+      <HStack className="items-center gap-2 px-3 pb-2.5 pt-3">
         <EditableGroupName
           value={name}
           onChangeText={onNameChange}
           onSubmit={onNameBlur}
           autoFocus={autoFocusName}
         />
-        <Pressable onPress={handleDelete} style={styles.deleteButton}>
+        <Pressable
+          onPress={handleDelete}
+          className="h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-brand-danger-light"
+        >
           <TrashIcon />
         </Pressable>
       </HStack>
-      <View style={styles.body}>{children}</View>
-    </View>
+      <Box className="pb-1.5">{children}</Box>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  primaryCard: {
-    marginHorizontal: 12,
-    marginBottom: 10,
-    borderRadius: 16,
-    backgroundColor: calendarsUIColors.primaryLight,
-    borderWidth: 1.5,
-    borderColor: calendarsUIColors.primaryBorder,
-  },
-  standardCard: {
-    marginHorizontal: 12,
-    marginBottom: 6,
-    borderRadius: 14,
-    backgroundColor: calendarsUIColors.surface,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-  },
-  header: {
-    alignItems: 'center',
-    gap: 8,
-    paddingTop: 12,
-    paddingBottom: 10,
-    paddingHorizontal: 12,
-  },
-  availabilityBadge: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.primaryBorder,
-    flexShrink: 0,
-  },
-  availabilityText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: calendarsUIColors.primary,
-    letterSpacing: 0.6,
-  },
-  deleteButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    backgroundColor: calendarsUIColors.dangerLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  body: {
-    paddingBottom: 6,
-  },
-});

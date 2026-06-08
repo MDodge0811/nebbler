@@ -20,6 +20,39 @@ paths:
 - The `URL` global is available in TS files
 - **Cyclomatic complexity is enforced**: `complexity: ['error', { max: 12 }]` — CI fails above 12. Drivers: `if/for/while/case/catch`, `?:`, `&&`, `||`, `??`, and `?.`. `useCallback`/`useEffect`/`.map()` arrows count as **separate** functions, so moving JSX/handlers out of a component body is the highest-leverage fix. Functions scoring 11 are fine — don't over-decompose.
 
+## Styling Contract (enforced as hard lint errors)
+
+NativeWind `className` + Gluestack is the **only** sanctioned styling path. These
+rules fail `npm run lint` (and the pre-commit hook):
+
+- `react-native/no-inline-styles` + `react-native/no-color-literals` are **errors**, not warnings.
+- `no-restricted-syntax` bans `StyleSheet.create` — use `tva()` + `className`.
+- `@typescript-eslint/no-restricted-imports` bans `View`/`Text`/`Pressable`/`Image`/`TouchableOpacity`
+  from `react-native`. Use Gluestack instead: `View`→`@/components/ui/box` (`Box`),
+  `Text`→`@/components/ui/text`, `Pressable`→`@/components/ui/pressable`,
+  `Image`/`TouchableOpacity`→`Pressable`+`Box`. `Animated`/`ScrollView`/`FlatList`/
+  `SectionList`/`KeyboardAvoidingView`/`Platform`/`ViewStyle` stay on `react-native`.
+
+**The named door for runtime (non-`className`) styling:** `components/ui/dynamic/`
+(`DynamicColorView` for runtime background/border/shadow color, `zIndex`, drag-driven
+`top`, inset-driven padding; `DynamicColorText` for runtime text color). Anything that
+genuinely can't be a static class goes through these primitives — never an inline
+`style={{...}}` or `eslint-disable`.
+
+**Path-exempt files** (inline styles + color literals allowed because they do
+reanimated/runtime-dimension work the door can't express): `components/ui/dynamic/**`,
+`src/components/calendars/CalendarCheckbox.tsx`, `src/components/SyncStatusIndicator.tsx`,
+`src/components/schedule/week-strip/WeekStrip.tsx`,
+`src/components/schedule/month-grid/MonthGrid.tsx`. This list is **closed** — fix new
+lint errors by migrating to `tva()`/`DynamicColorView`, never by widening the exempt
+list or adding `eslint-disable`. Growing the list needs explicit user sign-off.
+
+Color tokens are in `components/ui/gluestack-ui-provider/config.ts` (CSS vars, light+dark)
+mapped through `tailwind.config.js`. Brand chrome hexes with no exact palette match live
+under the `brand-*` namespace; add new ones to **both** config blocks, the
+`tailwind.config.js` `brand` color map, and the safelist regex. Tokens must be
+byte-exact hex, never near-matches.
+
 ## Formatting (Prettier)
 
 - Config: `.prettierrc`

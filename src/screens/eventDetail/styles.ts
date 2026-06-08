@@ -1,5 +1,4 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { StyleSheet } from 'react-native';
 
 export const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 export const sectionLabelStyle = tva({ base: 'text-sm text-typography-500' });
@@ -11,44 +10,13 @@ export const calendarNameStyle = tva({ base: 'flex-1 text-base text-typography-9
 export const chevronStyle = tva({ base: 'text-base text-typography-400' });
 export const errorTextStyle = tva({ base: 'mt-1 text-sm text-error-600' });
 
-export const styles = StyleSheet.create({
-  scrollContent: { flexGrow: 1 },
-  calendarDot: { width: 10, height: 10, borderRadius: 5 },
-  busyBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: '#F3F4F6',
-  },
-  titleInput: {
-    fontSize: 16,
-    color: '#262627',
-    paddingVertical: 8,
-    paddingHorizontal: 0,
-  },
-  descriptionInput: {
-    fontSize: 16,
-    color: '#262627',
-    minHeight: 100,
-    textAlignVertical: 'top',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    borderRadius: 8,
-  },
-  deleteButton: {
-    marginHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center' as const,
-  },
-  deleteButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#DC2626',
-  },
+export const calendarDotStyle = tva({ base: 'mr-2.5 h-2.5 w-2.5 rounded-full' });
+export const busyBadgeStyle = tva({ base: 'rounded-xl bg-brand-surface-muted px-3 py-1' });
+export const titleInputStyle = tva({ base: 'px-0 py-2 text-base text-typography-900' });
+export const descriptionInputStyle = tva({
+  base: 'min-h-[100px] rounded-lg border border-typography-100 px-3 py-2 text-base text-typography-900',
 });
+export const deleteButtonStyle = tva({
+  base: 'mx-4 mb-4 mt-6 items-center rounded-xl bg-error-50 py-3.5',
+});
+export const deleteButtonTextStyle = tva({ base: 'text-base font-semibold text-error-600' });

@@ -6,6 +6,23 @@ paths:
 
 # UI Component Rules
 
+## Styling Contract (the one way to style)
+
+NativeWind `className` + Gluestack is the **only** sanctioned styling path, enforced as
+hard lint errors. No `StyleSheet.create`, no inline `style={{...}}`, no color literals,
+no raw `View`/`Text`/`Pressable`/`Image`/`TouchableOpacity` from `react-native`.
+
+- **Static styling** → `className` (use `tva()` for variants). Use Gluestack `Box`/`Text`/
+  `Pressable`/`VStack`/`HStack` instead of the raw RN primitives.
+- **Runtime styling that can't be a class** (data-driven color, `zIndex`, drag-driven
+  `top`, safe-area-inset padding) → the named door in `components/ui/dynamic/`:
+  `DynamicColorView` (background/border/shadow color, `zIndex`, `top`, `paddingTop/Bottom`)
+  and `DynamicColorText` (text color). Never an inline `style` or `eslint-disable`.
+- A small **closed** set of reanimated/runtime-dimension files is path-exempted in
+  `eslint.config.js` (CalendarCheckbox, SyncStatusIndicator, WeekStrip, MonthGrid +
+  `components/ui/dynamic/**`). Don't grow it — migrate instead. See
+  `.claude/rules/code-quality.md` for the full contract and exempt list.
+
 ## Icons
 
 - Use `react-native-svg` (`Svg`, `Circle`, `Path`) for simple custom icons — no icon library installed
@@ -32,6 +49,10 @@ paths:
 - Theme color palette: `src/constants/colors.ts`
 - Calendar-specific colors: `src/constants/calendarColors.ts`
 - Gluestack CSS variable colors: `components/ui/gluestack-ui-provider/config.ts` (light/dark mode)
+- Brand chrome hexes with no exact palette match live under the `brand-*` namespace
+  (e.g. `bg-brand-primary`, `bg-brand-handle`). Add a new one to **both** the light and
+  dark blocks in `config.ts`, the `brand` color map in `tailwind.config.js`, and the
+  safelist regex — and keep the hex byte-exact, never a near-match.
 
 ## Deep-Dive References
 

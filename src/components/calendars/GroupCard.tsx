@@ -1,8 +1,9 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { type ReactNode } from 'react';
-import { LayoutAnimation, StyleSheet, View } from 'react-native';
+import { LayoutAnimation } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -12,6 +13,10 @@ import { CalendarCheckbox } from './CalendarCheckbox';
 
 const primaryNameStyle = tva({ base: 'text-[15px] font-bold text-typography-900' });
 const standardNameStyle = tva({ base: 'flex-1 text-[15px] font-semibold text-typography-900' });
+const headerStyle = tva({
+  base: 'items-center gap-2.5 px-3.5 pt-3.5',
+  variants: { closed: { true: 'pb-3.5', false: 'pb-2.5' } },
+});
 
 interface GroupCardProps {
   name: string;
@@ -25,7 +30,7 @@ interface GroupCardProps {
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <View style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }}>
+    <Box className={open ? 'rotate-90' : 'rotate-0'}>
       <Svg width={18} height={18} viewBox="0 0 18 18" fill="none">
         <Path
           d="M7 5L11 9L7 13"
@@ -35,7 +40,7 @@ function ChevronIcon({ open }: { open: boolean }) {
           strokeLinejoin="round"
         />
       </Svg>
-    </View>
+    </Box>
   );
 }
 
@@ -55,18 +60,20 @@ export function GroupCard({
 
   if (isPrimary) {
     return (
-      <View style={styles.primaryCard}>
+      <Box className="mx-3 mb-2.5 overflow-hidden rounded-2xl border-[1.5px] border-brand-primary-border bg-brand-primary-light">
         <Pressable onPress={handleToggle}>
-          <HStack style={styles.header}>
+          <HStack className={headerStyle({ closed: false })}>
             <ChevronIcon open={isOpen} />
-            <View style={styles.titleContainer}>
-              <HStack style={styles.titleRow}>
+            <Box className="flex-1">
+              <HStack className="items-center gap-2">
                 <Text className={primaryNameStyle({})}>{name}</Text>
-                <View style={styles.availabilityBadge}>
-                  <Text style={styles.availabilityText}>AVAILABILITY</Text>
-                </View>
+                <Box className="rounded-[5px] border border-brand-primary-border bg-background-0 px-[7px] py-0.5">
+                  <Text className="text-[9px] font-bold tracking-[0.6px] text-brand-primary">
+                    AVAILABILITY
+                  </Text>
+                </Box>
               </HStack>
-            </View>
+            </Box>
             <CalendarCheckbox
               checked={checked}
               color={calendarsUIColors.primary}
@@ -74,15 +81,15 @@ export function GroupCard({
             />
           </HStack>
         </Pressable>
-        {isOpen && <View style={styles.body}>{children}</View>}
-      </View>
+        {isOpen && <Box className="pb-1.5">{children}</Box>}
+      </Box>
     );
   }
 
   return (
-    <View style={styles.standardCard}>
+    <Box className="mx-3 mb-1.5 overflow-hidden rounded-[14px] border border-brand-border bg-background-0">
       <Pressable onPress={handleToggle}>
-        <HStack style={[styles.header, !isOpen && styles.headerClosed]}>
+        <HStack className={headerStyle({ closed: !isOpen })}>
           <ChevronIcon open={isOpen} />
           <Text className={standardNameStyle({})}>{name}</Text>
           <CalendarCheckbox
@@ -92,62 +99,7 @@ export function GroupCard({
           />
         </HStack>
       </Pressable>
-      {isOpen && <View style={styles.body}>{children}</View>}
-    </View>
+      {isOpen && <Box className="pb-1.5">{children}</Box>}
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  primaryCard: {
-    marginHorizontal: 12,
-    marginBottom: 10,
-    borderRadius: 16,
-    backgroundColor: calendarsUIColors.primaryLight,
-    borderWidth: 1.5,
-    borderColor: calendarsUIColors.primaryBorder,
-    overflow: 'hidden',
-  },
-  standardCard: {
-    marginHorizontal: 12,
-    marginBottom: 6,
-    borderRadius: 14,
-    backgroundColor: calendarsUIColors.surface,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-    overflow: 'hidden',
-  },
-  header: {
-    alignItems: 'center',
-    gap: 10,
-    paddingTop: 14,
-    paddingBottom: 10,
-    paddingHorizontal: 14,
-  },
-  headerClosed: {
-    paddingBottom: 14,
-  },
-  titleContainer: {
-    flex: 1,
-  },
-  titleRow: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  availabilityBadge: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.primaryBorder,
-  },
-  availabilityText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: calendarsUIColors.primary,
-    letterSpacing: 0.6,
-  },
-  body: {
-    paddingBottom: 6,
-  },
-});

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -8,6 +7,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
+import { Box } from '@/components/ui/box';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthRowCount } from '@utils/monthUtils';
 
@@ -106,23 +106,23 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
   const isWeekMode = viewMode === 'week';
 
   return (
-    <View testID="calendar-container">
+    <Box testID="calendar-container">
       <Animated.View style={animatedContainerStyle}>
         <WeekStripDayHeaders />
-        <View style={{ flex: 1, position: 'relative' }}>
+        <Box className="relative flex-1">
           {isWeekMode && (
             <WeekStrip {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
           )}
           {showMonthGrid && !isWeekMode && (
             <MonthGrid {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
           )}
-        </View>
+        </Box>
       </Animated.View>
       <GestureDetector gesture={panGesture}>
         <Animated.View hitSlop={{ top: 16, bottom: 16 }}>
           <GrabHandle />
         </Animated.View>
       </GestureDetector>
-    </View>
+    </Box>
   );
 }

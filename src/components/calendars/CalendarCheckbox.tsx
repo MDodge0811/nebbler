@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
@@ -10,7 +10,14 @@ interface CalendarCheckboxProps {
   onToggle: () => void;
 }
 
-const AnimatedView = Animated.createAnimatedComponent(View);
+const checkboxBase: ViewStyle = {
+  width: 24,
+  height: 24,
+  borderRadius: 7,
+  borderWidth: 2,
+  alignItems: 'center',
+  justifyContent: 'center',
+};
 
 export function CalendarCheckbox({ checked, color, onToggle }: CalendarCheckboxProps) {
   const animatedStyle = useAnimatedStyle(() => ({
@@ -21,7 +28,7 @@ export function CalendarCheckbox({ checked, color, onToggle }: CalendarCheckboxP
 
   return (
     <Pressable onPress={onToggle} hitSlop={8}>
-      <AnimatedView style={[styles.checkbox, animatedStyle]}>
+      <Animated.View style={[checkboxBase, animatedStyle]}>
         {checked && (
           <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
             <Path
@@ -33,18 +40,7 @@ export function CalendarCheckbox({ checked, color, onToggle }: CalendarCheckboxP
             />
           </Svg>
         )}
-      </AnimatedView>
+      </Animated.View>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

@@ -1,8 +1,10 @@
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useCallback, useEffect } from 'react';
-import { Alert, Pressable as RNPressable, Text as RNText } from 'react-native';
+import { Alert } from 'react-native';
 
 import { Box } from '@/components/ui/box';
+import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { useEventMutations } from '@hooks/useCalendarEvents';
 import { useEventDetail } from '@hooks/useEventDetail';
@@ -13,6 +15,12 @@ import { getCalendarColor } from '@utils/calendarColor';
 import { EventEditForm } from './eventDetail/EventEditForm';
 import { EventReadView } from './eventDetail/EventReadView';
 import { FreeBusyView } from './eventDetail/FreeBusyView';
+
+const headerCloseStyle = tva({ base: 'text-base text-primary-300' });
+const headerSaveStyle = tva({
+  base: 'text-base font-semibold',
+  variants: { enabled: { true: 'text-brand-primary', false: 'text-typography-300' } },
+});
 
 export function EventDetailScreen() {
   const navigation = useNavigation();
@@ -63,39 +71,35 @@ export function EventDetailScreen() {
       navigation.setOptions({
         title: 'Edit Event',
         headerLeft: () => (
-          <RNPressable onPress={handleCancelEdit} hitSlop={8}>
-            <RNText style={{ fontSize: 16, color: '#666666' }}>Cancel</RNText>
-          </RNPressable>
+          <Pressable onPress={handleCancelEdit} hitSlop={8}>
+            <Text className={headerCloseStyle({})}>Cancel</Text>
+          </Pressable>
         ),
         headerRight: () => (
-          <RNPressable
+          <Pressable
             onPress={() => {
               void handleSaveEdit();
             }}
             disabled={!isValid || isSaving}
             hitSlop={8}
           >
-            <RNText
-              style={{ fontSize: 16, fontWeight: '600', color: isValid ? '#00DB74' : '#D4D4D4' }}
-            >
-              Save
-            </RNText>
-          </RNPressable>
+            <Text className={headerSaveStyle({ enabled: isValid })}>Save</Text>
+          </Pressable>
         ),
       });
     } else {
       navigation.setOptions({
         title: 'Event Details',
         headerLeft: () => (
-          <RNPressable onPress={() => navigation.goBack()} hitSlop={8}>
-            <RNText style={{ fontSize: 16, color: '#666666' }}>{'‹'} Back</RNText>
-          </RNPressable>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+            <Text className={headerCloseStyle({})}>{'‹'} Back</Text>
+          </Pressable>
         ),
         headerRight: () =>
           permissions.canEdit && !permissions.isFreeBusy ? (
-            <RNPressable onPress={enterEditMode} hitSlop={8}>
-              <RNText style={{ fontSize: 16, fontWeight: '600', color: '#00DB74' }}>Edit</RNText>
-            </RNPressable>
+            <Pressable onPress={enterEditMode} hitSlop={8}>
+              <Text className={headerSaveStyle({ enabled: true })}>Edit</Text>
+            </Pressable>
           ) : null,
       });
     }

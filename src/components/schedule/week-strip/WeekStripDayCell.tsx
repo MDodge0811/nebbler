@@ -1,14 +1,23 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { memo, useCallback } from 'react';
-import { View } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { DynamicColorText, DynamicColorView } from '@/components/ui/dynamic';
 import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
 import { calendarColors } from '@constants/calendarColors';
 
 const cellStyle = tva({ base: 'flex-1 items-center py-1' });
 const dayNumberStyle = tva({ base: 'text-base font-medium' });
 const dotContainerStyle = tva({ base: 'h-2 items-center justify-center' });
+// selected + today share the brand-primary hex (#00DB74), so the circle is a
+// static variant rather than a dynamic-color door.
+const circleStyle = tva({
+  base: 'h-9 w-9 items-center justify-center rounded-full',
+  variants: {
+    selected: { true: 'bg-brand-primary' },
+    today: { true: 'border-[2px] border-brand-primary' },
+  },
+});
 
 interface WeekStripDayCellProps {
   dateString: string;
@@ -33,8 +42,8 @@ export const WeekStripDayCell = memo(function WeekStripDayCell({
 }: WeekStripDayCellProps) {
   const handlePress = useCallback(() => onPress(dateString), [onPress, dateString]);
 
+  const isSelectedCircle = isSelected && !isAdjacentMonth;
   const isTodayOnly = isToday && !isSelected && !isAdjacentMonth;
-  const circleColor = isSelected && !isAdjacentMonth ? calendarColors.selected : undefined;
   const textColor = isAdjacentMonth
     ? calendarColors.disabled
     : isSelected
@@ -46,43 +55,24 @@ export const WeekStripDayCell = memo(function WeekStripDayCell({
       onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={dateString}
-      style={{ flex: 1 }}
+      className="flex-1"
     >
-      <View className={cellStyle({})}>
-        <View
-          style={[
-            {
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              alignItems: 'center',
-              justifyContent: 'center',
-            },
-            circleColor
-              ? { backgroundColor: circleColor }
-              : isTodayOnly
-                ? { borderWidth: 2, borderColor: calendarColors.today }
-                : undefined,
-          ]}
-        >
-          <Text className={dayNumberStyle({})} style={{ color: textColor }}>
+      <Box className={cellStyle({})}>
+        <Box className={circleStyle({ selected: isSelectedCircle, today: isTodayOnly })}>
+          <DynamicColorText className={dayNumberStyle({})} color={textColor}>
             {dayNumber}
-          </Text>
-        </View>
-        <View className={dotContainerStyle({})}>
+          </DynamicColorText>
+        </Box>
+        <Box className={dotContainerStyle({})}>
           {hasEvent ? (
-            <View
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: 2.5,
-                backgroundColor: dotColor,
-              }}
+            <DynamicColorView
+              className="h-[5px] w-[5px] rounded-full"
+              backgroundColor={dotColor}
               testID="event-dot"
             />
           ) : null}
-        </View>
-      </View>
+        </Box>
+      </Box>
     </Pressable>
   );
 });

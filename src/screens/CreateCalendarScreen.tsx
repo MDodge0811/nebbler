@@ -4,21 +4,12 @@ import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable as RNPressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text as RNText,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, TextInput } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { ZodError } from 'zod';
 
+import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -114,238 +105,81 @@ function ChevronDownIcon({ color = calendarsUIColors.textMuted }: { color?: stri
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const errorTextStyle = tva({ base: 'mt-1 text-sm text-error-600' });
-
-const styles = StyleSheet.create({
-  scrollContent: { flexGrow: 1, paddingBottom: 40 },
-  formContent: { padding: 16, paddingTop: 20, gap: 24 },
-
-  // Section label
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: calendarsUIColors.textMuted,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-    marginBottom: 8,
+const formContentStyle = tva({ base: 'gap-6 p-4 pt-5' });
+const sectionLabelStyle = tva({
+  base: 'mb-2 text-[13px] font-semibold uppercase tracking-[0.3px] text-brand-text-muted',
+});
+const requiredStarStyle = tva({ base: 'ml-0.5 text-brand-danger' });
+const headerCloseButtonStyle = tva({
+  base: 'h-9 w-9 items-center justify-center rounded-full bg-typography-50',
+});
+const headerCreateButtonStyle = tva({
+  base: 'rounded-[10px] px-[18px] py-2',
+  variants: {
+    valid: { true: 'bg-brand-primary opacity-100', false: 'bg-typography-50 opacity-70' },
   },
-  requiredStar: {
-    color: calendarsUIColors.danger,
-    marginLeft: 2,
-  },
-
-  // Header
-  headerCloseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: calendarsUIColors.surfaceHover,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerCreateButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  headerCreateButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.1,
-  },
-
-  // Preview card
-  previewCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: calendarsUIColors.surface,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-    gap: 14,
-  },
-  previewIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  previewLetter: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: calendarsUIColors.text,
-  },
-  previewEmoji: {
-    fontSize: 24,
-  },
-  previewName: {
-    fontSize: 17,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-  },
-  previewType: {
-    fontSize: 13,
-    color: calendarsUIColors.textMuted,
-    marginTop: 2,
-    textTransform: 'capitalize',
-  },
-
-  // Name input
-  nameInput: {
-    width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: calendarsUIColors.border,
-    backgroundColor: calendarsUIColors.surfaceHover,
-    fontSize: 16,
-    fontWeight: '500',
-    color: calendarsUIColors.text,
-  },
-
-  // Type cards — horizontal row
-  typeCardsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  typeCard: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: calendarsUIColors.border,
-    backgroundColor: calendarsUIColors.surface,
-  },
-  typeCardSelected: {
-    borderWidth: 2,
-    borderColor: calendarsUIColors.primary,
-    backgroundColor: calendarsUIColors.primaryLight,
-  },
-  typeIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  typeLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: calendarsUIColors.text,
-    textAlign: 'center',
-  },
-  typeDescription: {
-    fontSize: 11,
-    color: calendarsUIColors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 15,
-  },
-
-  // Group picker
-  groupPicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: calendarsUIColors.border,
-    backgroundColor: calendarsUIColors.surfaceHover,
-  },
-  groupPickerText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: calendarsUIColors.text,
-  },
-  groupPickerPlaceholder: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: calendarsUIColors.textMuted,
-  },
-
-  // Toggle
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  toggleLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: calendarsUIColors.text,
-  },
-
-  // Description
-  descriptionInput: {
-    width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: calendarsUIColors.border,
-    backgroundColor: calendarsUIColors.surfaceHover,
-    fontSize: 15,
-    fontWeight: '400',
-    color: calendarsUIColors.text,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    lineHeight: 22,
-  },
-
-  // Add description link
-  addDescriptionText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: calendarsUIColors.primary,
-  },
-
-  // Bottom sheet
-  sheetContent: {
-    paddingBottom: 50,
-  },
-  sheetTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: calendarsUIColors.text,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 12,
-  },
-  sheetItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: calendarsUIColors.border,
-  },
-  sheetItemText: {
-    fontSize: 16,
-    color: calendarsUIColors.text,
-  },
-  sheetItemSelected: {
-    fontSize: 16,
-    color: calendarsUIColors.primary,
-    fontWeight: '600',
-  },
+});
+const headerCreateTextStyle = tva({
+  base: 'text-sm font-bold tracking-[0.1px]',
+  variants: { valid: { true: 'text-typography-white', false: 'text-brand-text-muted' } },
+});
+const previewCardStyle = tva({
+  base: 'flex-row items-center gap-[14px] rounded-2xl border border-brand-border bg-background-0 p-4',
+});
+const previewIconStyle = tva({
+  base: 'h-[52px] w-[52px] items-center justify-center rounded-[14px] border-2',
+});
+const previewLetterStyle = tva({ base: 'text-2xl font-semibold text-brand-text' });
+const previewEmojiStyle = tva({ base: 'text-2xl' });
+const previewNameStyle = tva({
+  base: 'text-[17px] font-semibold tracking-[-0.2px]',
+  variants: { hasName: { true: 'text-brand-text', false: 'text-brand-text-muted' } },
+});
+const previewTypeStyle = tva({ base: 'mt-0.5 text-[13px] capitalize text-brand-text-muted' });
+const nameInputStyle = tva({
+  base: 'w-full rounded-xl border-[1.5px] border-brand-border bg-typography-50 px-[14px] py-3 text-base font-medium text-brand-text',
+});
+const typeCardsRowStyle = tva({ base: 'flex-row gap-2' });
+const typeCardStyle = tva({
+  base: 'flex-1 items-center gap-1.5 rounded-[14px] border-[1.5px] border-brand-border bg-background-0 px-2 py-3',
+  variants: { selected: { true: 'border-2 border-brand-primary bg-brand-primary-light' } },
+});
+const typeIconBoxStyle = tva({ base: 'h-10 w-10 items-center justify-center rounded-[10px]' });
+const typeLabelStyle = tva({ base: 'text-center text-sm font-semibold text-brand-text' });
+const typeDescriptionStyle = tva({
+  base: 'text-center text-[11px] leading-[15px] text-brand-text-secondary',
+});
+const groupPickerStyle = tva({
+  base: 'flex-row items-center justify-between rounded-xl border-[1.5px] border-brand-border bg-typography-50 px-[14px] py-3',
+});
+const groupPickerTextStyle = tva({
+  base: 'text-[15px] font-medium',
+  variants: { selected: { true: 'text-brand-text', false: 'text-brand-text-muted' } },
+});
+const toggleRowStyle = tva({ base: 'flex-row items-center justify-between' });
+const toggleLabelStyle = tva({ base: 'text-[15px] font-medium text-brand-text' });
+const descriptionInputStyle = tva({
+  base: 'min-h-[80px] w-full rounded-xl border-[1.5px] border-brand-border bg-typography-50 px-[14px] py-3 text-[15px] font-normal leading-[22px] text-brand-text',
+});
+const addDescriptionTextStyle = tva({ base: 'text-[15px] font-medium text-brand-primary' });
+const sheetContentStyle = tva({ base: 'pb-[50px]' });
+const sheetTitleStyle = tva({ base: 'px-4 pb-3 pt-1 text-[17px] font-semibold text-brand-text' });
+const sheetItemStyle = tva({
+  base: 'flex-row items-center justify-between border-b border-brand-border px-4 py-3.5',
+});
+const sheetItemTextStyle = tva({
+  base: 'text-base',
+  variants: { selected: { true: 'font-semibold text-brand-primary', false: 'text-brand-text' } },
 });
 
 // --- Inline components ---
 
 function SectionLabel({ label, required }: { label: string; required?: boolean }) {
   return (
-    <RNText style={styles.sectionLabel}>
+    <Text className={sectionLabelStyle({})}>
       {label}
-      {required && <RNText style={styles.requiredStar}>*</RNText>}
-    </RNText>
+      {required && <Text className={requiredStarStyle({})}>*</Text>}
+    </Text>
   );
 }
 
@@ -356,26 +190,25 @@ function CalendarPreviewCard({ name, type, color }: { name: string; type: string
   const tintBorder = `${color}30`;
 
   return (
-    <View style={styles.previewCard}>
-      <View style={[styles.previewIcon, { backgroundColor: tintBg, borderColor: tintBorder }]}>
+    <Box className={previewCardStyle({})}>
+      <DynamicColorView
+        className={previewIconStyle({})}
+        backgroundColor={tintBg}
+        borderColor={tintBorder}
+      >
         {hasName ? (
-          <RNText style={styles.previewLetter}>{name.trim()[0]!.toUpperCase()}</RNText>
+          <Text className={previewLetterStyle({})}>{name.trim()[0]!.toUpperCase()}</Text>
         ) : (
-          <RNText style={styles.previewEmoji}>{'📅'}</RNText>
+          <Text className={previewEmojiStyle({})}>{'📅'}</Text>
         )}
-      </View>
-      <View>
-        <RNText
-          style={[
-            styles.previewName,
-            { color: hasName ? calendarsUIColors.text : calendarsUIColors.textMuted },
-          ]}
-        >
+      </DynamicColorView>
+      <Box>
+        <Text className={previewNameStyle({ hasName })}>
           {hasName ? name.trim() : 'Calendar name'}
-        </RNText>
-        <RNText style={styles.previewType}>{type} calendar</RNText>
-      </View>
-    </View>
+        </Text>
+        <Text className={previewTypeStyle({})}>{type} calendar</Text>
+      </Box>
+    </Box>
   );
 }
 
@@ -408,12 +241,12 @@ function TypeCard({
   const iconColor = selected ? calendarsUIColors.primary : calendarsUIColors.textMuted;
 
   return (
-    <Pressable style={[styles.typeCard, selected && styles.typeCardSelected]} onPress={onPress}>
-      <View style={[styles.typeIconBox, { backgroundColor: iconBg }]}>
+    <Pressable className={typeCardStyle({ selected })} onPress={onPress}>
+      <DynamicColorView className={typeIconBoxStyle({})} backgroundColor={iconBg}>
         <Icon size={22} color={iconColor} />
-      </View>
-      <RNText style={styles.typeLabel}>{option.label}</RNText>
-      <RNText style={styles.typeDescription}>{option.description}</RNText>
+      </DynamicColorView>
+      <Text className={typeLabelStyle({})}>{option.label}</Text>
+      <Text className={typeDescriptionStyle({})}>{option.description}</Text>
     </Pressable>
   );
 }
@@ -451,22 +284,24 @@ function GroupPickerSheet({
 
   return (
     <BottomSheetModal ref={sheetRef} enableDynamicSizing backdropComponent={renderBackdrop}>
-      <BottomSheetScrollView contentContainerStyle={styles.sheetContent}>
-        <RNText style={styles.sheetTitle}>Choose Group</RNText>
-        <RNPressable style={styles.sheetItem} onPress={() => handleSelect(null)}>
-          <RNText style={selectedId === null ? styles.sheetItemSelected : styles.sheetItemText}>
-            No group (ungrouped)
-          </RNText>
-          {selectedId === null && <CheckIcon size={14} color={calendarsUIColors.primary} />}
-        </RNPressable>
-        {groups.map((g) => (
-          <RNPressable key={g.id} style={styles.sheetItem} onPress={() => handleSelect(g.id)}>
-            <RNText style={selectedId === g.id ? styles.sheetItemSelected : styles.sheetItemText}>
-              {g.name}
-            </RNText>
-            {selectedId === g.id && <CheckIcon size={14} color={calendarsUIColors.primary} />}
-          </RNPressable>
-        ))}
+      <BottomSheetScrollView>
+        <Box className={sheetContentStyle({})}>
+          <Text className={sheetTitleStyle({})}>Choose Group</Text>
+          <Pressable className={sheetItemStyle({})} onPress={() => handleSelect(null)}>
+            <Text className={sheetItemTextStyle({ selected: selectedId === null })}>
+              No group (ungrouped)
+            </Text>
+            {selectedId === null && <CheckIcon size={14} color={calendarsUIColors.primary} />}
+          </Pressable>
+          {groups.map((g) => (
+            <Pressable key={g.id} className={sheetItemStyle({})} onPress={() => handleSelect(g.id)}>
+              <Text className={sheetItemTextStyle({ selected: selectedId === g.id })}>
+                {g.name}
+              </Text>
+              {selectedId === g.id && <CheckIcon size={14} color={calendarsUIColors.primary} />}
+            </Pressable>
+          ))}
+        </Box>
       </BottomSheetScrollView>
     </BottomSheetModal>
   );
@@ -618,7 +453,7 @@ export function CreateCalendarScreen() {
       title: 'New Calendar',
       headerTitleStyle: { fontSize: 17, fontWeight: '700' },
       headerLeft: () => (
-        <RNPressable onPress={handleClose} hitSlop={8} style={styles.headerCloseButton}>
+        <Pressable onPress={handleClose} hitSlop={8} className={headerCloseButtonStyle({})}>
           <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
             <Path
               d="M5 5L15 15M15 5L5 15"
@@ -627,32 +462,19 @@ export function CreateCalendarScreen() {
               strokeLinecap="round"
             />
           </Svg>
-        </RNPressable>
+        </Pressable>
       ),
       headerRight: () => (
-        <RNPressable
+        <Pressable
           onPress={() => {
             void handleSave();
           }}
           disabled={!isValid || isSaving}
           hitSlop={8}
-          style={[
-            styles.headerCreateButton,
-            {
-              backgroundColor: isValid ? calendarsUIColors.primary : calendarsUIColors.surfaceHover,
-              opacity: isValid ? 1 : 0.7,
-            },
-          ]}
+          className={headerCreateButtonStyle({ valid: isValid })}
         >
-          <RNText
-            style={[
-              styles.headerCreateButtonText,
-              { color: isValid ? '#FFFFFF' : calendarsUIColors.textMuted },
-            ]}
-          >
-            Create
-          </RNText>
-        </RNPressable>
+          <Text className={headerCreateTextStyle({ valid: isValid })}>Create</Text>
+        </Pressable>
       ),
     });
   }, [navigation, handleClose, handleSave, isValid, isSaving]);
@@ -664,8 +486,8 @@ export function CreateCalendarScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className={containerStyle({})}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.formContent}>
+      <ScrollView contentContainerClassName="grow pb-10" keyboardShouldPersistTaps="handled">
+        <Box className={formContentStyle({})}>
           {/* Preview Card */}
           <CalendarPreviewCard name={name} type={type} color={selectedColor} />
 
@@ -673,7 +495,7 @@ export function CreateCalendarScreen() {
           <VStack>
             <SectionLabel label="Name" required />
             <TextInput
-              style={styles.nameInput}
+              className={nameInputStyle({})}
               placeholder="Calendar name"
               placeholderTextColor={calendarsUIColors.textMuted}
               value={name}
@@ -697,7 +519,7 @@ export function CreateCalendarScreen() {
           {/* Type */}
           <VStack>
             <SectionLabel label="Type" required />
-            <View style={styles.typeCardsRow}>
+            <Box className={typeCardsRowStyle({})}>
               {TYPE_OPTIONS.map((option) => (
                 <TypeCard
                   key={option.value}
@@ -706,7 +528,7 @@ export function CreateCalendarScreen() {
                   onPress={() => setType(option.value)}
                 />
               ))}
-            </View>
+            </Box>
           </VStack>
 
           {/* Color */}
@@ -718,37 +540,39 @@ export function CreateCalendarScreen() {
           {/* Calendar Group */}
           <VStack>
             <SectionLabel label="Calendar Group" />
-            <Pressable style={styles.groupPicker} onPress={() => groupSheetRef.current?.present()}>
-              <RNText
-                style={selectedGroup ? styles.groupPickerText : styles.groupPickerPlaceholder}
-              >
+            <Pressable
+              className={groupPickerStyle({})}
+              onPress={() => groupSheetRef.current?.present()}
+            >
+              <Text className={groupPickerTextStyle({ selected: Boolean(selectedGroup) })}>
                 {selectedGroup?.name ?? 'No group (ungrouped)'}
-              </RNText>
+              </Text>
               <ChevronDownIcon />
             </Pressable>
           </VStack>
 
           {/* Show as Busy */}
-          <View style={styles.toggleRow}>
-            <RNText style={styles.toggleLabel}>Show as busy</RNText>
+          <Box className={toggleRowStyle({})}>
+            <Text className={toggleLabelStyle({})}>Show as busy</Text>
             <Switch
               value={showAsBusy}
               onValueChange={setShowAsBusy}
               trackColor={{ false: calendarsUIColors.border, true: calendarsUIColors.primary }}
               thumbColor="#FFFFFF"
             />
-          </View>
+          </Box>
 
           {/* Description */}
           {!showDescription ? (
             <Pressable onPress={() => setShowDescription(true)}>
-              <RNText style={styles.addDescriptionText}>+ Add description</RNText>
+              <Text className={addDescriptionTextStyle({})}>+ Add description</Text>
             </Pressable>
           ) : (
             <VStack>
               <SectionLabel label="Description" />
               <TextInput
-                style={styles.descriptionInput}
+                className={descriptionInputStyle({})}
+                textAlignVertical="top"
                 placeholder="What's this calendar for?"
                 placeholderTextColor={calendarsUIColors.textMuted}
                 value={description}
@@ -763,7 +587,7 @@ export function CreateCalendarScreen() {
               )}
             </VStack>
           )}
-        </View>
+        </Box>
       </ScrollView>
 
       <GroupPickerSheet

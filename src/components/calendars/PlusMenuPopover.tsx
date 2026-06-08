@@ -1,8 +1,9 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Modal } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
+import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -102,7 +103,7 @@ interface MenuItemProps {
 function MenuItem({ icon, label, onPress }: MenuItemProps) {
   return (
     <Pressable onPress={onPress}>
-      <HStack style={styles.menuItem}>
+      <HStack className="items-center gap-2.5 px-3.5 py-3">
         {icon}
         <Text className={menuItemStyle({})}>{label}</Text>
       </HStack>
@@ -119,48 +120,15 @@ export function PlusMenuPopover({
 }: PlusMenuPopoverProps) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={styles.menu}>
+      <Pressable className="flex-1" onPress={onClose}>
+        <Box className="absolute right-4 top-[60px] min-w-[180px] rounded-xl border border-brand-border bg-background-0 py-1 shadow-lg">
           <MenuItem icon={<CalendarPlusIcon />} label="New Calendar" onPress={onNewCalendar} />
-          <View style={styles.separator} />
+          <Box className="mx-2.5 h-px bg-brand-border" />
           <MenuItem icon={<FolderPlusIcon />} label="New Group" onPress={onNewGroup} />
-          <View style={styles.separator} />
+          <Box className="mx-2.5 h-px bg-brand-border" />
           <MenuItem icon={<ImportIcon />} label="Import Calendar" onPress={onImportCalendar} />
-        </View>
+        </Box>
       </Pressable>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-  },
-  menu: {
-    position: 'absolute',
-    top: 60,
-    right: 16,
-    backgroundColor: calendarsUIColors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-    paddingVertical: 4,
-    minWidth: 180,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  menuItem: {
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: calendarsUIColors.border,
-    marginHorizontal: 10,
-  },
-});

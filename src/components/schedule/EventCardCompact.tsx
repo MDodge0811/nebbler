@@ -1,8 +1,8 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { memo } from 'react';
-import { View, StyleSheet } from 'react-native';
 
 import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -39,8 +39,8 @@ export const EventCardCompact = memo(function EventCardCompact({
       accessibilityLabel={event.title ?? undefined}
     >
       <Box className={cardStyle({})}>
-        <HStack style={styles.container}>
-          <View style={[styles.colorBar, { backgroundColor: color }]} />
+        <HStack className="h-[56px] items-center">
+          <DynamicColorView className="w-1 self-stretch" backgroundColor={color} />
           <HStack className={rowStyle({})}>
             <Text className={titleStyle({})} numberOfLines={1}>
               {event.title}
@@ -52,15 +52,4 @@ export const EventCardCompact = memo(function EventCardCompact({
       </Box>
     </Pressable>
   );
-});
-
-const styles = StyleSheet.create({
-  container: {
-    height: 56,
-    alignItems: 'center',
-  },
-  colorBar: {
-    width: 4,
-    alignSelf: 'stretch',
-  },
 });

@@ -2,10 +2,12 @@ import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Line } from 'react-native-svg';
 
+import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -26,15 +28,48 @@ import { useCalendarsDisplayStore } from '@stores/useCalendarsDisplayStore';
 import { useDragStore } from '@stores/useDragStore';
 import { getCalendarColor } from '@utils/calendarColor';
 
+const containerStyle = tva({ base: 'flex-1 bg-brand-background' });
+const headerStyle = tva({ base: 'items-center justify-between px-5 pb-3.5 pt-2' });
+const headerActionsStyle = tva({ base: 'items-center gap-2' });
+const editButtonStyle = tva({
+  base: 'rounded-lg border border-brand-border bg-background-0 px-3.5 py-[7px]',
+});
+const editButtonTextStyle = tva({ base: 'text-sm font-semibold text-brand-text' });
+const doneButtonStyle = tva({
+  base: 'rounded-lg border border-brand-primary-border bg-brand-primary-light px-3.5 py-[7px]',
+});
+const doneButtonTextStyle = tva({ base: 'text-sm font-bold text-brand-primary' });
+const plusButtonStyle = tva({
+  base: 'h-9 w-9 items-center justify-center rounded-lg border border-brand-border bg-background-0',
+  variants: { active: { true: 'border-brand-primary-border bg-brand-primary-light' } },
+});
 const titleStyle = tva({ base: 'text-[28px] font-bold text-typography-900' });
-const ungroupedTitleStyle = tva({ base: 'text-[15px] font-semibold text-typography-600' });
-const emptyTextStyle = tva({ base: 'text-sm italic text-typography-400 text-center py-4' });
-const createGroupLabelStyle = tva({ base: 'text-[14px] font-semibold' });
+const ungroupedSectionStyle = tva({ base: 'mx-3 mb-2.5 mt-1.5' });
+const ungroupedTitleStyle = tva({
+  base: 'mb-1.5 ml-1 text-[15px] font-semibold text-typography-600',
+});
+const emptyTextStyle = tva({ base: 'py-4 text-center text-sm italic text-typography-400' });
+const createGroupButtonStyle = tva({
+  base: 'mx-3 mb-5 mt-1 rounded-[14px] border-[1.5px] border-dashed border-brand-primary-border bg-brand-primary-light',
+});
+const createGroupContentStyle = tva({ base: 'items-center justify-center gap-2 py-3.5' });
+const createGroupIconStyle = tva({
+  base: 'h-7 w-7 items-center justify-center rounded-[7px] border-[1.5px] border-dashed border-brand-primary-border',
+});
+const createGroupLabelStyle = tva({ base: 'text-[14px] font-semibold text-brand-primary' });
+const dragOverlayStyle = tva({
+  base: 'absolute left-5 right-5 rounded-xl bg-background-0 shadow-lg',
+});
+const dragOverlayContentStyle = tva({ base: 'items-center gap-2.5 px-3.5 py-2.5' });
+const newGroupCardStyle = tva({
+  base: 'mx-3 mb-2.5 rounded-[14px] border border-brand-border bg-background-0 p-3',
+});
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function CalendarsScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const { user } = useCurrentUser();
   const {
     primaryGroupId,
@@ -207,10 +242,8 @@ export function CalendarsScreen() {
 
     if (ungroupedCalendars.length > 0) {
       sections.push(
-        <View key="ungrouped" style={styles.ungroupedSection}>
-          <Text className={ungroupedTitleStyle({})} style={styles.ungroupedTitle}>
-            Ungrouped
-          </Text>
+        <Box key="ungrouped" className={ungroupedSectionStyle({})}>
+          <Text className={ungroupedTitleStyle({})}>Ungrouped</Text>
           {ungroupedCalendars.map((cal) => (
             <CalendarRow
               key={cal.id}
@@ -222,7 +255,7 @@ export function CalendarsScreen() {
               isInPrimaryGroup={false}
             />
           ))}
-        </View>
+        </Box>
       );
     }
 
@@ -294,23 +327,23 @@ export function CalendarsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <DynamicColorView className={containerStyle({})} paddingTop={insets.top}>
       {/* Header */}
-      <HStack style={styles.header}>
+      <HStack className={headerStyle({})}>
         <Text className={titleStyle({})}>Calendars</Text>
-        <HStack style={styles.headerActions}>
+        <HStack className={headerActionsStyle({})}>
           {editing ? (
-            <Pressable onPress={() => setEditing(false)} style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>Done</Text>
+            <Pressable onPress={() => setEditing(false)} className={doneButtonStyle({})}>
+              <Text className={doneButtonTextStyle({})}>Done</Text>
             </Pressable>
           ) : (
             <>
-              <Pressable onPress={() => setEditing(true)} style={styles.editButton}>
-                <Text style={styles.editButtonText}>Edit</Text>
+              <Pressable onPress={() => setEditing(true)} className={editButtonStyle({})}>
+                <Text className={editButtonTextStyle({})}>Edit</Text>
               </Pressable>
               <Pressable
                 onPress={() => setPlusMenuOpen(true)}
-                style={[styles.plusButton, plusMenuOpen && styles.plusButtonActive]}
+                className={plusButtonStyle({ active: plusMenuOpen })}
               >
                 <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
                   <Line
@@ -340,14 +373,14 @@ export function CalendarsScreen() {
 
       {/* Content */}
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        className="flex-1"
+        contentContainerClassName="pb-10"
         showsVerticalScrollIndicator={false}
       >
         {editing ? <EditModeContent {...editModeProps} /> : renderDefaultMode}
 
         {isCreatingGroup && (
-          <View style={styles.newGroupCard}>
+          <Box className={newGroupCardStyle({})}>
             <EditableGroupName
               value={newGroupName}
               onChangeText={setNewGroupName}
@@ -356,7 +389,7 @@ export function CalendarsScreen() {
               }}
               autoFocus
             />
-          </View>
+          </Box>
         )}
       </ScrollView>
 
@@ -369,7 +402,7 @@ export function CalendarsScreen() {
         onNewGroup={handleNewGroup}
         onImportCalendar={handleImportCalendar}
       />
-    </SafeAreaView>
+    </DynamicColorView>
   );
 }
 
@@ -454,10 +487,8 @@ function EditModeContent({
       })}
 
       {/* Ungrouped section */}
-      <View style={styles.ungroupedSection}>
-        <Text className={ungroupedTitleStyle({})} style={styles.ungroupedTitle}>
-          Ungrouped
-        </Text>
+      <Box className={ungroupedSectionStyle({})}>
+        <Text className={ungroupedTitleStyle({})}>Ungrouped</Text>
         {ungroupedCalendars.length > 0 ? (
           ungroupedCalendars.map((cal) => (
             <DraggableCalendarRow
@@ -476,12 +507,12 @@ function EditModeContent({
           isActive={activeDropZoneId === UNGROUPED_DROP_ZONE_ID}
           onLayout={onDropZoneLayout}
         />
-      </View>
+      </Box>
 
       {/* Create Group button */}
-      <Pressable onPress={handleNewGroup} style={styles.createGroupButton}>
-        <HStack style={styles.createGroupContent}>
-          <View style={styles.createGroupIcon}>
+      <Pressable onPress={handleNewGroup} className={createGroupButtonStyle({})}>
+        <HStack className={createGroupContentStyle({})}>
+          <Box className={createGroupIconStyle({})}>
             <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
               <Path
                 d="M8 3V13M3 8H13"
@@ -490,10 +521,8 @@ function EditModeContent({
                 strokeLinecap="round"
               />
             </Svg>
-          </View>
-          <Text className={createGroupLabelStyle({})} style={{ color: calendarsUIColors.primary }}>
-            Create Group
-          </Text>
+          </Box>
+          <Text className={createGroupLabelStyle({})}>Create Group</Text>
         </HStack>
       </Pressable>
     </>
@@ -512,8 +541,8 @@ function DragOverlay() {
   const color = draggedCalendar.color ?? getCalendarColor(draggedCalendar.id);
 
   return (
-    <View style={[styles.dragOverlay, { top: pageY - 24 }]} pointerEvents="none">
-      <HStack style={styles.dragOverlayContent}>
+    <DynamicColorView className={dragOverlayStyle({})} top={pageY - 24} pointerEvents="none">
+      <HStack className={dragOverlayContentStyle({})}>
         <CalendarIcon
           calendarName={draggedCalendar.name ?? ''}
           calendarId={draggedCalendar.id}
@@ -521,132 +550,6 @@ function DragOverlay() {
         />
         <Text className={dragOverlayNameStyle({})}>{draggedCalendar.name}</Text>
       </HStack>
-    </View>
+    </DynamicColorView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: calendarsUIColors.background,
-  },
-  header: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 14,
-  },
-  headerActions: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  editButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: calendarsUIColors.surface,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1A1F',
-  },
-  doneButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: calendarsUIColors.primaryLight,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.primaryBorder,
-  },
-  doneButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: calendarsUIColors.primary,
-  },
-  plusButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: calendarsUIColors.surface,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  plusButtonActive: {
-    backgroundColor: calendarsUIColors.primaryLight,
-    borderColor: calendarsUIColors.primaryBorder,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
-  ungroupedSection: {
-    marginHorizontal: 12,
-    marginTop: 6,
-    marginBottom: 10,
-  },
-  ungroupedTitle: {
-    marginBottom: 6,
-    marginLeft: 4,
-  },
-  createGroupButton: {
-    marginHorizontal: 12,
-    marginTop: 4,
-    marginBottom: 20,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: calendarsUIColors.primaryBorder,
-    backgroundColor: calendarsUIColors.primaryLight,
-  },
-  createGroupContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-  },
-  createGroupIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: calendarsUIColors.primaryBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dragOverlay: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    borderRadius: 12,
-    backgroundColor: calendarsUIColors.surface,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  dragOverlayContent: {
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  newGroupCard: {
-    marginHorizontal: 12,
-    marginBottom: 10,
-    borderRadius: 14,
-    backgroundColor: calendarsUIColors.surface,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-    padding: 12,
-  },
-});

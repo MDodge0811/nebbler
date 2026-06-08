@@ -1,6 +1,6 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { StyleSheet, View } from 'react-native';
 
+import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -13,6 +13,10 @@ import { TypeBadge } from './TypeBadge';
 
 const nameStyle = tva({ base: 'text-[15px] font-medium text-typography-900' });
 const memberCountStyle = tva({ base: 'mt-px text-xs text-typography-400' });
+const containerStyle = tva({
+  base: 'items-center gap-3 rounded-xl py-2.5 pl-4 pr-[14px]',
+  variants: { primary: { true: 'mx-2.5', false: 'mx-3' } },
+});
 
 interface CalendarRowProps {
   calendar: Calendar;
@@ -35,12 +39,10 @@ export function CalendarRow({
 
   return (
     <Pressable onPress={onPress}>
-      <HStack
-        style={[styles.container, isInPrimaryGroup ? styles.primaryMargin : styles.standardMargin]}
-      >
+      <HStack className={containerStyle({ primary: isInPrimaryGroup })}>
         <CalendarIcon calendarName={calendar.name ?? ''} calendarId={calendar.id} color={color} />
-        <View style={styles.info}>
-          <HStack style={styles.nameRow}>
+        <Box className="min-w-0 flex-1">
+          <HStack className="items-center gap-[7px]">
             <Text className={nameStyle({})}>{calendar.name}</Text>
             <TypeBadge type={calendar.type} />
           </HStack>
@@ -49,34 +51,9 @@ export function CalendarRow({
               {memberCount} {memberCount === 1 ? 'member' : 'members'}
             </Text>
           )}
-        </View>
+        </Box>
         <CalendarCheckbox checked={isChecked} color={color} onToggle={onToggle} />
       </HStack>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    paddingLeft: 16,
-    paddingRight: 14,
-    borderRadius: 12,
-  },
-  primaryMargin: {
-    marginHorizontal: 10,
-  },
-  standardMargin: {
-    marginHorizontal: 12,
-  },
-  info: {
-    flex: 1,
-    minWidth: 0,
-  },
-  nameRow: {
-    alignItems: 'center',
-    gap: 7,
-  },
-});

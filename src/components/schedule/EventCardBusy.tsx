@@ -1,9 +1,10 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { Box } from '@/components/ui/box';
+import { DynamicColorView } from '@/components/ui/dynamic';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -28,21 +29,22 @@ export const EventCardBusy = memo(function EventCardBusy({ event }: EventCardBus
   return (
     <Box className={cardStyle({})}>
       {/* Frosted gradient header */}
-      <View style={styles.headerContainer}>
+      <Box className="relative min-h-12">
         <LinearGradient
           colors={[color + '66', color + '33']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.gradient}
+          style={StyleSheet.absoluteFill}
         />
-      </View>
+      </Box>
 
       {/* Body */}
       <VStack className={bodyStyle({})}>
         <Text className={busyLabel({})}>Busy</Text>
         <HStack className={calendarIndicatorStyle({})}>
-          <View
-            style={[styles.calendarDot, { backgroundColor: color }]}
+          <DynamicColorView
+            className="h-2 w-2 rounded-full"
+            backgroundColor={color}
             accessibilityLabel="Calendar color"
           />
           <Text className={calendarNameStyle({})}>{event.calendar_name}</Text>
@@ -50,19 +52,4 @@ export const EventCardBusy = memo(function EventCardBusy({ event }: EventCardBus
       </VStack>
     </Box>
   );
-});
-
-const styles = StyleSheet.create({
-  headerContainer: {
-    minHeight: 48,
-    position: 'relative',
-  },
-  gradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  calendarDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
 });

@@ -1,219 +1,117 @@
-import { StyleSheet } from 'react-native';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
-import { calendarsUIColors } from '@constants/calendarsUI';
-
-export const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scroll: { paddingBottom: 120 },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: calendarsUIColors.surfaceHover,
-    alignItems: 'center',
-    justifyContent: 'center',
+export const containerStyle = tva({ base: 'flex-1 bg-background-0' });
+export const scrollStyle = tva({ base: 'pb-[120px]' });
+export const headerBtnStyle = tva({
+  base: 'h-9 w-9 items-center justify-center rounded-[18px] bg-typography-50',
+});
+export const headerCardStyle = tva({ base: 'border-b-[0.5px] border-brand-border p-4 pt-5' });
+export const headerRowStyle = tva({ base: 'mb-3.5 flex-row items-center gap-3.5' });
+export const tileStyle = tva({
+  base: 'h-14 w-14 items-center justify-center rounded-2xl border-2',
+});
+export const tileLetterStyle = tva({ base: 'text-[26px] font-bold' });
+export const headerInfoStyle = tva({ base: 'flex-1 gap-1.5' });
+export const headerNameStyle = tva({
+  base: 'text-[22px] font-bold tracking-[-0.4px] text-brand-text',
+});
+export const metaRowStyle = tva({ base: 'flex-row items-center gap-4' });
+export const metaTextStyle = tva({ base: 'text-sm text-brand-text-secondary' });
+export const metaOwnerNameStyle = tva({ base: 'font-semibold text-brand-text' });
+export const metaLinkStyle = tva({ base: 'text-sm font-semibold text-brand-primary' });
+export const descriptionBubbleStyle = tva({
+  base: 'mt-3 rounded-xl bg-typography-50 px-3.5 py-2.5',
+});
+export const descriptionTextStyle = tva({
+  base: 'text-sm leading-[21px] text-brand-text-secondary',
+});
+export const sectionLabelStyle = tva({
+  base: 'px-4 pb-2 pt-5 text-[13px] font-semibold tracking-[0.3px] text-brand-text-muted',
+});
+export const eventListStyle = tva({
+  base: 'mx-4 overflow-hidden rounded-[14px] border border-brand-border',
+});
+export const emptyEventsStyle = tva({
+  base: 'mx-4 items-center rounded-[14px] border border-brand-border bg-background-0 p-6',
+});
+export const emptyEventsTextStyle = tva({ base: 'text-sm italic text-brand-text-muted' });
+export const membersCardStyle = tva({
+  base: 'mx-4 overflow-hidden rounded-[14px] border border-brand-border bg-background-0',
+});
+export const membersHeaderStyle = tva({
+  base: 'flex-row items-center justify-between px-4 py-3.5',
+});
+export const membersHeaderLeftStyle = tva({ base: 'flex-row items-center gap-2.5' });
+export const stackedAvatarsStyle = tva({ base: 'flex-row' });
+export const stackedAvatarStyle = tva({
+  base: 'h-7 w-7 items-center justify-center rounded-[14px] border-2 border-background-0',
+});
+export const stackedAvatarTextStyle = tva({ base: 'text-[11px] font-bold' });
+export const membersHeaderLabelStyle = tva({ base: 'text-[15px] font-medium text-brand-text' });
+export const inviteBtnStyle = tva({ base: 'items-center bg-brand-primary-light px-4 py-3' });
+export const inviteTextStyle = tva({ base: 'text-sm font-semibold text-brand-primary' });
+export const fabPositionStyle = tva({ base: 'absolute bottom-8 right-5' });
+export const fabSurfaceStyle = tva({
+  base: 'h-14 w-14 items-center justify-center rounded-2xl shadow-lg',
+});
+export const headerSaveStyle = tva({
+  base: 'rounded-[10px] px-[18px] py-2',
+  variants: {
+    enabled: { true: 'bg-brand-primary opacity-100', false: 'bg-typography-50 opacity-70' },
   },
-  headerCard: {
-    padding: 16,
-    paddingTop: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: calendarsUIColors.border,
+});
+export const headerSaveTextStyle = tva({
+  base: 'text-sm font-bold',
+  variants: {
+    enabled: { true: 'text-background-0', false: 'text-brand-text-muted' },
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
-  tile: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+});
+export const editBodyStyle = tva({ base: 'gap-4 p-4 pt-5' });
+export const editTitleStyle = tva({ base: 'text-center text-[17px] font-bold text-brand-text' });
+export const previewCardStyle = tva({
+  base: 'flex-row items-center gap-3.5 rounded-2xl border border-brand-border bg-background-0 p-4',
+});
+export const previewTileStyle = tva({
+  base: 'h-[52px] w-[52px] items-center justify-center rounded-[14px] border-2',
+});
+export const previewLetterStyle = tva({ base: 'text-2xl font-semibold' });
+export const previewNameStyle = tva({
+  base: 'text-[17px] font-semibold tracking-[-0.2px]',
+  variants: {
+    filled: { true: 'text-brand-text', false: 'text-brand-text-muted' },
   },
-  tileLetter: { fontSize: 26, fontWeight: '700' },
-  headerInfo: { flex: 1, gap: 6 },
-  headerName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: calendarsUIColors.text,
-    letterSpacing: -0.4,
+});
+export const previewTypeStyle = tva({
+  base: 'mt-0.5 text-[13px] capitalize text-brand-text-muted',
+});
+export const textInputStyle = tva({
+  base: 'w-full rounded-xl border-[1.5px] border-brand-border bg-typography-50 px-3.5 py-3 text-base font-medium text-brand-text',
+});
+export const textAreaStyle = tva({ base: 'min-h-20 leading-[22px]' });
+export const swatchRowStyle = tva({
+  base: 'flex-row flex-wrap gap-2 rounded-[14px] border border-brand-border bg-background-0 p-3',
+});
+export const swatchStyle = tva({
+  base: 'h-9 w-9 rounded-[10px]',
+  variants: {
+    selected: { true: 'border-[2.5px] border-background-0' },
   },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  metaText: { fontSize: 14, color: calendarsUIColors.textSecondary },
-  metaOwnerName: { fontWeight: '600', color: calendarsUIColors.text },
-  metaLink: { fontSize: 14, fontWeight: '600', color: calendarsUIColors.primary },
-  descriptionBubble: {
-    marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: calendarsUIColors.surfaceHover,
-    borderRadius: 12,
+});
+export const dangerCardStyle = tva({
+  base: 'rounded-[14px] border border-brand-danger-border bg-brand-danger-light p-4',
+});
+export const dangerCopyStyle = tva({
+  base: 'mb-3 text-[13px] leading-[19px] text-brand-danger-text',
+});
+export const dangerBtnStyle = tva({ base: 'items-center rounded-xl bg-brand-danger px-4 py-3' });
+export const dangerBtnTextStyle = tva({ base: 'text-[15px] font-bold text-background-0' });
+export const testAffordanceStyle = tva({ base: 'absolute left-0 top-0 h-px w-px opacity-0' });
+export const toastStyle = tva({
+  base: 'absolute left-5 right-5 top-4 z-[100] rounded-[14px] px-[18px] py-3.5 shadow-lg',
+  variants: {
+    success: { true: 'bg-brand-primary', false: 'bg-brand-danger' },
   },
-  descriptionText: { fontSize: 14, color: calendarsUIColors.textSecondary, lineHeight: 21 },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: calendarsUIColors.textMuted,
-    letterSpacing: 0.3,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 8,
-  },
-  eventList: {
-    marginHorizontal: 16,
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-  },
-  emptyEvents: {
-    marginHorizontal: 16,
-    padding: 24,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-    backgroundColor: calendarsUIColors.surface,
-    alignItems: 'center',
-  },
-  emptyEventsText: { fontSize: 14, color: calendarsUIColors.textMuted, fontStyle: 'italic' },
-  membersCard: {
-    marginHorizontal: 16,
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-    backgroundColor: calendarsUIColors.surface,
-  },
-  membersHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  membersHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  stackedAvatars: { flexDirection: 'row' },
-  stackedAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stackedAvatarText: { fontSize: 11, fontWeight: '700' },
-  membersHeaderLabel: { fontSize: 15, fontWeight: '500', color: calendarsUIColors.text },
-  inviteBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    backgroundColor: calendarsUIColors.primaryLight,
-  },
-  inviteText: { fontSize: 14, fontWeight: '600', color: calendarsUIColors.primary },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 32,
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  headerSave: { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 10 },
-  headerSaveText: { fontSize: 14, fontWeight: '700' },
-  editBody: { padding: 16, paddingTop: 20, gap: 16 },
-  editTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: calendarsUIColors.text,
-    textAlign: 'center',
-  },
-  previewCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: calendarsUIColors.surface,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-  },
-  previewTile: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewLetter: { fontSize: 24, fontWeight: '600' },
-  previewName: { fontSize: 17, fontWeight: '600', letterSpacing: -0.2 },
-  previewType: {
-    fontSize: 13,
-    color: calendarsUIColors.textMuted,
-    marginTop: 2,
-    textTransform: 'capitalize',
-  },
-  textInput: {
-    width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: calendarsUIColors.border,
-    backgroundColor: calendarsUIColors.surfaceHover,
-    fontSize: 16,
-    fontWeight: '500',
-    color: calendarsUIColors.text,
-  },
-  textArea: { minHeight: 80, textAlignVertical: 'top', lineHeight: 22 },
-  swatchRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    padding: 12,
-    backgroundColor: calendarsUIColors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: calendarsUIColors.border,
-  },
-  swatch: { width: 36, height: 36, borderRadius: 10 },
-  swatchSelected: { borderWidth: 2.5, borderColor: '#FFFFFF' },
-  dangerCard: {
-    padding: 16,
-    borderRadius: 14,
-    backgroundColor: calendarsUIColors.dangerLight,
-    borderWidth: 1,
-    borderColor: '#FFD4D4',
-  },
-  dangerCopy: { fontSize: 13, color: '#CC4444', marginBottom: 12, lineHeight: 19 },
-  dangerBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: calendarsUIColors.danger,
-    alignItems: 'center',
-  },
-  dangerBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  testAffordance: { position: 'absolute', width: 1, height: 1, opacity: 0, top: 0, left: 0 },
-  toast: {
-    position: 'absolute',
-    top: 16,
-    left: 20,
-    right: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 6,
-    zIndex: 100,
-  },
-  toastText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' },
+});
+export const toastTextStyle = tva({
+  base: 'text-center text-[15px] font-semibold text-background-0',
 });

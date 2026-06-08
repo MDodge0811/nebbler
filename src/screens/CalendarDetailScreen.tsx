@@ -1,9 +1,10 @@
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable as RNPressable, Text as RNText, View } from 'react-native';
 
+import { Box } from '@/components/ui/box';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
 import { DeleteCalendarConfirmModal } from '@components/calendars/DeleteCalendarConfirmModal';
 import { calendarsUIColors } from '@constants/calendarsUI';
 import { useCalendarDetail } from '@hooks/useCalendarDetail';
@@ -13,9 +14,16 @@ import type { RootStackParamList } from '@navigation/types';
 import { CalendarDetailEditBody } from './calendarDetail/CalendarDetailEditBody';
 import { CalendarDetailView } from './calendarDetail/CalendarDetailView';
 import { BackIcon, CloseIcon, EditIcon } from './calendarDetail/icons';
-import { styles } from './calendarDetail/styles';
+import {
+  containerStyle,
+  headerBtnStyle,
+  headerSaveStyle,
+  headerSaveTextStyle,
+  testAffordanceStyle,
+  toastStyle,
+  toastTextStyle,
+} from './calendarDetail/styles';
 
-const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Rt = RouteProp<RootStackParamList, 'CalendarDetail'>;
 
@@ -55,20 +63,20 @@ export function CalendarDetailScreen() {
         title: calendar.name ?? '',
         headerTitleStyle: { fontSize: 17, fontWeight: '700' },
         headerLeft: () => (
-          <RNPressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.headerBtn}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8} className={headerBtnStyle({})}>
             <BackIcon />
-          </RNPressable>
+          </Pressable>
         ),
         headerRight: () =>
           permissions.canEnterEdit ? (
-            <RNPressable
+            <Pressable
               onPress={enterEditMode}
               hitSlop={8}
-              style={styles.headerBtn}
+              className={headerBtnStyle({})}
               testID="enter-edit-btn"
             >
               <EditIcon />
-            </RNPressable>
+            </Pressable>
           ) : null,
       });
     } else {
@@ -76,42 +84,27 @@ export function CalendarDetailScreen() {
         title: 'Edit Calendar',
         headerTitleStyle: { fontSize: 17, fontWeight: '700' },
         headerLeft: () => (
-          <RNPressable
+          <Pressable
             onPress={exitEditMode}
             hitSlop={8}
-            style={styles.headerBtn}
+            className={headerBtnStyle({})}
             testID="close-edit-btn"
           >
             <CloseIcon />
-          </RNPressable>
+          </Pressable>
         ),
         headerRight: () => (
-          <RNPressable
+          <Pressable
             onPress={() => {
               void handleSave();
             }}
             disabled={!canSaveName}
             hitSlop={8}
             testID="save-edit-btn"
-            style={[
-              styles.headerSave,
-              {
-                backgroundColor: canSaveName
-                  ? calendarsUIColors.primary
-                  : calendarsUIColors.surfaceHover,
-                opacity: canSaveName ? 1 : 0.7,
-              },
-            ]}
+            className={headerSaveStyle({ enabled: canSaveName })}
           >
-            <RNText
-              style={[
-                styles.headerSaveText,
-                { color: canSaveName ? '#FFFFFF' : calendarsUIColors.textMuted },
-              ]}
-            >
-              Save
-            </RNText>
-          </RNPressable>
+            <Text className={headerSaveTextStyle({ enabled: canSaveName })}>Save</Text>
+          </Pressable>
         ),
       });
     }
@@ -126,20 +119,20 @@ export function CalendarDetailScreen() {
     handleSave,
   ]);
 
-  if (!calendar) return <View />;
+  if (!calendar) return <Box />;
 
   const color = calendar.color ?? calendarsUIColors.primary;
   const firstLetter = (calendar.name ?? '?').charAt(0).toUpperCase();
   const isPrivate = calendar.type === 'private';
 
   return (
-    <View className={containerStyle({})} style={styles.flex}>
+    <Box className={containerStyle({})}>
       {/* Test affordance: mirrors the header-pencil action. Always renders;
           a no-op in production for sighted users since the header pencil owns the UX. */}
-      <RNPressable
+      <Pressable
         testID="enter-edit-btn-inline"
         onPress={enterEditMode}
-        style={styles.testAffordance}
+        className={testAffordanceStyle({})}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
       />
@@ -174,21 +167,13 @@ export function CalendarDetailScreen() {
       />
 
       {form.toast && (
-        <View
+        <Box
           pointerEvents="none"
-          style={[
-            styles.toast,
-            {
-              backgroundColor:
-                form.toast.kind === 'success'
-                  ? calendarsUIColors.primary
-                  : calendarsUIColors.danger,
-            },
-          ]}
+          className={toastStyle({ success: form.toast.kind === 'success' })}
         >
-          <RNText style={styles.toastText}>{form.toast.text}</RNText>
-        </View>
+          <Text className={toastTextStyle({})}>{form.toast.text}</Text>
+        </Box>
       )}
-    </View>
+    </Box>
   );
 }

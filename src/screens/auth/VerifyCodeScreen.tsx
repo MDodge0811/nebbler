@@ -1,6 +1,6 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useCallback, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 
 import { Box } from '@/components/ui/box';
 import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
@@ -28,10 +28,6 @@ const errorBannerTextStyle = tva({ base: 'text-center text-error-600' });
 const footerStyle = tva({ base: 'mt-6 flex-row items-center justify-center' });
 const footerTextStyle = tva({ base: 'text-typography-600' });
 const linkTextStyle = tva({ base: 'ml-1 font-semibold text-primary-500' });
-
-const styles = StyleSheet.create({
-  scrollContent: { flexGrow: 1 },
-});
 
 export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'VerifyCode'>) {
   const { email, mode } = route.params;
@@ -73,7 +69,7 @@ export function VerifyCodeScreen({ route, navigation }: AuthStackScreenProps<'Ve
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className={containerStyle({})}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerClassName="grow" keyboardShouldPersistTaps="handled">
         <Box className={scrollContentStyle({})}>
           <Box className={headerStyle({})}>
             <Text className={titleStyle({})}>Check your email</Text>
