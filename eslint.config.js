@@ -7,6 +7,7 @@ const reactNativePlugin = require('eslint-plugin-react-native');
 const prettierPlugin = require('eslint-plugin-prettier');
 const importX = require('eslint-plugin-import-x');
 const boundaries = require('eslint-plugin-boundaries');
+const jestPlugin = require('eslint-plugin-jest');
 
 const compat = new FlatCompat({ baseDirectory: __dirname });
 
@@ -324,10 +325,20 @@ module.exports = tseslint.config(
   },
   {
     files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    plugins: {
+      jest: jestPlugin,
+    },
     rules: {
       // Tests legitimately import and mock vendor SDKs + raw RN primitives.
       'no-restricted-imports': 'off',
       '@typescript-eslint/no-restricted-imports': 'off',
+      // jest-specific rules
+      'jest/no-focused-tests': 'error', // committed .only = false CI green
+      'jest/no-disabled-tests': 'warn', // accumulating xit/xdescribe is tech debt
+      'jest/valid-expect': 'error', // expect(foo) with no matcher is a no-op
+      'jest/expect-expect': 'error', // tests must have at least one assertion
+      'jest/no-conditional-expect': 'error', // flaky tests from if/try-wrapped expects
+      'jest/no-standalone-expect': 'error', // expect outside a test block
     },
     languageOptions: {
       globals: {
