@@ -1,0 +1,44 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-08-people-tab-fe1-data-model.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 0: TanStack Query foundation + lint hard-check",
+      "status": "pending",
+      "description": "**Goal:** Add @tanstack/react-query, wrap the app in a QueryClientProvider, and add two ESLint guardrails that force all online API work through TanStack Query.\n\n**Files:** package.json; src/api/queryClient.ts (create); App.tsx:108-120; eslint.config.js; tsconfig.json; babel.config.js; jest.config.js; .claude/rules/api-data.md (create); .claude/rules/rules.md\n\n**Acceptance Criteria:** @tanstack/react-query in deps; singleton QueryClient inside ClerkProvider; raw fetch banned outside connector.ts + src/api/**, userSearch.ts exempt with TODO(FE-5); @tanstack/react-query contained to src/hooks/** + src/api/**; npm run check passes.\n\n**Verify:** npm run check\n\n```json:metadata\n{\"files\": [\"package.json\", \"src/api/queryClient.ts\", \"App.tsx\", \"eslint.config.js\", \"tsconfig.json\", \"babel.config.js\", \"jest.config.js\", \".claude/rules/api-data.md\", \".claude/rules/rules.md\"], \"verifyCommand\": \"npm run check\", \"acceptanceCriteria\": [\"@tanstack/react-query in deps and installed\", \"singleton QueryClient provided inside ClerkProvider\", \"raw fetch banned outside connector.ts + src/api/**; userSearch.ts exempt with TODO(FE-5)\", \"@tanstack/react-query contained to src/hooks/** + src/api/**\", \"npm run check passes\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 1: Rewrite user_connections schema + Zod (read-only)",
+      "status": "pending",
+      "description": "**Goal:** Replace the synced table and Zod schema with the normalized read-only pair; remove all status/requester/addressee/blocker/deleted_at fields and every write-input shape.\n\n**Files:** src/database/schema.ts:115-123 + :158; src/database/schemas/userConnectionSchemas.ts; src/database/schemas/index.ts:14-21; src/database/schemas/__tests__/userConnectionSchemas.test.ts\n\n**Acceptance Criteria:** table is {user_a_id,user_b_id,inserted_at,updated_at}; Zod exposes only UserConnectionSchema + UserConnection; barrel + schema.ts re-exports updated, no ConnectionStatus; schemas test passes >=90% coverage.\n\n**Verify:** npx jest src/database/schemas/__tests__/userConnectionSchemas.test.ts\n\n```json:metadata\n{\"files\": [\"src/database/schema.ts\", \"src/database/schemas/userConnectionSchemas.ts\", \"src/database/schemas/index.ts\", \"src/database/schemas/__tests__/userConnectionSchemas.test.ts\"], \"verifyCommand\": \"npx jest src/database/schemas/__tests__/userConnectionSchemas.test.ts\", \"acceptanceCriteria\": [\"table is {user_a_id,user_b_id,inserted_at,updated_at}\", \"Zod exposes only UserConnectionSchema + UserConnection\", \"barrel + schema.ts re-exports updated; no ConnectionStatus\", \"schemas test passes at >=90% coverage\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 2: Connector guard — block user_connections uploads",
+      "status": "pending",
+      "description": "**Goal:** Add a READ_ONLY_TABLES guard in uploadCrudEntry so a stray local CRUD against user_connections is skipped before any fetch.\n\n**Files:** src/database/connector.ts; src/database/__tests__/connector.test.ts (create)\n\n**Acceptance Criteria:** user_connections CRUD skipped — no fetch; other tables still upload; connector test passes.\n\n**Verify:** npx jest src/database/__tests__/connector.test.ts\n\n```json:metadata\n{\"files\": [\"src/database/connector.ts\", \"src/database/__tests__/connector.test.ts\"], \"verifyCommand\": \"npx jest src/database/__tests__/connector.test.ts\", \"acceptanceCriteria\": [\"user_connections CRUD is skipped — no fetch\", \"other tables still upload\", \"connector test passes\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 3: Reduce useConnections to reads-only",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** Re-key the connection hooks to the normalized pair, return only the connected list, remove the status/pending queries, resolve the other participant both directions.\n\n**Files:** src/hooks/useConnections.ts:1-111; src/hooks/index.ts; src/hooks/__tests__/useConnections.test.ts\n\n**Acceptance Criteria:** useConnections returns {connections,isLoading} resolving other_user_id both directions; useConnectionWith returns {id}|null re-keyed to pair, no status; HydratedConnection drops status/requester/addressee/blocker; shared-calendar/profile hooks unchanged + passing.\n\n**Verify:** npx jest src/hooks/__tests__/useConnections.test.ts\n\n```json:metadata\n{\"files\": [\"src/hooks/useConnections.ts\", \"src/hooks/index.ts\", \"src/hooks/__tests__/useConnections.test.ts\"], \"verifyCommand\": \"npx jest src/hooks/__tests__/useConnections.test.ts\", \"acceptanceCriteria\": [\"useConnections returns {connections,isLoading} resolving other_user_id both directions\", \"useConnectionWith returns {id}|null re-keyed to the pair\", \"HydratedConnection drops status/requester/addressee/blocker\", \"shared-calendar/profile hooks unchanged and passing\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 4: Delete the client write path",
+      "status": "pending",
+      "description": "**Goal:** Remove src/utils/connections.ts and its barrel re-export and test — the six mutation functions move to REST in FE-2.\n\n**Files:** src/utils/connections.ts (delete); src/utils/__tests__/connections.test.ts (delete); src/utils/index.ts\n\n**Acceptance Criteria:** connections.ts + its test deleted; barrel no longer re-exports mutations; only the four screens still reference removed symbols (cleared in Task 5).\n\n**Verify:** npx jest src/utils/\n\n```json:metadata\n{\"files\": [\"src/utils/connections.ts\", \"src/utils/__tests__/connections.test.ts\", \"src/utils/index.ts\"], \"verifyCommand\": \"npx jest src/utils/\", \"acceptanceCriteria\": [\"connections.ts + its test deleted\", \"barrel no longer re-exports mutations\", \"only the four screens still reference the removed symbols (cleared in Task 5)\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 5: Neutralize the four People-tab screens (green gate)",
+      "status": "pending",
+      "blockedBy": [1, 2, 4, 5],
+      "description": "**Goal:** Make the four screens compile against the new data layer with minimal placeholders so npm run check is fully green. Real rewires are FE-4/5/6/7.\n\n**Files:** src/screens/people/{ConnectionsScreen,AddConnectionScreen,PersonProfileScreen}.tsx; src/screens/ProfileScreen.tsx; src/screens/people/__tests__/{ConnectionsScreen,AddConnectionScreen,PersonProfileScreen}.test.tsx; src/screens/__tests__/ProfileScreen.test.tsx\n\n**Acceptance Criteria:** no screen imports deleted mutations or removed hook fields; ConnectionsScreen renders connected list, pending removed; AddConnectionScreen actions disabled placeholders; PersonProfileScreen connected-from-presence, Remove/Block disabled; ProfileScreen pending badge dropped, Connections row kept; screen tests rewritten; npm run check passes.\n\n**Verify:** npm run check (THE GREEN GATE)\n\n```json:metadata\n{\"files\": [\"src/screens/people/ConnectionsScreen.tsx\", \"src/screens/people/AddConnectionScreen.tsx\", \"src/screens/people/PersonProfileScreen.tsx\", \"src/screens/ProfileScreen.tsx\", \"src/screens/people/__tests__/ConnectionsScreen.test.tsx\", \"src/screens/people/__tests__/AddConnectionScreen.test.tsx\", \"src/screens/people/__tests__/PersonProfileScreen.test.tsx\", \"src/screens/__tests__/ProfileScreen.test.tsx\"], \"verifyCommand\": \"npm run check\", \"acceptanceCriteria\": [\"no screen imports deleted mutations or removed hook fields\", \"ConnectionsScreen renders connected list, pending removed\", \"AddConnectionScreen actions disabled placeholders\", \"PersonProfileScreen connected-from-presence; Remove/Block disabled\", \"ProfileScreen pending badge dropped; Connections row kept\", \"screen tests rewritten; npm run check passes\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-08"
+}
