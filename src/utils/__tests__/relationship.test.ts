@@ -21,6 +21,10 @@ describe('relationshipToAction', () => {
     const rel: Relationship = { state: 'connected', request_id: null, connection_id: connId };
     expect(relationshipToAction(rel)).toEqual({ kind: 'open', connectionId: connId });
   });
+  it('maps self → { kind: self }', () => {
+    const rel: Relationship = { state: 'self', request_id: null, connection_id: null };
+    expect(relationshipToAction(rel)).toEqual({ kind: 'self' });
+  });
   it('throws when outgoing_pending has no request_id', () => {
     const rel: Relationship = { state: 'outgoing_pending', request_id: null, connection_id: null };
     expect(() => relationshipToAction(rel)).toThrow();

@@ -7,7 +7,8 @@ import {
   NotAuthenticatedError,
   InboundRequestExistsError,
   AlreadyConnectedError,
-  DuplicateRequestError,
+  OutboundRequestExistsError,
+  RequestNotPendingError,
   ValidationError,
   ForbiddenError,
   NotFoundError,
@@ -49,12 +50,21 @@ describe('sendRequest', () => {
       ok: true,
       status: 201,
       json: jest.fn().mockResolvedValue({
-        id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-        requested_at: '2026-06-09T00:00:00Z',
+        connection_request: {
+          id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          status: 'pending',
+          direction: 'outgoing',
+          other_user_id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+          requestor_id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+          requestee_id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+          completed_at: null,
+          inserted_at: '2026-06-09T00:00:00Z',
+        },
       }),
     });
     const res = await sendRequest('dddddddd-dddd-4ddd-8ddd-dddddddddddd');
     expect(res.id).toBe('cccccccc-cccc-4ccc-8ccc-cccccccccccc');
+    expect(res.status).toBe('pending');
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/api/connection-requests'),
       expect.objectContaining({
@@ -73,9 +83,9 @@ describe('sendRequest', () => {
     fetchSpy.mockResolvedValue({ status: 409, ...errorBody('already_connected') });
     await expect(sendRequest('id')).rejects.toThrow(AlreadyConnectedError);
   });
-  it('throws DuplicateRequestError on 409 duplicate_request', async () => {
-    fetchSpy.mockResolvedValue({ status: 409, ...errorBody('duplicate_request') });
-    await expect(sendRequest('id')).rejects.toThrow(DuplicateRequestError);
+  it('throws OutboundRequestExistsError on 409 outbound_request_exists', async () => {
+    fetchSpy.mockResolvedValue({ status: 409, ...errorBody('outbound_request_exists') });
+    await expect(sendRequest('id')).rejects.toThrow(OutboundRequestExistsError);
   });
   it('throws ValidationError with details on 422', async () => {
     fetchSpy.mockResolvedValue({
@@ -135,16 +145,20 @@ describe('resolveRequest', () => {
     fetchSpy.mockResolvedValue({ status: 403, ...errorBody('forbidden') });
     await expect(resolveRequest('req-id', 'accepted')).rejects.toThrow(ForbiddenError);
   });
+  it('throws RequestNotPendingError on 409 not_pending', async () => {
+    fetchSpy.mockResolvedValue({ status: 409, ...errorBody('not_pending') });
+    await expect(resolveRequest('req-id', 'accepted')).rejects.toThrow(RequestNotPendingError);
+  });
 });
 
 describe('removeConnection', () => {
-  it('DELETEs /api/connections/:id with bearer token', async () => {
-    fetchSpy.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue({}) });
+  it('PATCHes /api/connections/:id with bearer token', async () => {
+    fetchSpy.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue({ status: 'ok' }) });
     await expect(removeConnection('conn-id')).resolves.toBeUndefined();
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/api/connections/conn-id'),
       expect.objectContaining({
-        method: 'DELETE',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
       })
     );

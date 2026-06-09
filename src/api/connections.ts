@@ -2,7 +2,7 @@ import { powersyncConfig } from '@constants/config';
 import { getApiToken } from '@database/index';
 import {
   ApiErrorResponseSchema,
-  ConnectionRequestSchema,
+  ConnectionRequestEnvelopeSchema,
   ConnectionRequestListResponseSchema,
   UserProfileResponseSchema,
   type ConnectionRequest,
@@ -28,7 +28,7 @@ export class ConnectionsApiError extends Error {
 /** No auth token, or HTTP 401. */
 export class NotAuthenticatedError extends ConnectionsApiError {
   constructor(message = 'User not signed in') {
-    super(401, 'unauthenticated', message);
+    super(401, 'unauthorized', message);
     this.name = 'NotAuthenticatedError';
   }
 }
@@ -78,11 +78,19 @@ export class AlreadyConnectedError extends ConnectionsApiError {
   }
 }
 
-/** 409 — the current user already has an outstanding request to this user. */
-export class DuplicateRequestError extends ConnectionsApiError {
+/** 409 — the current user already has an outstanding OUTGOING request to this user. */
+export class OutboundRequestExistsError extends ConnectionsApiError {
   constructor(message = 'You already have a pending request to this user') {
-    super(409, 'duplicate_request', message);
-    this.name = 'DuplicateRequestError';
+    super(409, 'outbound_request_exists', message);
+    this.name = 'OutboundRequestExistsError';
+  }
+}
+
+/** 409 — the targeted request is no longer pending (already resolved). */
+export class RequestNotPendingError extends ConnectionsApiError {
+  constructor(message = 'This request is no longer pending') {
+    super(409, 'not_pending', message);
+    this.name = 'RequestNotPendingError';
   }
 }
 
@@ -104,9 +112,9 @@ async function authedFetch(path: string, init: RequestInit = {}): Promise<Respon
 }
 
 /**
- * Map a 409 conflict to its typed error by `error.code`.
- * NOTE: the exact 409 `code` strings for already_connected / duplicate_request
- * are assumptions pending BE (NEB-138); inbound_request_exists is contractual.
+ * Map a 409 conflict to its typed error by `error.code`. Codes verified against
+ * the live BE: outbound_request_exists / inbound_request_exists /
+ * already_connected / not_pending.
  */
 function toConflictError(code: string, message: string): ConnectionsApiError {
   switch (code) {
@@ -114,8 +122,10 @@ function toConflictError(code: string, message: string): ConnectionsApiError {
       return new InboundRequestExistsError(message);
     case 'already_connected':
       return new AlreadyConnectedError(message);
-    case 'duplicate_request':
-      return new DuplicateRequestError(message);
+    case 'outbound_request_exists':
+      return new OutboundRequestExistsError(message);
+    case 'not_pending':
+      return new RequestNotPendingError(message);
     default:
       return new ConnectionsApiError(409, code || 'conflict', message);
   }
@@ -164,7 +174,7 @@ export async function sendRequest(requesteeId: string): Promise<ConnectionReques
     body: JSON.stringify({ requestee_id: requesteeId }),
   });
   if (response.status === 201) {
-    return ConnectionRequestSchema.parse(await response.json());
+    return ConnectionRequestEnvelopeSchema.parse(await response.json()).connection_request;
   }
   throw await toTypedError(response);
 }
@@ -195,12 +205,13 @@ export async function resolveRequest(id: string, status: ResolveStatus): Promise
 // ---------------------------------------------------------------------------
 
 /**
- * DELETE /api/connections/:id — remove/unfriend. Either participant may remove.
+ * PATCH /api/connections/:id — remove/unfriend. Either participant may remove.
  * Server soft-deletes + cascades shared-calendar revocation; the row de-syncs.
- * `:id` is the synced user_connections id (not stable across remove → re-add).
+ * Returns 200 { status: "ok" }. `:id` is the synced user_connections id (not
+ * stable across remove → re-add).
  */
 export async function removeConnection(connectionId: string): Promise<void> {
-  const response = await authedFetch(`/api/connections/${connectionId}`, { method: 'DELETE' });
+  const response = await authedFetch(`/api/connections/${connectionId}`, { method: 'PATCH' });
   if (response.ok) return;
   throw await toTypedError(response);
 }

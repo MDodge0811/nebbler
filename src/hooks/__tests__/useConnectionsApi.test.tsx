@@ -65,7 +65,16 @@ describe('useUserProfileApi', () => {
 
 describe('useSendRequest', () => {
   it('calls sendRequest and invalidates the requests + profile queries on success', async () => {
-    mockedApi.sendRequest.mockResolvedValue({ id: 'r1', requested_at: '2026-06-09T00:00:00Z' });
+    mockedApi.sendRequest.mockResolvedValue({
+      id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      status: 'pending',
+      direction: 'outgoing',
+      other_user_id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      requestor_id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      requestee_id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+      completed_at: null,
+      inserted_at: '2026-06-09T00:00:00Z',
+    });
     const { queryClient, Wrapper } = createWrapper();
     const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
     const { result } = renderHook(() => useSendRequest(), { wrapper: Wrapper });

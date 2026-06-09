@@ -1,5 +1,6 @@
 import {
   ConnectionRequestSchema,
+  ConnectionRequestEnvelopeSchema,
   ConnectionRequestItemSchema,
   ConnectionRequestListResponseSchema,
 } from '@database/schemas';
@@ -42,16 +43,35 @@ describe('ConnectionRequestListResponseSchema', () => {
   });
 });
 
-describe('ConnectionRequestSchema (created request)', () => {
-  it('accepts a created request and strips extra keys', () => {
-    const parsed = ConnectionRequestSchema.parse({
-      id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-      requested_at: '2026-06-09T00:00:00Z',
-      extra: 'ignored',
-    });
-    expect(parsed).not.toHaveProperty('extra');
+const createdRequest = {
+  id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  status: 'pending',
+  direction: 'outgoing',
+  other_user_id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+  requestor_id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+  requestee_id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+  completed_at: null,
+  inserted_at: '2026-06-09T00:00:00Z',
+};
+
+describe('ConnectionRequestSchema (created/resolved request)', () => {
+  it('accepts a valid request', () => {
+    expect(() => ConnectionRequestSchema.parse(createdRequest)).not.toThrow();
   });
-  it('rejects a missing id', () => {
-    expect(() => ConnectionRequestSchema.parse({ requested_at: '2026-06-09T00:00:00Z' })).toThrow();
+  it('rejects a non-uuid id', () => {
+    expect(() => ConnectionRequestSchema.parse({ ...createdRequest, id: 'nope' })).toThrow();
+  });
+  it('rejects an invalid status', () => {
+    expect(() => ConnectionRequestSchema.parse({ ...createdRequest, status: 'bogus' })).toThrow();
+  });
+});
+
+describe('ConnectionRequestEnvelopeSchema', () => {
+  it('parses the wrapped request', () => {
+    const parsed = ConnectionRequestEnvelopeSchema.parse({ connection_request: createdRequest });
+    expect(parsed.connection_request.id).toBe(createdRequest.id);
+  });
+  it('rejects a missing connection_request wrapper', () => {
+    expect(() => ConnectionRequestEnvelopeSchema.parse(createdRequest)).toThrow();
   });
 });

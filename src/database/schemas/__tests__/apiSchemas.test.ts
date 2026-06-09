@@ -19,8 +19,9 @@ const basicUser = {
 const relationship = { state: 'none', request_id: null, connection_id: null };
 
 describe('RelationshipStateSchema', () => {
-  it.each(['none', 'outgoing_pending', 'incoming_pending', 'connected'])('accepts %s', (state) =>
-    expect(() => RelationshipStateSchema.parse(state)).not.toThrow()
+  it.each(['none', 'outgoing_pending', 'incoming_pending', 'connected', 'self'])(
+    'accepts %s',
+    (state) => expect(() => RelationshipStateSchema.parse(state)).not.toThrow()
   );
   it('rejects an unknown state', () => {
     expect(() => RelationshipStateSchema.parse('blocked')).toThrow();
@@ -64,6 +65,9 @@ describe('BasicUserSchema', () => {
   it('rejects a missing username', () => {
     const withoutUsername = { ...basicUser, username: undefined };
     expect(() => BasicUserSchema.parse(withoutUsername)).toThrow();
+  });
+  it('accepts a null username', () => {
+    expect(() => BasicUserSchema.parse({ ...basicUser, username: null })).not.toThrow();
   });
   it('accepts null first/last name and avatar_color', () => {
     expect(() =>

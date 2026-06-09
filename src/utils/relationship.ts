@@ -5,12 +5,14 @@ import type { Relationship } from '@database/schemas';
  * maps each `kind` to its button(s):
  *   connect → "Connect" | cancel → "Pending" (tap to cancel)
  *   respond → "Accept" / "Decline" | open → "Connected" (open profile)
+ *   self → your own profile (no action)
  */
 export type RelationshipAction =
   | { kind: 'connect' }
   | { kind: 'cancel'; requestId: string }
   | { kind: 'respond'; requestId: string }
-  | { kind: 'open'; connectionId: string };
+  | { kind: 'open'; connectionId: string }
+  | { kind: 'self' };
 
 /**
  * Map a relationship to its action. Throws on an internally-inconsistent
@@ -31,6 +33,8 @@ export function relationshipToAction(relationship: Relationship): RelationshipAc
     case 'connected':
       if (!connection_id) throw new Error('connected relationship is missing connection_id');
       return { kind: 'open', connectionId: connection_id };
+    case 'self':
+      return { kind: 'self' };
   }
 }
 

@@ -23,6 +23,7 @@ export { UserConnectionSchema, type UserConnection } from './userConnectionSchem
 export {
   ConnectionRequestSchema,
   type ConnectionRequest,
+  ConnectionRequestEnvelopeSchema,
   ConnectionRequestItemSchema,
   type ConnectionRequestItem,
   ConnectionRequestListResponseSchema,

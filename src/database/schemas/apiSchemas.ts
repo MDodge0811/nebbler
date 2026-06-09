@@ -44,6 +44,7 @@ export const RelationshipStateSchema = z.enum([
   'outgoing_pending',
   'incoming_pending',
   'connected',
+  'self',
 ]);
 
 export type RelationshipState = z.infer<typeof RelationshipStateSchema>;
@@ -65,7 +66,7 @@ export type Relationship = z.infer<typeof RelationshipSchema>;
  */
 export const BasicUserSchema = z.object({
   id: z.string().uuid(),
-  username: z.string(),
+  username: z.string().nullable(),
   first_name: z.string().nullable(),
   last_name: z.string().nullable(),
   avatar_color: z
