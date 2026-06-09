@@ -1,0 +1,41 @@
+{
+  "planPath": "nebbler/docs/superpowers/plans/2026-06-09-neb-150-connections-rest-client.md",
+  "linearIssue": "NEB-150",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Relationship, basic-user & profile schemas",
+      "status": "pending",
+      "description": "**Goal:** Extend apiSchemas.ts with relationship/basic-user building blocks, recompose UserSearchResultSchema (add username + relationship), add UserProfileResponseSchema, and keep userSearch test green.\n\n**Files:** modify nebbler/src/database/schemas/apiSchemas.ts, nebbler/src/database/schemas/index.ts, nebbler/src/utils/__tests__/userSearch.test.ts; create nebbler/src/database/schemas/__tests__/apiSchemas.test.ts\n\n**Verify:** cd nebbler && npx jest src/database/schemas/__tests__/apiSchemas.test.ts src/utils/__tests__/userSearch.test.ts && npx tsc --noEmit\n\n```json:metadata\n{\"files\": [\"nebbler/src/database/schemas/apiSchemas.ts\", \"nebbler/src/database/schemas/index.ts\", \"nebbler/src/utils/__tests__/userSearch.test.ts\", \"nebbler/src/database/schemas/__tests__/apiSchemas.test.ts\"], \"verifyCommand\": \"cd nebbler && npx jest src/database/schemas/__tests__/apiSchemas.test.ts src/utils/__tests__/userSearch.test.ts && npx tsc --noEmit\", \"acceptanceCriteria\": [\"RelationshipStateSchema enumerates the 4 contract states\", \"RelationshipSchema has state/request_id/connection_id\", \"UserSearchResultSchema requires username + relationship\", \"UserProfileResponseSchema exists; BasicUserSchema exported\", \"index.ts re-exports all new schemas+types\", \"userSearch.test.ts green; schemas coverage >=90%\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Connection-request list/item schemas",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Add Zod schemas for GET /api/connection-requests (incoming/outgoing) and the POST created-request body, reusing BasicUserSchema.\n\n**Files:** create nebbler/src/database/schemas/connectionRequestSchemas.ts + __tests__; modify index.ts\n\n**Verify:** cd nebbler && npx jest src/database/schemas/__tests__/connectionRequestSchemas.test.ts && npx tsc --noEmit\n\n```json:metadata\n{\"files\": [\"nebbler/src/database/schemas/connectionRequestSchemas.ts\", \"nebbler/src/database/schemas/index.ts\", \"nebbler/src/database/schemas/__tests__/connectionRequestSchemas.test.ts\"], \"verifyCommand\": \"cd nebbler && npx jest src/database/schemas/__tests__/connectionRequestSchemas.test.ts && npx tsc --noEmit\", \"acceptanceCriteria\": [\"ConnectionRequestItemSchema = {id,user:BasicUser,requested_at}\", \"ConnectionRequestListResponseSchema = {incoming[],outgoing[]}\", \"ConnectionRequestSchema tolerant {id,requested_at}\", \"re-exported from index.ts; schemas coverage >=90%\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Relationship helper (relationship.ts)",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** UI-agnostic relationshipToAction + otherParticipant helpers.\n\n**Files:** create nebbler/src/utils/relationship.ts + __tests__\n\n**Verify:** cd nebbler && npx jest src/utils/__tests__/relationship.test.ts && npx tsc --noEmit\n\n```json:metadata\n{\"files\": [\"nebbler/src/utils/relationship.ts\", \"nebbler/src/utils/__tests__/relationship.test.ts\"], \"verifyCommand\": \"cd nebbler && npx jest src/utils/__tests__/relationship.test.ts && npx tsc --noEmit\", \"acceptanceCriteria\": [\"RelationshipAction union connect/cancel/respond/open\", \"relationshipToAction maps all 4 states + throws on inconsistent payload\", \"otherParticipant resolves both directions\", \"no fetch/React imports; utils coverage thresholds met\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: connectionsApi.ts — typed errors + connection-requests resource",
+      "status": "pending",
+      "blockedBy": [1, 2],
+      "description": "**Goal:** REST client typed errors + authedFetch/toTypedError core + sendRequest/listRequests/resolveRequest; add raw-fetch lint exemption.\n\n**Files:** create nebbler/src/utils/connectionsApi.ts + __tests__; modify nebbler/eslint.config.js\n\n**Verify:** cd nebbler && npx jest src/utils/__tests__/connectionsApi.test.ts && npm run lint && npx tsc --noEmit\n\n```json:metadata\n{\"files\": [\"nebbler/src/utils/connectionsApi.ts\", \"nebbler/eslint.config.js\", \"nebbler/src/utils/__tests__/connectionsApi.test.ts\"], \"verifyCommand\": \"cd nebbler && npx jest src/utils/__tests__/connectionsApi.test.ts && npm run lint && npx tsc --noEmit\", \"acceptanceCriteria\": [\"Typed errors incl distinct InboundRequestExistsError\", \"sendRequest POSTs requestee_id, returns 201 body\", \"listRequests Zod-parses incoming/outgoing\", \"resolveRequest PATCHes accepted/declined/cancelled\", \"bearer token on every request; missing token throws before fetch\", \"npm run lint passes with connectionsApi exemption; utils coverage met\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: connectionsApi.ts — removeConnection + getUserProfile + full gate",
+      "status": "pending",
+      "blockedBy": [4],
+      "description": "**Goal:** Add removeConnection + getUserProfile, then run npm run check.\n\n**Files:** modify nebbler/src/utils/connectionsApi.ts + __tests__\n\n**Verify:** cd nebbler && npm run check\n\n```json:metadata\n{\"files\": [\"nebbler/src/utils/connectionsApi.ts\", \"nebbler/src/utils/__tests__/connectionsApi.test.ts\"], \"verifyCommand\": \"cd nebbler && npm run check\", \"acceptanceCriteria\": [\"removeConnection DELETEs /api/connections/:id, maps 403/404/401\", \"getUserProfile GETs /api/users/:id, Zod-parses profile\", \"no blockUser (NEB-139 pending)\", \"bearer token; missing token throws before fetch\", \"npm run check passes (full gate)\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-09"
+}
