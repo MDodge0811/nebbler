@@ -197,7 +197,7 @@ function CalendarPreviewCard({ name, type, color }: { name: string; type: string
         borderColor={tintBorder}
       >
         {hasName ? (
-          <Text className={previewLetterStyle({})}>{name.trim()[0]!.toUpperCase()}</Text>
+          <Text className={previewLetterStyle({})}>{name.trim()[0]?.toUpperCase()}</Text>
         ) : (
           <Text className={previewEmojiStyle({})}>{'📅'}</Text>
         )}

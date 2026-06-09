@@ -120,7 +120,7 @@ describe('useCalendarsListData', () => {
 
     const { result } = renderHook(() => useCalendarsListData());
     expect(result.current.ungroupedCalendars).toHaveLength(1);
-    expect(result.current.ungroupedCalendars[0]!.id).toBe('c2');
+    expect(result.current.ungroupedCalendars[0]?.id).toBe('c2');
   });
 
   it('returns safe defaults with empty data', () => {

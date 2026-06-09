@@ -1,5 +1,7 @@
+const DEFAULT_CALENDAR_COLOR = '#FFB3B3'; // soft red
+
 const CALENDAR_COLORS = [
-  '#FFB3B3', // soft red
+  DEFAULT_CALENDAR_COLOR,
   '#B3F0D4', // soft green
   '#B3E5F6', // soft blue
   '#FFD6A8', // soft orange
@@ -24,7 +26,7 @@ export function getCalendarColor(calendarId: string): string {
   for (let i = 0; i < calendarId.length; i++) {
     hash = hash + calendarId.charCodeAt(i);
   }
-  const color = CALENDAR_COLORS[hash % CALENDAR_COLORS.length]!;
+  const color = CALENDAR_COLORS[hash % CALENDAR_COLORS.length] ?? DEFAULT_CALENDAR_COLOR;
   colorCache.set(calendarId, color);
   return color;
 }
