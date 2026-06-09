@@ -63,15 +63,26 @@ describe('searchUsers', () => {
     );
   });
 
-  it('throws RateLimitedError on 429, with retryAfterSeconds from body', async () => {
+  it('throws RateLimitedError on 429, reading retryAfterSeconds from the Retry-After header', async () => {
+    // The 429 path reads the `Retry-After` header, not the body.
     fetchSpy.mockResolvedValue({
       ok: false,
       status: 429,
-      json: jest.fn().mockResolvedValue({ retry_after_seconds: 30 }),
+      headers: { get: (name: string) => (name === 'Retry-After' ? '30' : null) },
     });
 
     await expect(searchUsers('alice')).rejects.toThrow(RateLimitedError);
     await expect(searchUsers('alice')).rejects.toMatchObject({ retryAfterSeconds: 30 });
+  });
+
+  it('throws RateLimitedError with a 60s fallback when the Retry-After header is absent', async () => {
+    fetchSpy.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: { get: () => null },
+    });
+
+    await expect(searchUsers('alice')).rejects.toMatchObject({ retryAfterSeconds: 60 });
   });
 
   it('returns [] on 400 response', async () => {

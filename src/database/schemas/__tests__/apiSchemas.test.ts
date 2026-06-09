@@ -26,17 +26,32 @@ describe('FetchCredentialsResponseSchema', () => {
 });
 
 describe('ApiErrorResponseSchema', () => {
-  it('accepts an error without message', () => {
-    const result = ApiErrorResponseSchema.safeParse({ error: 'not_found' });
+  it('accepts a canonical error without details', () => {
+    const result = ApiErrorResponseSchema.safeParse({
+      error: { code: 'not_found', message: 'Resource not found' },
+    });
     expect(result.success).toBe(true);
   });
 
-  it('accepts an error with message', () => {
+  it('accepts a validation_failed error with details', () => {
     const result = ApiErrorResponseSchema.safeParse({
-      error: 'validation_failed',
-      message: 'Name is required',
+      error: {
+        code: 'validation_failed',
+        message: 'Validation failed',
+        details: { name: ["can't be blank"] },
+      },
     });
     expect(result.success).toBe(true);
+  });
+
+  it('rejects the legacy flat { error: string } shape', () => {
+    const result = ApiErrorResponseSchema.safeParse({ error: 'not_found' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an error object missing code or message', () => {
+    const result = ApiErrorResponseSchema.safeParse({ error: { code: 'not_found' } });
+    expect(result.success).toBe(false);
   });
 
   it('rejects a missing error field', () => {
