@@ -18,6 +18,7 @@ Use the `log-pain-point` skill (`/log-pain-point`) — or add one manually below
 
 ```markdown
 ### YYYY-MM-DD — <short title>
+
 - **Category:** tokens | time | clarity | tooling
 - **What happened:** what you were doing and where the friction hit.
 - **Cost:** rough token/time impact ("re-read 3 large files", "~5 min waiting").

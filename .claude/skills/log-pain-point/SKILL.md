@@ -54,6 +54,7 @@ marker in the `## Open` section, so newest is on top. Use today's date.
 
 ```markdown
 ### YYYY-MM-DD — <title>
+
 - **Category:** <tokens | time | clarity | tooling>
 - **What happened:** <...>
 - **Cost:** <...>
