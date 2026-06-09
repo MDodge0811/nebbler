@@ -35,11 +35,38 @@ export const ApiErrorResponseSchema = z.object({
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 
 /**
- * Schema for a single user result from the user-search endpoint.
- * avatar_color regex is case-insensitive to accept both #00DB74 and #00db74.
+ * Relationship state between the current user and another user (the FE's core
+ * mental model). Carried on every payload that returns another user.
+ * Contract: connections-api-contract-be-fe.
  */
-export const UserSearchResultSchema = z.object({
+export const RelationshipStateSchema = z.enum([
+  'none',
+  'outgoing_pending',
+  'incoming_pending',
+  'connected',
+  'self',
+]);
+
+export type RelationshipState = z.infer<typeof RelationshipStateSchema>;
+
+export const RelationshipSchema = z.object({
+  state: RelationshipStateSchema,
+  // present for *_pending (accept/decline/cancel); null otherwise
+  request_id: z.string().uuid().nullable(),
+  // present for connected (open profile); null otherwise. NOT a stable id —
+  // re-connecting after a removal yields a new id (contract "Deletion model").
+  connection_id: z.string().uuid().nullable(),
+});
+
+export type Relationship = z.infer<typeof RelationshipSchema>;
+
+/**
+ * Basic (public) user identity. Returned everywhere a user appears.
+ * Email is NEVER part of this shape.
+ */
+export const BasicUserSchema = z.object({
   id: z.string().uuid(),
+  username: z.string().nullable(),
   first_name: z.string().nullable(),
   last_name: z.string().nullable(),
   avatar_color: z
@@ -48,9 +75,24 @@ export const UserSearchResultSchema = z.object({
     .nullable(),
 });
 
+export type BasicUser = z.infer<typeof BasicUserSchema>;
+
 /**
- * Schema for the full response from GET /api/users/search.
+ * A single user result from GET /api/users/search — basic info + relationship.
  */
+export const UserSearchResultSchema = BasicUserSchema.extend({
+  relationship: RelationshipSchema,
+});
+
 export const UserSearchResponseSchema = z.array(UserSearchResultSchema);
 
 export type UserSearchResult = z.infer<typeof UserSearchResultSchema>;
+
+/**
+ * GET /api/users/:id — basic info + relationship (same shape as a search result).
+ */
+export const UserProfileResponseSchema = BasicUserSchema.extend({
+  relationship: RelationshipSchema,
+});
+
+export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>;

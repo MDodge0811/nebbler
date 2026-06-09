@@ -4,11 +4,28 @@ export {
   type FetchCredentialsResponse,
   ApiErrorResponseSchema,
   type ApiErrorResponse,
+  RelationshipStateSchema,
+  type RelationshipState,
+  RelationshipSchema,
+  type Relationship,
+  BasicUserSchema,
+  type BasicUser,
   UserSearchResultSchema,
   UserSearchResponseSchema,
   type UserSearchResult,
+  UserProfileResponseSchema,
+  type UserProfileResponse,
 } from './apiSchemas';
 export { CreateEventSchema, type CreateEventFormData } from './eventSchemas';
 export { CreateCalendarSchema, type CreateCalendarFormData } from './calendarSchemas';
 export { UpdateCalendarSchema, type UpdateCalendarFormData } from './updateCalendarSchema';
 export { UserConnectionSchema, type UserConnection } from './userConnectionSchemas';
+export {
+  ConnectionRequestSchema,
+  type ConnectionRequest,
+  ConnectionRequestEnvelopeSchema,
+  ConnectionRequestItemSchema,
+  type ConnectionRequestItem,
+  ConnectionRequestListResponseSchema,
+  type ConnectionRequestListResponse,
+} from './connectionRequestSchemas';

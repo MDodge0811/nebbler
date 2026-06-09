@@ -338,7 +338,7 @@ module.exports = tseslint.config(
             // data/engine layer stays low-level.
             { from: ['data'], allow: ['data', 'type', 'constant'] },
             // api: TanStack query/mutation functions — online REST layer.
-            { from: ['api'], allow: ['api', 'type', 'constant', 'util'] },
+            { from: ['api'], allow: ['api', 'type', 'constant', 'util', 'data'] },
             // hooks: the data-access + logic layer.
             { from: ['hook'], allow: ['hook', 'type', 'constant', 'util', 'data', 'api'] },
             // components: presentational — may use hooks/stores/utils,

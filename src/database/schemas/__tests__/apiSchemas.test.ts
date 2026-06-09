@@ -1,4 +1,92 @@
-import { ApiErrorResponseSchema, FetchCredentialsResponseSchema } from '../apiSchemas';
+import {
+  ApiErrorResponseSchema,
+  FetchCredentialsResponseSchema,
+  RelationshipSchema,
+  RelationshipStateSchema,
+  BasicUserSchema,
+  UserSearchResultSchema,
+  UserProfileResponseSchema,
+} from '../apiSchemas';
+
+const basicUser = {
+  id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+  username: 'alice',
+  first_name: 'Alice',
+  last_name: 'Smith',
+  avatar_color: '#00DB74',
+};
+
+const relationship = { state: 'none', request_id: null, connection_id: null };
+
+describe('RelationshipStateSchema', () => {
+  it.each(['none', 'outgoing_pending', 'incoming_pending', 'connected', 'self'])(
+    'accepts %s',
+    (state) => expect(() => RelationshipStateSchema.parse(state)).not.toThrow()
+  );
+  it('rejects an unknown state', () => {
+    expect(() => RelationshipStateSchema.parse('blocked')).toThrow();
+  });
+});
+
+describe('RelationshipSchema', () => {
+  it('accepts a pending relationship with a request_id', () => {
+    expect(() =>
+      RelationshipSchema.parse({
+        state: 'incoming_pending',
+        request_id: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
+        connection_id: null,
+      })
+    ).not.toThrow();
+  });
+  it('accepts a connected relationship with a connection_id', () => {
+    expect(() =>
+      RelationshipSchema.parse({
+        state: 'connected',
+        request_id: null,
+        connection_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      })
+    ).not.toThrow();
+  });
+  it('rejects a non-uuid request_id', () => {
+    expect(() =>
+      RelationshipSchema.parse({
+        state: 'outgoing_pending',
+        request_id: 'nope',
+        connection_id: null,
+      })
+    ).toThrow();
+  });
+});
+
+describe('BasicUserSchema', () => {
+  it('accepts a basic user', () => {
+    expect(() => BasicUserSchema.parse(basicUser)).not.toThrow();
+  });
+  it('rejects a missing username', () => {
+    const withoutUsername = { ...basicUser, username: undefined };
+    expect(() => BasicUserSchema.parse(withoutUsername)).toThrow();
+  });
+  it('accepts a null username', () => {
+    expect(() => BasicUserSchema.parse({ ...basicUser, username: null })).not.toThrow();
+  });
+  it('accepts null first/last name and avatar_color', () => {
+    expect(() =>
+      BasicUserSchema.parse({ ...basicUser, first_name: null, last_name: null, avatar_color: null })
+    ).not.toThrow();
+  });
+});
+
+describe('UserSearchResultSchema / UserProfileResponseSchema', () => {
+  it('accepts a search result with username + relationship', () => {
+    expect(() => UserSearchResultSchema.parse({ ...basicUser, relationship })).not.toThrow();
+  });
+  it('rejects a search result missing relationship', () => {
+    expect(() => UserSearchResultSchema.parse(basicUser)).toThrow();
+  });
+  it('accepts a profile response', () => {
+    expect(() => UserProfileResponseSchema.parse({ ...basicUser, relationship })).not.toThrow();
+  });
+});
 
 describe('FetchCredentialsResponseSchema', () => {
   it('accepts a token without expiresAt', () => {
