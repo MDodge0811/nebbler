@@ -2,23 +2,26 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers-extended-cc:subagent-driven-development (recommended) or superpowers-extended-cc:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the online REST data layer for connection mutations/request-lists plus a UI-agnostic relationship helper, mirroring the existing `src/utils/userSearch.ts` pattern, all validated against the [Connections API Contract](https://linear.app/nebbler/document/connections-api-contract-be-fe-efaede5e5b39).
+**Goal:** Build the online REST data layer for connection mutations/request-lists, exposed via TanStack Query hooks, plus a UI-agnostic relationship helper — all validated against the [Connections API Contract](https://linear.app/nebbler/document/connections-api-contract-be-fe-efaede5e5b39).
 
-**Architecture:** Pure async functions in `src/utils/` (`connectionsApi.ts`, `relationship.ts`) that call `fetch` with a Clerk bearer token from `getApiToken()`, validate responses with Zod schemas from `src/database/schemas/`, and throw typed errors mapped from the canonical NEB-147 error envelope. No PowerSync, no React, no TanStack Query — consumption layer (hooks/screens) comes in FE-3..FE-7. All requests are online-only.
+**Architecture (follows the repo's lint-enforced online-REST standard — `.claude/rules/api-data.md`):** Zod schemas in `src/database/schemas/`; the relationship helper is a pure function in `src/utils/`. Online REST lives in **`src/api/connections.ts`** — async functions that call `fetch` (sanctioned in `src/api/**`, **no eslint exemption**) with a Clerk bearer token from `getApiToken()`, validate responses with Zod, and throw typed errors mapped from the canonical NEB-147 error envelope. Those functions are exposed as **TanStack Query** hooks (`@tanstack/react-query`, v5) in `src/hooks/`, which screens/components (FE-3..FE-7) consume. All requests are online-only.
 
-**Tech Stack:** TypeScript, Zod, Jest (`fetch`/`getApiToken` mocked), eslint-plugin-boundaries (`util` layer).
+> **Correction vs. the Linear issue text:** NEB-150 says "new `src/utils/connectionsApi.ts` … like `userSearch.ts`." That predates / conflicts with the repo's now-enforced standard. `userSearch.ts`'s raw-`fetch` exemption is explicitly TEMPORARY (`TODO(FE-5 / NEB-153): migrate to src/api/** + TanStack Query and DELETE this exemption`). We do **not** add another `src/utils` + `no-restricted-syntax: off` exemption; we put the client in `src/api/**` (its sanctioned home) and wrap it in TanStack hooks. The Zod schemas (Tasks 1–2) and the pure relationship helper (Task 3) are unaffected by this correction.
+
+**Tech Stack:** TypeScript, Zod, TanStack Query v5.101 (`QueryClientProvider` already mounted in `App.tsx` under `<ClerkProvider>`), Jest + `@testing-library/react-native` `renderHook` (`fetch`/`getApiToken`/api-module mocked), eslint-plugin-boundaries (`api`/`hook` layers).
 
 ---
 
 ## Context the engineer needs (read first)
 
-- **Pattern to mirror exactly:** `nebbler/src/utils/userSearch.ts` and its test `nebbler/src/utils/__tests__/userSearch.test.ts`. Same imports, fetch shape, bearer header, Zod-`.parse()` on `response.json()`, custom `Error` subclasses.
+- **`fetch` pattern to mirror (logic only):** `nebbler/src/utils/userSearch.ts` and its test show the bearer-header fetch + Zod-`.parse()` + custom `Error` subclass shape. Reuse the _logic_, but the new client lives in `src/api/`, not `src/utils/`, and needs **no** exemption.
 - **Base URL:** `import { powersyncConfig } from '@constants/config'` → `powersyncConfig.backendUrl`.
 - **Auth token:** `import { getApiToken } from '@database/index'` → `Promise<string | null>` (Clerk JWT).
 - **Canonical error envelope (NEB-147)** is already modeled: `ApiErrorResponseSchema` in `src/database/schemas/apiSchemas.ts` → `{ error: { code, message, details? } }`. Discriminate typed errors by HTTP status + `error.code`.
-- **Boundaries:** files in `src/utils/**` are element-type `util`; may import only `util | type | constant | data`. `@database/schemas` and `@constants/config` are allowed. No hooks/components.
-- **Raw `fetch` lint exemption:** `no-restricted-syntax` is globally on; `userSearch.ts` is exempted in `nebbler/eslint.config.js`. `connectionsApi.ts` must be added to that same exemption. `relationship.ts` uses no `fetch`, so needs no exemption.
-- **Coverage gates (`nebbler/jest.config.js`):** `src/database/schemas/**` ≥90% all metrics; `src/utils/**` ≥90% functions/lines/statements, ≥65% branches.
+- **Boundaries (`eslint.config.js`, lines ~337-343):** `{ from: ['api'], allow: ['api','type','constant','util'] }` and `{ from: ['hook'], allow: ['hook','type','constant','util','data','api'] }`. ⚠️ **`api → data` is NOT currently allowed**, but `src/api/connections.ts` must import `@database/schemas` (Zod, `data`) and `@database/index` (`getApiToken`, `data`). **Task 4 adds `data` to the `api` allow-list** — the same edge `util` already has (how `userSearch.ts` works today). `hook → api` is already allowed, so the hooks can import `@api/connections`.
+- **`fetch` is sanctioned in `src/api/**`:** `eslint.config.js`(~lines 258-280) bans raw`fetch`globally but the block keyed to`files: ['src/api/**/*.{ts,tsx}']`re-allows it. So`src/api/connections.ts`needs no exemption.`@tanstack/react-query`is importable only in`src/hooks/**`+`src/api/**`.
+- **TanStack v5 (`^5.101`):** object syntax (`useQuery({ queryKey, queryFn })`, `useMutation({ mutationFn })`), `isPending` (not `isLoading`), `error: Error | null`. `queryClient` singleton at `@api/queryClient` (`retry: 1`, `staleTime: 30_000`); `QueryClientProvider` already in `App.tsx`.
+- **Coverage gates (`nebbler/jest.config.js`):** `src/database/schemas/**` ≥90% all metrics; `src/utils/**` ≥90% functions/lines/statements, ≥65% branches; `src/hooks/**` ≥30% functions/≥50% lines (low — tracked debt). `src/api/**` has **no** threshold yet (do not add one — `queryClient.ts` is untested config and would drag a glob threshold below 90%). Write thorough api tests regardless.
 - **Gate command:** `npm run check` = `lint && format:check && typecheck && test`. Run from `nebbler/`.
 
 ### Contract shapes (authoritative — do NOT guess)
@@ -47,19 +50,22 @@ Basic user (everywhere a user appears; **never includes email**): `{ id, usernam
 
 ## File structure
 
-| File                                                              | Action | Responsibility                                                                                                                               |
-| ----------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/database/schemas/apiSchemas.ts`                              | Modify | Add `RelationshipStateSchema`, `RelationshipSchema`, `BasicUserSchema`; recompose `UserSearchResultSchema`; add `UserProfileResponseSchema`. |
-| `src/database/schemas/connectionRequestSchemas.ts`                | Create | `ConnectionRequestSchema`, `ConnectionRequestItemSchema`, `ConnectionRequestListResponseSchema`.                                             |
-| `src/database/schemas/index.ts`                                   | Modify | Re-export all new schemas + inferred types.                                                                                                  |
-| `src/database/schemas/__tests__/apiSchemas.test.ts`               | Create | Cover relationship/basic-user/profile + extended search schema (≥90%).                                                                       |
-| `src/database/schemas/__tests__/connectionRequestSchemas.test.ts` | Create | Cover request item/list/created schemas (≥90%).                                                                                              |
-| `src/utils/__tests__/userSearch.test.ts`                          | Modify | Update mock users to include now-required `username` + `relationship`.                                                                       |
-| `src/utils/relationship.ts`                                       | Create | `RelationshipAction`, `relationshipToAction`, `otherParticipant`.                                                                            |
-| `src/utils/__tests__/relationship.test.ts`                        | Create | All 4 states → action; `otherParticipant` both directions; invariant violations.                                                             |
-| `src/utils/connectionsApi.ts`                                     | Create | Typed errors + `authedFetch`/`toTypedError` + `sendRequest`/`listRequests`/`resolveRequest`/`removeConnection`/`getUserProfile`.             |
-| `src/utils/__tests__/connectionsApi.test.ts`                      | Create | Success + every typed-error path; bearer-token assertions.                                                                                   |
-| `eslint.config.js`                                                | Modify | Add `connectionsApi.ts` to the raw-`fetch` exemption.                                                                                        |
+| File                                                              | Action | Responsibility                                                                                                                                                   |
+| ----------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/database/schemas/apiSchemas.ts`                              | Modify | Add `RelationshipStateSchema`, `RelationshipSchema`, `BasicUserSchema`; recompose `UserSearchResultSchema`; add `UserProfileResponseSchema`.                     |
+| `src/database/schemas/connectionRequestSchemas.ts`                | Create | `ConnectionRequestSchema`, `ConnectionRequestItemSchema`, `ConnectionRequestListResponseSchema`.                                                                 |
+| `src/database/schemas/index.ts`                                   | Modify | Re-export all new schemas + inferred types.                                                                                                                      |
+| `src/database/schemas/__tests__/apiSchemas.test.ts`               | Create | Cover relationship/basic-user/profile + extended search schema (≥90%).                                                                                           |
+| `src/database/schemas/__tests__/connectionRequestSchemas.test.ts` | Create | Cover request item/list/created schemas (≥90%).                                                                                                                  |
+| `src/utils/__tests__/userSearch.test.ts`                          | Modify | Update mock users to include now-required `username` + `relationship`.                                                                                           |
+| `src/utils/relationship.ts`                                       | Create | `RelationshipAction`, `relationshipToAction`, `otherParticipant`.                                                                                                |
+| `src/utils/__tests__/relationship.test.ts`                        | Create | All 4 states → action; `otherParticipant` both directions; invariant violations.                                                                                 |
+| `src/api/connections.ts`                                          | Create | Typed errors + `authedFetch`/`toTypedError` + `sendRequest`/`listRequests`/`resolveRequest`/`removeConnection`/`getUserProfile`. Raw `fetch`, **no exemption**.  |
+| `src/api/__tests__/connections.test.ts`                           | Create | Success + every typed-error path; bearer-token assertions (mock `fetch` + `getApiToken`).                                                                        |
+| `eslint.config.js`                                                | Modify | Add `data` to the `api` boundary allow-list (so `src/api/**` may import schemas + `getApiToken`).                                                                |
+| `src/hooks/useConnectionsApi.ts`                                  | Create | TanStack hooks wrapping the api fns: `connectionsKeys`, `useConnectionRequests`, `useUserProfile`, `useSendRequest`, `useResolveRequest`, `useRemoveConnection`. |
+| `src/hooks/__tests__/useConnectionsApi.test.tsx`                  | Create | `renderHook` + `QueryClientProvider` wrapper; mock `@api/connections`; assert fn called + query/mutation state + invalidation.                                   |
+| `src/hooks/index.ts`                                              | Modify | Re-export the new hooks (if the barrel lists hooks).                                                                                                             |
 
 All paths are relative to `nebbler/`.
 
@@ -575,30 +581,42 @@ git commit -m "feat(connections): add relationship action + otherParticipant hel
 
 ---
 
-### Task 4: `connectionsApi.ts` — typed errors + connection-requests resource
+### Task 4: `src/api/connections.ts` — REST client (typed errors + all 5 calls) + boundary edit
 
-**Goal:** Create the REST client module: typed error classes, the shared auth+fetch+error-mapping core, and the three `connection-requests` calls (`sendRequest`, `listRequests`, `resolveRequest`). Add the raw-`fetch` lint exemption.
+**Goal:** Create the online REST client in the sanctioned `src/api/**` layer: typed error classes, the shared auth+fetch+error-mapping core, and all five calls (`sendRequest`, `listRequests`, `resolveRequest`, `removeConnection`, `getUserProfile`). Add the `api → data` boundary edge so the layer can import schemas + `getApiToken`. **No `no-restricted-syntax` exemption** (`fetch` is already sanctioned in `src/api/**`).
 
 **Files:**
 
-- Create: `src/utils/connectionsApi.ts`
-- Modify: `eslint.config.js` (add `connectionsApi.ts` to the `no-restricted-syntax` exemption)
-- Test: `src/utils/__tests__/connectionsApi.test.ts` (create)
+- Create: `src/api/connections.ts`
+- Modify: `eslint.config.js` (add `data` to the `api` boundary allow-list)
+- Test: `src/api/__tests__/connections.test.ts` (create)
 
 **Acceptance Criteria:**
 
-- [ ] Typed errors exist and extend a common `ConnectionsApiError`: `NotAuthenticatedError` (401/no token), `InboundRequestExistsError` (**distinct**, 409 `inbound_request_exists`), `AlreadyConnectedError` (409), `DuplicateRequestError` (409), `ValidationError` (422, carries `details`), `ForbiddenError` (403), `NotFoundError` (404).
-- [ ] `sendRequest(requesteeId)` POSTs `{ requestee_id }`, returns the parsed created request on 201, throws the right typed error otherwise.
-- [ ] `listRequests()` GETs and Zod-parses `{ incoming, outgoing }`.
+- [ ] Typed errors extend a common `ConnectionsApiError`: `NotAuthenticatedError` (401/no token), `InboundRequestExistsError` (**distinct**, 409 `inbound_request_exists`), `AlreadyConnectedError` (409), `DuplicateRequestError` (409), `ValidationError` (422, carries `details`), `ForbiddenError` (403), `NotFoundError` (404).
+- [ ] `sendRequest(requesteeId)` POSTs `{ requestee_id }`, returns parsed created request on 201, else throws the right typed error.
+- [ ] `listRequests()` GETs + Zod-parses `{ incoming, outgoing }`.
 - [ ] `resolveRequest(id, status)` PATCHes `{ status }` for `accepted|declined|cancelled`, resolves on 2xx.
-- [ ] Every request carries `Authorization: Bearer <token>`; a missing token throws `NotAuthenticatedError` before any `fetch`.
-- [ ] `npm run lint` passes (exemption added); `src/utils/**` coverage ≥90% functions/lines, ≥65% branches.
+- [ ] `removeConnection(connectionId)` DELETEs `/api/connections/:id`, resolves on 2xx, maps `403/404/401`.
+- [ ] `getUserProfile(id)` GETs `/api/users/:id` and Zod-parses `UserProfileResponse`.
+- [ ] No `blockUser` (NEB-139 pending). Every request carries `Authorization: Bearer <token>`; a missing token throws `NotAuthenticatedError` before any `fetch`.
+- [ ] `eslint.config.js` `api` allow-list now includes `data`; `npm run lint` passes with **no new `no-restricted-syntax` exemption**.
 
-**Verify:** `cd nebbler && npx jest src/utils/__tests__/connectionsApi.test.ts && npm run lint && npx tsc --noEmit` → pass.
+**Verify:** `cd nebbler && npx jest src/api/__tests__/connections.test.ts && npm run lint && npx tsc --noEmit` → all pass.
 
 **Steps:**
 
-- [ ] **Step 1: Write failing tests** — `src/utils/__tests__/connectionsApi.test.ts`
+- [ ] **Step 1: Add the boundary edge first** (so lint passes once the file imports `data`). In `eslint.config.js`, find the `eslint-plugin-boundaries` rules and change the `api` allow-list:
+
+```javascript
+// before:
+{ from: ['api'], allow: ['api', 'type', 'constant', 'util'] },
+// after — api may read the data layer (Zod schemas + getApiToken), the same
+// edge `util` already has (how src/utils/userSearch.ts reaches @database/*):
+{ from: ['api'], allow: ['api', 'type', 'constant', 'util', 'data'] },
+```
+
+- [ ] **Step 2: Write failing tests** — `src/api/__tests__/connections.test.ts`
 
 ```typescript
 import { getApiToken } from '@database/index';
@@ -606,6 +624,8 @@ import {
   sendRequest,
   listRequests,
   resolveRequest,
+  removeConnection,
+  getUserProfile,
   NotAuthenticatedError,
   InboundRequestExistsError,
   AlreadyConnectedError,
@@ -613,7 +633,7 @@ import {
   ValidationError,
   ForbiddenError,
   NotFoundError,
-} from '@utils/connectionsApi';
+} from '@api/connections';
 
 jest.mock('@database/index', () => ({ getApiToken: jest.fn() }));
 jest.mock('expo-constants', () => ({
@@ -649,17 +669,17 @@ describe('sendRequest', () => {
       ok: true,
       status: 201,
       json: jest.fn().mockResolvedValue({
-        id: 'cccccccc-cccc-4ccc-cccc-cccccccccccc',
+        id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
         requested_at: '2026-06-09T00:00:00Z',
       }),
     });
-    const res = await sendRequest('dddddddd-dddd-4ddd-dddd-dddddddddddd');
-    expect(res.id).toBe('cccccccc-cccc-4ccc-cccc-cccccccccccc');
+    const res = await sendRequest('dddddddd-dddd-4ddd-8ddd-dddddddddddd');
+    expect(res.id).toBe('cccccccc-cccc-4ccc-8ccc-cccccccccccc');
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/api/connection-requests'),
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ requestee_id: 'dddddddd-dddd-4ddd-dddd-dddddddddddd' }),
+        body: JSON.stringify({ requestee_id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' }),
         headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
       })
     );
@@ -692,7 +712,7 @@ describe('sendRequest', () => {
 describe('listRequests', () => {
   it('GETs and parses incoming/outgoing', async () => {
     const user = {
-      id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
       username: 'alice',
       first_name: 'Alice',
       last_name: 'Smith',
@@ -703,7 +723,7 @@ describe('listRequests', () => {
       json: jest.fn().mockResolvedValue({
         incoming: [
           {
-            id: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
+            id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
             user,
             requested_at: '2026-06-09T00:00:00Z',
           },
@@ -735,11 +755,63 @@ describe('resolveRequest', () => {
     await expect(resolveRequest('req-id', 'accepted')).rejects.toThrow(ForbiddenError);
   });
 });
+
+describe('removeConnection', () => {
+  it('DELETEs /api/connections/:id with bearer token', async () => {
+    fetchSpy.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue({}) });
+    await expect(removeConnection('conn-id')).resolves.toBeUndefined();
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/api/connections/conn-id'),
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
+      })
+    );
+  });
+  it('throws ForbiddenError on 403 (non-participant)', async () => {
+    fetchSpy.mockResolvedValue({ status: 403, ...errorBody('forbidden') });
+    await expect(removeConnection('conn-id')).rejects.toThrow(ForbiddenError);
+  });
+  it('throws NotFoundError on 404', async () => {
+    fetchSpy.mockResolvedValue({ status: 404, ...errorBody('not_found') });
+    await expect(removeConnection('conn-id')).rejects.toThrow(NotFoundError);
+  });
+  it('throws NotAuthenticatedError when no token', async () => {
+    mockGetApiToken.mockResolvedValue(null);
+    await expect(removeConnection('conn-id')).rejects.toThrow(NotAuthenticatedError);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('getUserProfile', () => {
+  const profile = {
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    username: 'alice',
+    first_name: 'Alice',
+    last_name: 'Smith',
+    avatar_color: '#00DB74',
+    relationship: {
+      state: 'connected',
+      request_id: null,
+      connection_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    },
+  };
+  it('GETs /api/users/:id and parses the profile', async () => {
+    fetchSpy.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(profile) });
+    const res = await getUserProfile(profile.id);
+    expect(res.username).toBe('alice');
+    expect(res.relationship.state).toBe('connected');
+  });
+  it('throws NotFoundError on 404', async () => {
+    fetchSpy.mockResolvedValue({ status: 404, ...errorBody('not_found') });
+    await expect(getUserProfile('missing')).rejects.toThrow(NotFoundError);
+  });
+});
 ```
 
-- [ ] **Step 2: Run tests to confirm they fail** — Run: `cd nebbler && npx jest src/utils/__tests__/connectionsApi.test.ts`. Expected: FAIL (module not found).
+- [ ] **Step 3: Run tests to confirm they fail** — Run: `cd nebbler && npx jest src/api/__tests__/connections.test.ts`. Expected: FAIL (module not found).
 
-- [ ] **Step 3: Implement the client core + requests resource** — `src/utils/connectionsApi.ts`
+- [ ] **Step 4: Implement** — `src/api/connections.ts`
 
 ```typescript
 import { powersyncConfig } from '@constants/config';
@@ -748,12 +820,14 @@ import {
   ApiErrorResponseSchema,
   ConnectionRequestSchema,
   ConnectionRequestListResponseSchema,
+  UserProfileResponseSchema,
   type ConnectionRequest,
   type ConnectionRequestListResponse,
+  type UserProfileResponse,
 } from '@database/schemas';
 
 // ---------------------------------------------------------------------------
-// Typed errors — all mapped from the canonical NEB-147 envelope { error: { code, message, details? } }.
+// Typed errors — mapped from the canonical NEB-147 envelope { error: { code, message, details? } }.
 // ---------------------------------------------------------------------------
 
 export class ConnectionsApiError extends Error {
@@ -920,117 +994,10 @@ export async function resolveRequest(id: string, status: ResolveStatus): Promise
   if (response.ok) return;
   throw await toTypedError(response);
 }
-```
 
-- [ ] **Step 4: Add the lint exemption** — in `eslint.config.js`, find the block that disables `no-restricted-syntax` for `userSearch.ts` and add `connectionsApi.ts`:
-
-```javascript
-  {
-    // Raw fetch is allowed in these REST utils until the FE-5 (NEB-153)
-    // migration to src/api/** + TanStack Query, which will DELETE this exemption.
-    files: ['src/utils/userSearch.ts', 'src/utils/connectionsApi.ts'],
-    rules: { 'no-restricted-syntax': 'off' },
-  },
-```
-
-- [ ] **Step 5: Run tests + lint + typecheck** — Run: `cd nebbler && npx jest src/utils/__tests__/connectionsApi.test.ts && npm run lint && npx tsc --noEmit`. Expected: PASS.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add nebbler/src/utils/connectionsApi.ts nebbler/src/utils/__tests__/connectionsApi.test.ts nebbler/eslint.config.js
-git commit -m "feat(connections): REST client typed errors + connection-requests calls (NEB-150)"
-```
-
----
-
-### Task 5: `connectionsApi.ts` — connections + profile (`removeConnection`, `getUserProfile`)
-
-**Goal:** Complete the client with the remaining two endpoints, then run the full gate.
-
-**Files:**
-
-- Modify: `src/utils/connectionsApi.ts`
-- Modify: `src/utils/__tests__/connectionsApi.test.ts`
-
-**Acceptance Criteria:**
-
-- [ ] `removeConnection(connectionId)` DELETEs `/api/connections/:id`, resolves on 2xx, maps `403/404/401`.
-- [ ] `getUserProfile(id)` GETs `/api/users/:id` and Zod-parses `UserProfileResponse` (basic info + relationship).
-- [ ] No `blockUser` is added (NEB-139 pending).
-- [ ] Both carry the bearer token; missing token throws `NotAuthenticatedError` before `fetch`.
-- [ ] `npm run check` passes (full gate).
-
-**Verify:** `cd nebbler && npm run check` → all green.
-
-**Steps:**
-
-- [ ] **Step 1: Add failing tests** — append to `src/utils/__tests__/connectionsApi.test.ts` (and add the two functions to the import at the top):
-
-```typescript
-// add to the existing import from '@utils/connectionsApi':
-//   removeConnection, getUserProfile
-
-describe('removeConnection', () => {
-  it('DELETEs /api/connections/:id with bearer token', async () => {
-    fetchSpy.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue({}) });
-    await expect(removeConnection('conn-id')).resolves.toBeUndefined();
-    expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringContaining('/api/connections/conn-id'),
-      expect.objectContaining({
-        method: 'DELETE',
-        headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
-      })
-    );
-  });
-  it('throws ForbiddenError on 403 (non-participant)', async () => {
-    fetchSpy.mockResolvedValue({ status: 403, ...errorBody('forbidden') });
-    await expect(removeConnection('conn-id')).rejects.toThrow(ForbiddenError);
-  });
-  it('throws NotFoundError on 404', async () => {
-    fetchSpy.mockResolvedValue({ status: 404, ...errorBody('not_found') });
-    await expect(removeConnection('conn-id')).rejects.toThrow(NotFoundError);
-  });
-  it('throws NotAuthenticatedError when no token', async () => {
-    mockGetApiToken.mockResolvedValue(null);
-    await expect(removeConnection('conn-id')).rejects.toThrow(NotAuthenticatedError);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-});
-
-describe('getUserProfile', () => {
-  const profile = {
-    id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
-    username: 'alice',
-    first_name: 'Alice',
-    last_name: 'Smith',
-    avatar_color: '#00DB74',
-    relationship: {
-      state: 'connected',
-      request_id: null,
-      connection_id: 'cccccccc-cccc-4ccc-cccc-cccccccccccc',
-    },
-  };
-  it('GETs /api/users/:id and parses the profile', async () => {
-    fetchSpy.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(profile) });
-    const res = await getUserProfile(profile.id);
-    expect(res.username).toBe('alice');
-    expect(res.relationship.state).toBe('connected');
-  });
-  it('throws NotFoundError on 404', async () => {
-    fetchSpy.mockResolvedValue({ status: 404, ...errorBody('not_found') });
-    await expect(getUserProfile('missing')).rejects.toThrow(NotFoundError);
-  });
-});
-```
-
-- [ ] **Step 2: Run tests to confirm they fail** — Run: `cd nebbler && npx jest src/utils/__tests__/connectionsApi.test.ts`. Expected: FAIL (`removeConnection`/`getUserProfile` not exported).
-
-- [ ] **Step 3: Implement** — append to `src/utils/connectionsApi.ts`, and add `UserProfileResponseSchema` + `UserProfileResponse` to the existing `@database/schemas` import:
-
-```typescript
-// extend the existing import from '@database/schemas' with:
-//   UserProfileResponseSchema, type UserProfileResponse
+// ---------------------------------------------------------------------------
+// connections + users resources
+// ---------------------------------------------------------------------------
 
 /**
  * DELETE /api/connections/:id — remove/unfriend. Either participant may remove.
@@ -1053,22 +1020,243 @@ export async function getUserProfile(id: string): Promise<UserProfileResponse> {
 }
 ```
 
-- [ ] **Step 4: Run the full gate** — Run: `cd nebbler && npm run check`. Expected: lint + format:check + typecheck + test all PASS. If `format:check` fails, run `npm run format` and re-check. Confirm `src/utils/**` and `src/database/schemas/**` coverage thresholds hold in the jest output.
+- [ ] **Step 5: Run tests + lint + typecheck** — Run: `cd nebbler && npx jest src/api/__tests__/connections.test.ts && npm run lint && npx tsc --noEmit`. Expected: PASS. (If `npm run lint` reports an `api → data` boundary error, Step 1's allow-list edit was missed.)
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add nebbler/src/utils/connectionsApi.ts nebbler/src/utils/__tests__/connectionsApi.test.ts
-git commit -m "feat(connections): removeConnection + getUserProfile REST calls; npm run check green (NEB-150)"
+git add nebbler/src/api/connections.ts nebbler/src/api/__tests__/connections.test.ts nebbler/eslint.config.js
+git commit -m "feat(connections): REST client in src/api with typed errors + api→data boundary (NEB-150)"
 ```
 
 ---
 
-## Self-review (completed by plan author)
+### Task 5: TanStack Query hooks (`src/hooks/useConnectionsApi.ts`) + full gate
 
-- **Spec coverage:** `connectionsApi.ts` send/list/resolve/remove/profile → Tasks 4–5 ✓. Typed errors incl. distinct `inbound_request_exists` → Task 4 ✓. Zod request-list + profile schemas → Tasks 1–2 ✓. Extended `UserSearchResultSchema` (username + relationship) → Task 1 ✓. Relationship helper (`relationshipToAction` all states + `otherParticipant` both directions) → Task 3 ✓. `npm run check` gate → Task 5 ✓. No `blockUser` (NEB-139 pending) → explicitly excluded ✓. Boundaries/lint exemption → Task 4 ✓.
-- **Type consistency:** `Relationship`/`RelationshipState`/`BasicUser` defined in Task 1 and consumed unchanged in Tasks 2–5. `RelationshipAction` kinds (`connect|cancel|respond|open`) consistent across helper + test. `ResolveStatus` (`accepted|declined|cancelled`) matches contract.
-- **Out-of-scope but in-blast-radius:** Task 1 must fix `userSearch.test.ts` mocks (newly-required fields) — captured as an explicit step, not a surprise.
+**Goal:** Expose the `src/api/connections.ts` functions as TanStack Query hooks (the repo-standard consumption layer for online REST), with a query-key factory and mutation cache invalidation. Then run the full `npm run check` gate.
+
+**Files:**
+
+- Create: `src/hooks/useConnectionsApi.ts`
+- Create: `src/hooks/__tests__/useConnectionsApi.test.tsx`
+- Modify: `src/hooks/index.ts` (only if it re-exports hooks — match the existing barrel; otherwise skip)
+
+**Acceptance Criteria:**
+
+- [ ] `connectionsKeys` query-key factory (`all`, `requests()`, `profile(id)`).
+- [ ] `useConnectionRequests()` query wraps `listRequests`; `useUserProfile(id)` query wraps `getUserProfile`, `enabled` only when `id` is set.
+- [ ] `useSendRequest()`, `useResolveRequest()`, `useRemoveConnection()` mutations wrap the api fns and invalidate the relevant queries on success (requests + profile for send/resolve; profile for remove).
+- [ ] Uses TanStack v5 object syntax; imports `@tanstack/react-query` (allowed in `src/hooks/**`).
+- [ ] Tests use `renderHook` with a `QueryClientProvider` wrapper and mock `@api/connections`; they assert the api fn is called with the right args, the query/mutation reaches success, and `invalidateQueries` is called.
+- [ ] `npm run check` passes (full gate: lint + format:check + typecheck + test).
+
+**Verify:** `cd nebbler && npm run check` → all green.
+
+**Steps:**
+
+- [ ] **Step 1: Write failing tests** — `src/hooks/__tests__/useConnectionsApi.test.tsx`
+
+```tsx
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react-native';
+import React, { type ReactNode } from 'react';
+
+import * as connectionsApi from '@api/connections';
+import {
+  connectionsKeys,
+  useConnectionRequests,
+  useUserProfile,
+  useSendRequest,
+  useResolveRequest,
+  useRemoveConnection,
+} from '@hooks/useConnectionsApi';
+
+jest.mock('@api/connections');
+
+const mockedApi = connectionsApi as jest.Mocked<typeof connectionsApi>;
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  const Wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+  return { queryClient, Wrapper };
+}
+
+beforeEach(() => jest.clearAllMocks());
+
+describe('useConnectionRequests', () => {
+  it('queries listRequests and exposes the data', async () => {
+    mockedApi.listRequests.mockResolvedValue({ incoming: [], outgoing: [] });
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useConnectionRequests(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockedApi.listRequests).toHaveBeenCalledTimes(1);
+    expect(result.current.data).toEqual({ incoming: [], outgoing: [] });
+  });
+});
+
+describe('useUserProfile', () => {
+  it('does not fetch when id is undefined', () => {
+    const { Wrapper } = createWrapper();
+    renderHook(() => useUserProfile(undefined), { wrapper: Wrapper });
+    expect(mockedApi.getUserProfile).not.toHaveBeenCalled();
+  });
+  it('fetches the profile when id is set', async () => {
+    mockedApi.getUserProfile.mockResolvedValue({
+      id: 'u1',
+      username: 'alice',
+      first_name: 'Alice',
+      last_name: 'Smith',
+      avatar_color: '#00DB74',
+      relationship: { state: 'none', request_id: null, connection_id: null },
+    });
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useUserProfile('u1'), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockedApi.getUserProfile).toHaveBeenCalledWith('u1');
+  });
+});
+
+describe('useSendRequest', () => {
+  it('calls sendRequest and invalidates the requests query on success', async () => {
+    mockedApi.sendRequest.mockResolvedValue({ id: 'r1', requested_at: '2026-06-09T00:00:00Z' });
+    const { queryClient, Wrapper } = createWrapper();
+    const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+    const { result } = renderHook(() => useSendRequest(), { wrapper: Wrapper });
+    await result.current.mutateAsync('user-id');
+    expect(mockedApi.sendRequest).toHaveBeenCalledWith('user-id');
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: connectionsKeys.requests() })
+    );
+  });
+});
+
+describe('useResolveRequest', () => {
+  it('calls resolveRequest with id + status', async () => {
+    mockedApi.resolveRequest.mockResolvedValue(undefined);
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useResolveRequest(), { wrapper: Wrapper });
+    await result.current.mutateAsync({ id: 'req-1', status: 'accepted' });
+    expect(mockedApi.resolveRequest).toHaveBeenCalledWith('req-1', 'accepted');
+  });
+});
+
+describe('useRemoveConnection', () => {
+  it('calls removeConnection with the connection id', async () => {
+    mockedApi.removeConnection.mockResolvedValue(undefined);
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useRemoveConnection(), { wrapper: Wrapper });
+    await result.current.mutateAsync('conn-1');
+    expect(mockedApi.removeConnection).toHaveBeenCalledWith('conn-1');
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to confirm they fail** — Run: `cd nebbler && npx jest src/hooks/__tests__/useConnectionsApi.test.tsx`. Expected: FAIL (hook module not found).
+
+- [ ] **Step 3: Implement** — `src/hooks/useConnectionsApi.ts`
+
+```typescript
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import {
+  getUserProfile,
+  listRequests,
+  removeConnection,
+  resolveRequest,
+  sendRequest,
+  type ResolveStatus,
+} from '@api/connections';
+
+/** Query-key factory for the online connections data. */
+export const connectionsKeys = {
+  all: ['connections'] as const,
+  requests: () => [...connectionsKeys.all, 'requests'] as const,
+  profile: (id: string) => [...connectionsKeys.all, 'profile', id] as const,
+};
+
+/** GET /api/connection-requests — pending incoming/outgoing. */
+export function useConnectionRequests() {
+  return useQuery({
+    queryKey: connectionsKeys.requests(),
+    queryFn: listRequests,
+  });
+}
+
+/** GET /api/users/:id — only fetches when an id is provided. */
+export function useUserProfile(id: string | undefined) {
+  return useQuery({
+    queryKey: connectionsKeys.profile(id ?? ''),
+    queryFn: () => getUserProfile(id as string),
+    enabled: !!id,
+  });
+}
+
+/** Invalidate every cached user-profile query (relationship state may have changed). */
+function invalidateProfiles(queryClient: ReturnType<typeof useQueryClient>): void {
+  void queryClient.invalidateQueries({ queryKey: [...connectionsKeys.all, 'profile'] });
+}
+
+/** POST /api/connection-requests. */
+export function useSendRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (requesteeId: string) => sendRequest(requesteeId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: connectionsKeys.requests() });
+      invalidateProfiles(queryClient);
+    },
+  });
+}
+
+/** PATCH /api/connection-requests/:id. */
+export function useResolveRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: ResolveStatus }) =>
+      resolveRequest(id, status),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: connectionsKeys.requests() });
+      invalidateProfiles(queryClient);
+    },
+  });
+}
+
+/** DELETE /api/connections/:id. The synced list updates via PowerSync; refresh profiles. */
+export function useRemoveConnection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (connectionId: string) => removeConnection(connectionId),
+    onSuccess: () => invalidateProfiles(queryClient),
+  });
+}
+```
+
+- [ ] **Step 4: Re-export (only if `src/hooks/index.ts` is a hook barrel)** — read it first. If it re-exports hooks, add the new hooks following the existing style; if it does not list hooks (or doesn't exist), skip this step. Do not invent a barrel.
+
+- [ ] **Step 5: Run the full gate** — Run: `cd nebbler && npm run check`. Expected: lint + format:check + typecheck + test all PASS. If `format:check` fails, run `npm run format` and re-check. Confirm the `src/hooks/**` thresholds still hold in the jest output.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add nebbler/src/hooks/useConnectionsApi.ts nebbler/src/hooks/__tests__/useConnectionsApi.test.tsx
+# include src/hooks/index.ts only if you modified it
+git commit -m "feat(connections): TanStack Query hooks for connections REST; npm run check green (NEB-150)"
+```
+
+---
+
+## Self-review (updated after the src/api + TanStack correction)
+
+- **Spec coverage:** send/list/resolve/remove/profile REST client → Task 4 ✓. Typed errors incl. distinct `inbound_request_exists` → Task 4 ✓. Zod request-list + profile schemas → Tasks 1–2 (done) ✓. Extended `UserSearchResultSchema` (username + relationship) → Task 1 (done) ✓. Relationship helper (`relationshipToAction` all states + `otherParticipant` both directions) → Task 3 ✓. TanStack consumption hooks → Task 5 ✓. `npm run check` gate → Task 5 ✓. No `blockUser` (NEB-139 pending) → excluded ✓.
+- **Architecture-standard compliance:** REST client lives in `src/api/**` (sanctioned `fetch` home) — **no new lint exemption**; exposed via TanStack hooks in `src/hooks/**`; the one boundary change is the justified `api → data` edge (Task 4). This replaces the original (wrong) `src/utils/connectionsApi.ts` + `no-restricted-syntax: off` approach.
+- **Type consistency:** `Relationship`/`RelationshipState`/`BasicUser` (Task 1) consumed unchanged downstream. `ResolveStatus` (`accepted|declined|cancelled`) defined in `src/api/connections.ts` and reused by `useResolveRequest`. `connectionsKeys` is the single source of query keys (used by both hooks and tests).
+- **Out-of-scope but in-blast-radius:** Task 1 fixed `userSearch.test.ts` mocks (done). Task 4 edits the eslint boundary allow-list (called out explicitly). Establishing the first TanStack test wrapper (`QueryClientProvider`) is new infra introduced in Task 5.
+
+---
 
 ## Notes on blockers (not a code concern)
 
