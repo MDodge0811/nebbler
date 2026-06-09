@@ -7,6 +7,7 @@ const reactNativePlugin = require('eslint-plugin-react-native');
 const prettierPlugin = require('eslint-plugin-prettier');
 const importX = require('eslint-plugin-import-x');
 const boundaries = require('eslint-plugin-boundaries');
+const jestPlugin = require('eslint-plugin-jest');
 
 const compat = new FlatCompat({ baseDirectory: __dirname });
 
@@ -129,7 +130,7 @@ module.exports = tseslint.config(
       'react-native/no-unused-styles': 'error',
       'react-native/split-platform-components': 'error',
       'prettier/prettier': 'error',
-      'no-console': 'off',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-unused-vars': 'off',
       // --- Complexity ceiling (enforced) ---
       // Cyclomatic-complexity cap. Worst-first offenders were refactored
@@ -145,6 +146,7 @@ module.exports = tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/no-unsafe-return': 'error',
       '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/await-thenable': 'error',
       '@typescript-eslint/no-unnecessary-condition': 'error',
       '@typescript-eslint/restrict-template-expressions': [
@@ -324,10 +326,20 @@ module.exports = tseslint.config(
   },
   {
     files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    plugins: {
+      jest: jestPlugin,
+    },
     rules: {
       // Tests legitimately import and mock vendor SDKs + raw RN primitives.
       'no-restricted-imports': 'off',
       '@typescript-eslint/no-restricted-imports': 'off',
+      // jest-specific rules
+      'jest/no-focused-tests': 'error', // committed .only = false CI green
+      'jest/no-disabled-tests': 'warn', // accumulating xit/xdescribe is tech debt
+      'jest/valid-expect': 'error', // expect(foo) with no matcher is a no-op
+      'jest/expect-expect': 'error', // tests must have at least one assertion
+      'jest/no-conditional-expect': 'error', // flaky tests from if/try-wrapped expects
+      'jest/no-standalone-expect': 'error', // expect outside a test block
     },
     languageOptions: {
       globals: {

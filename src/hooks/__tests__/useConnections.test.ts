@@ -61,7 +61,7 @@ describe('useConnections', () => {
     expect(result.current.pendingIncoming).toHaveLength(1);
     expect(result.current.accepted).toHaveLength(1);
     expect(result.current.pendingOutgoing).toHaveLength(0);
-    expect(result.current.accepted[0]!.first_name).toBe('Joe');
+    expect(result.current.accepted[0]?.first_name).toBe('Joe');
   });
 });
 
@@ -151,7 +151,7 @@ describe('useSharedCalendars', () => {
     });
     const { result } = renderHook(() => useSharedCalendars('me', 'other'));
     expect(result.current).toHaveLength(1);
-    expect(result.current[0]!.name).toBe('Book Club');
+    expect(result.current[0]?.name).toBe('Book Club');
   });
 
   it('passes both user ids as SQL params (self JOIN)', () => {

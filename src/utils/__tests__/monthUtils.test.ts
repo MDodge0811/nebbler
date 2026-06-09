@@ -85,14 +85,14 @@ describe('getMonthGrid', () => {
   it('first cell is a Sunday (first row starts on Sunday)', () => {
     // Feb 2026 starts on a Sunday
     const grid = getMonthGrid('2026-02-01');
-    const firstDate = new Date(grid.rows[0]![0]! + 'T12:00:00');
+    const firstDate = new Date((grid.rows[0]?.[0] ?? '') + 'T12:00:00');
     expect(firstDate.getDay()).toBe(0); // Sunday
   });
 
   it('last cell is a Saturday', () => {
     const grid = getMonthGrid('2026-02-01');
-    const lastRow = grid.rows[grid.rows.length - 1]!;
-    const lastDate = new Date(lastRow[6]! + 'T12:00:00');
+    const lastRow = grid.rows[grid.rows.length - 1] ?? [];
+    const lastDate = new Date((lastRow[6] ?? '') + 'T12:00:00');
     expect(lastDate.getDay()).toBe(6); // Saturday
   });
 
@@ -126,23 +126,23 @@ describe('getMonthGrid', () => {
   it('includes leading days from previous month', () => {
     // March 2026 starts on Sunday — no leading days
     const marchGrid = getMonthGrid('2026-03-01');
-    expect(marchGrid.rows[0]![0]).toBe('2026-03-01');
+    expect(marchGrid.rows[0]?.[0]).toBe('2026-03-01');
 
     // April 2026 starts on Wednesday (dow=3) — 3 leading days
     const aprilGrid = getMonthGrid('2026-04-01');
-    expect(aprilGrid.rows[0]![0]).toBe('2026-03-29'); // Sun before April 1
-    expect(aprilGrid.rows[0]![3]).toBe('2026-04-01'); // Wednesday
+    expect(aprilGrid.rows[0]?.[0]).toBe('2026-03-29'); // Sun before April 1
+    expect(aprilGrid.rows[0]?.[3]).toBe('2026-04-01'); // Wednesday
   });
 
   it('includes trailing days from next month', () => {
     // Feb 2026: 28 days, starts on Sunday → exactly 4 rows, no trailing
     const febGrid = getMonthGrid('2026-02-01');
-    const lastRow = febGrid.rows[febGrid.rows.length - 1]!;
+    const lastRow = febGrid.rows[febGrid.rows.length - 1] ?? [];
     expect(lastRow[6]).toBe('2026-02-28');
 
     // March 2026: 31 days, starts on Sunday → last row ends with trailing April days
     const marchGrid = getMonthGrid('2026-03-01');
-    const marchLastRow = marchGrid.rows[marchGrid.rows.length - 1]!;
+    const marchLastRow = marchGrid.rows[marchGrid.rows.length - 1] ?? [];
     expect(marchLastRow[6]).toBe('2026-04-04');
   });
 
