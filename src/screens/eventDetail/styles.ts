@@ -3,12 +3,9 @@ import { tva } from '@gluestack-ui/utils/nativewind-utils';
 export const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 export const sectionLabelStyle = tva({ base: 'text-sm text-typography-500' });
 export const valueStyle = tva({ base: 'mt-1 text-base text-typography-900' });
-export const dateTimeTextStyle = tva({ base: 'text-base text-typography-900' });
-export const dateTimeSeparatorStyle = tva({ base: 'text-base text-typography-400' });
 export const dividerStyle = tva({ base: 'h-px bg-outline-200' });
 export const calendarNameStyle = tva({ base: 'flex-1 text-base text-typography-900' });
 export const chevronStyle = tva({ base: 'text-base text-typography-400' });
-export const errorTextStyle = tva({ base: 'mt-1 text-sm text-error-600' });
 
 export const calendarDotStyle = tva({ base: 'mr-2.5 h-2.5 w-2.5 rounded-full' });
 export const busyBadgeStyle = tva({ base: 'rounded-xl bg-brand-surface-muted px-3 py-1' });

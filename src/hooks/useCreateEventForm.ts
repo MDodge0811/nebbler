@@ -193,5 +193,3 @@ export function useCreateEventForm(onDone: () => void) {
     handleEndChange,
   };
 }
-
-export type CreateEventForm = ReturnType<typeof useCreateEventForm>;
