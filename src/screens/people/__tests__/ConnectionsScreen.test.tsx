@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 
 import { ConnectionsScreen } from '../ConnectionsScreen';
 
@@ -16,44 +16,20 @@ jest.mock('@hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({ user: { id: 'me' } }),
 }));
 
-const mockAccept = jest.fn();
-const mockDecline = jest.fn();
-const mockCancel = jest.fn();
-jest.mock('@utils/connections', () => ({
-  acceptConnection: (...args: unknown[]): unknown => mockAccept(...args),
-  declineConnection: (...args: unknown[]): unknown => mockDecline(...args),
-  cancelSentRequest: (...args: unknown[]): unknown => mockCancel(...args),
-}));
-
-const sarah = {
-  id: 'c1',
-  requester_id: 'them1',
-  addressee_id: 'me',
-  status: 'pending' as const,
-  blocker_id: null,
-  other_user_id: 'them1',
-  first_name: 'Sarah',
-  last_name: 'Chen',
-  avatar_color: null,
-};
 const alex = {
-  ...sarah,
-  id: 'c2',
-  requester_id: 'me',
-  addressee_id: 'them2',
-  status: 'accepted' as const,
-  other_user_id: 'them2',
+  id: 'c1',
+  other_user_id: 'them1',
   first_name: 'Alex',
   last_name: 'Park',
+  avatar_color: null,
 };
+
 const riley = {
-  ...sarah,
-  id: 'c3',
-  requester_id: 'me',
-  addressee_id: 'them3',
-  other_user_id: 'them3',
+  id: 'c2',
+  other_user_id: 'them2',
   first_name: 'Riley',
   last_name: 'Stone',
+  avatar_color: null,
 };
 
 beforeEach(() => {
@@ -61,63 +37,40 @@ beforeEach(() => {
 });
 
 describe('ConnectionsScreen', () => {
-  it('renders Requests section with Accept and Decline buttons', () => {
+  it('renders Connected section with connected rows', () => {
     mockUseConnections.mockReturnValue({
-      pendingIncoming: [sarah],
-      accepted: [],
-      pendingOutgoing: [],
+      connections: [alex],
       isLoading: false,
     });
     const { getByText } = render(<ConnectionsScreen />);
-    expect(getByText(/Requests/)).toBeTruthy();
-    expect(getByText('Sarah Chen')).toBeTruthy();
-    expect(getByText('Accept')).toBeTruthy();
+    expect(getByText(/Connected \(1\)/i)).toBeTruthy();
+    expect(getByText('Alex Park')).toBeTruthy();
   });
 
-  it('calls acceptConnection when Accept tapped', async () => {
+  it('row tap navigates to PersonProfile with other_user_id', () => {
     mockUseConnections.mockReturnValue({
-      pendingIncoming: [sarah],
-      accepted: [],
-      pendingOutgoing: [],
+      connections: [alex],
       isLoading: false,
     });
     const { getByText } = render(<ConnectionsScreen />);
-    fireEvent.press(getByText('Accept'));
-    await waitFor(() => expect(mockAccept).toHaveBeenCalledWith('c1'));
-  });
-
-  it('renders Connected section; row tap navigates to PersonProfile', () => {
-    mockUseConnections.mockReturnValue({
-      pendingIncoming: [],
-      accepted: [alex],
-      pendingOutgoing: [],
-      isLoading: false,
-    });
-    const { getByText } = render(<ConnectionsScreen />);
-    expect(getByText('Connected (1)')).toBeTruthy();
     fireEvent.press(getByText('Alex Park'));
-    expect(mockNavigate).toHaveBeenCalledWith('PersonProfile', { userId: 'them2' });
+    expect(mockNavigate).toHaveBeenCalledWith('PersonProfile', { userId: 'them1' });
   });
 
-  it('renders Sent section collapsed by default, expands on tap', () => {
+  it('renders multiple connected rows', () => {
     mockUseConnections.mockReturnValue({
-      pendingIncoming: [],
-      accepted: [],
-      pendingOutgoing: [riley],
+      connections: [alex, riley],
       isLoading: false,
     });
-    const { getByText, queryByText } = render(<ConnectionsScreen />);
-    expect(getByText('Sent (1)')).toBeTruthy();
-    expect(queryByText('Riley Stone')).toBeNull(); // collapsed
-    fireEvent.press(getByText('Sent (1)'));
-    expect(queryByText('Riley Stone')).toBeTruthy(); // expanded
+    const { getByText } = render(<ConnectionsScreen />);
+    expect(getByText(/Connected \(2\)/i)).toBeTruthy();
+    expect(getByText('Alex Park')).toBeTruthy();
+    expect(getByText('Riley Stone')).toBeTruthy();
   });
 
-  it('renders the empty state with Add People CTA', () => {
+  it('renders the empty state with Add People CTA when no connections', () => {
     mockUseConnections.mockReturnValue({
-      pendingIncoming: [],
-      accepted: [],
-      pendingOutgoing: [],
+      connections: [],
       isLoading: false,
     });
     const { getByText } = render(<ConnectionsScreen />);
@@ -128,12 +81,20 @@ describe('ConnectionsScreen', () => {
 
   it('shows skeleton while isLoading', () => {
     mockUseConnections.mockReturnValue({
-      pendingIncoming: [],
-      accepted: [],
-      pendingOutgoing: [],
+      connections: [],
       isLoading: true,
     });
     const { getAllByTestId } = render(<ConnectionsScreen />);
     expect(getAllByTestId('person-row-skeleton')).toHaveLength(3);
+  });
+
+  it('does NOT render pending Requests or Sent sections', () => {
+    mockUseConnections.mockReturnValue({
+      connections: [alex],
+      isLoading: false,
+    });
+    const { queryByText } = render(<ConnectionsScreen />);
+    expect(queryByText(/Requests/i)).toBeNull();
+    expect(queryByText(/Sent/i)).toBeNull();
   });
 });

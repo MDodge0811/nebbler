@@ -18,7 +18,6 @@ import {
 } from '@hooks/useConnections';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import type { PeopleStackParamList, RootStackParamList } from '@navigation/types';
-import { removeConnection, blockUser } from '@utils/connections';
 import { displayName } from '@utils/displayName';
 
 type ScreenRoute = RouteProp<PeopleStackParamList, 'PersonProfile'>;
@@ -28,29 +27,23 @@ const sectionLabelStyle =
   'px-4 pb-1.5 pt-2 text-[13px] font-semibold tracking-[0.3px] text-brand-text-muted';
 const sectionCardStyle =
   'mx-3 mb-3 overflow-hidden rounded-[14px] border border-brand-border bg-background-0';
-const dangerRowStyle = 'flex-row items-center gap-3 px-4 py-3.5';
+const dangerRowStyle = 'flex-row items-center gap-3 px-4 py-3.5 opacity-50';
 const pillStyle = tva({
   base: 'mt-2 flex-row items-center gap-1.5 rounded-[20px] border px-[14px] py-[5px]',
   variants: {
-    status: {
-      accepted: 'border-brand-primary-border bg-brand-primary-light',
-      pending: 'border-brand-pending-border bg-brand-pending-bg',
+    connected: {
+      true: 'border-brand-primary-border bg-brand-primary-light',
     },
   },
 });
 const pillDotStyle = tva({
   base: 'h-[7px] w-[7px] rounded-full',
-  variants: { status: { accepted: 'bg-brand-primary', pending: 'bg-brand-pending-dot' } },
+  variants: { connected: { true: 'bg-brand-primary' } },
 });
 const pillTextStyle = tva({
   base: 'text-[13px] font-semibold',
-  variants: { status: { accepted: 'text-brand-primary', pending: 'text-brand-pending-text' } },
+  variants: { connected: { true: 'text-brand-primary' } },
 });
-
-function formatMonthYear(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
 
 function ClockIcon({ color = '#fff' }: { color?: string }) {
   return (
@@ -95,6 +88,8 @@ export function PersonProfileScreen() {
     email: null,
   });
 
+  const isConnected = connection !== null;
+
   const handleFindTime = () => {
     toast.show({
       id: 'find-a-time-coming-soon',
@@ -104,44 +99,16 @@ export function PersonProfileScreen() {
   };
 
   const handleRemove = () => {
-    if (!connection) return;
     Alert.alert(
-      'Remove Connection?',
-      `Removing ${name} will also remove them from any shared calendars.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              await removeConnection(connection.id);
-              navigation.goBack();
-            })();
-          },
-        },
-      ]
+      'Coming Soon',
+      'Removing connections will be available shortly — this feature requires online access.'
     );
   };
 
   const handleBlock = () => {
-    if (!currentUserId) return;
     Alert.alert(
-      `Block ${name}?`,
-      "This will remove the connection and prevent all future interaction. They won't be notified.",
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Block',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              await blockUser(userId, currentUserId);
-              navigation.goBack();
-            })();
-          },
-        },
-      ]
+      'Coming Soon',
+      'Blocking will be available shortly — this feature requires online access.'
     );
   };
 
@@ -151,24 +118,13 @@ export function PersonProfileScreen() {
         <AvatarCircle user={user} size={80} />
         <Text className="text-[22px] font-bold text-brand-text">{name}</Text>
 
-        <StatusPill status={connection?.status ?? null} />
+        <StatusPill connected={isConnected} />
 
         <Box className="mt-4 flex-row gap-5 border-t border-brand-divider pt-3">
           <Box className="min-w-[60px] items-center">
             <Text className="text-base font-bold text-brand-text">{sharedCount}</Text>
             <Text className="mt-0.5 text-xs text-brand-text-muted">Shared</Text>
           </Box>
-          {connection?.status === 'accepted' && (
-            <>
-              <Box className="w-px bg-brand-divider" />
-              <Box className="min-w-[60px] items-center">
-                <Text className="text-xs font-medium text-brand-text-secondary">Since</Text>
-                <Text className="mt-0.5 text-xs text-brand-text-muted">
-                  {formatMonthYear((connection as { updated_at?: string }).updated_at ?? '')}
-                </Text>
-              </Box>
-            </>
-          )}
         </Box>
       </Box>
 
@@ -207,15 +163,13 @@ export function PersonProfileScreen() {
 
       <Text className={sectionLabelStyle}>CONNECTION</Text>
       <Box className={sectionCardStyle}>
-        <Pressable className={dangerRowStyle} onPress={handleRemove} disabled={!connection}>
+        <Pressable className={dangerRowStyle} onPress={handleRemove}>
           <Box className="w-4 items-center">
             <Text className="text-base text-brand-danger">⊖</Text>
           </Box>
           <Box className="flex-1">
             <Text className="text-[15px] font-medium text-brand-danger">Remove Connection</Text>
-            <Text className="mt-0.5 text-xs text-brand-text-muted">
-              Also removes from shared calendars
-            </Text>
+            <Text className="mt-0.5 text-xs text-brand-text-muted">Coming soon</Text>
           </Box>
         </Pressable>
         <Box className="ml-11 h-px bg-brand-divider" />
@@ -225,9 +179,7 @@ export function PersonProfileScreen() {
           </Box>
           <Box className="flex-1">
             <Text className="text-[15px] font-medium text-brand-danger">Block</Text>
-            <Text className="mt-0.5 text-xs text-brand-text-muted">
-              Prevents all future interaction
-            </Text>
+            <Text className="mt-0.5 text-xs text-brand-text-muted">Coming soon</Text>
           </Box>
         </Pressable>
       </Box>
@@ -235,20 +187,12 @@ export function PersonProfileScreen() {
   );
 }
 
-function StatusPill({ status }: { status: string | null }) {
-  if (status === 'accepted') {
+function StatusPill({ connected }: { connected: boolean }) {
+  if (connected) {
     return (
-      <Box className={pillStyle({ status: 'accepted' })}>
-        <Box className={pillDotStyle({ status: 'accepted' })} />
-        <Text className={pillTextStyle({ status: 'accepted' })}>Connected</Text>
-      </Box>
-    );
-  }
-  if (status === 'pending') {
-    return (
-      <Box className={pillStyle({ status: 'pending' })}>
-        <Box className={pillDotStyle({ status: 'pending' })} />
-        <Text className={pillTextStyle({ status: 'pending' })}>Request Pending</Text>
+      <Box className={pillStyle({ connected: true })}>
+        <Box className={pillDotStyle({ connected: true })} />
+        <Text className={pillTextStyle({ connected: true })}>Connected</Text>
       </Box>
     );
   }

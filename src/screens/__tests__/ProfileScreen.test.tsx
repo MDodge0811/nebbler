@@ -37,9 +37,7 @@ beforeEach(() => {
     avatar_color: CALENDAR_PALETTE[0].hex,
   });
   mockUseConnections.mockReturnValue({
-    pendingIncoming: [],
-    accepted: [],
-    pendingOutgoing: [],
+    connections: [],
     isLoading: false,
   });
 });
@@ -67,16 +65,25 @@ describe('ProfileScreen', () => {
     );
   });
 
-  it('renders connection counts and pending badge', () => {
+  it('renders connection count from connections array', () => {
     mockUseConnections.mockReturnValue({
-      pendingIncoming: [{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }],
-      accepted: [{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }, { id: 'a4' }, { id: 'a5' }],
-      pendingOutgoing: [],
+      connections: [{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }],
       isLoading: false,
     });
     const { getByText } = render(<ProfileScreen />);
-    expect(getByText('5 connected')).toBeTruthy();
-    expect(getByText('3')).toBeTruthy();
+    expect(getByText('3 connected')).toBeTruthy();
+  });
+
+  it('does NOT render a pending badge', () => {
+    mockUseConnections.mockReturnValue({
+      connections: [{ id: 'a1' }],
+      isLoading: false,
+    });
+    // The pending badge from the old design has been removed; just confirm the count row is present
+    const { queryByText } = render(<ProfileScreen />);
+    // There should be no standalone badge number (no red circle with a count)
+    // The count text "1 connected" is present, but no separate badge
+    expect(queryByText('1 connected')).toBeTruthy();
   });
 
   it('navigates to People > Connections when Connections row tapped', () => {
