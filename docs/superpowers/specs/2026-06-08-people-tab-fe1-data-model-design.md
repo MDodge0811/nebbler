@@ -79,9 +79,29 @@ downstream uses one pattern:
 - Document the convention (new `.claude/rules/` entry or extension of the PowerSync rule):
   **PowerSync `useQuery` for synced/offline-readable data; TanStack Query for all online REST.**
 
-This is a deliberate expansion beyond NEB-149's literal data-layer scope, taken because FE-1 is the
-foundation slice and FE-2 should drop its `connection-requests` client straight onto the standard.
-Recorded as a decision on NEB-149.
+**Hard-check (the standard is lint-enforced, not just documented).** Two ESLint rules in
+`eslint.config.js`, mirroring the repo's existing architecture-contract patterns, so a violation fails
+`npm run lint` → `npm run check` → CI:
+
+1. **Ban raw `fetch` app-wide** via `no-restricted-syntax` (`CallExpression[callee.name='fetch']`, same
+   mechanism as the existing `StyleSheet.create` ban), re-allowed via per-file overrides only in the
+   sanctioned homes: `src/database/connector.ts` (PowerSync upload — sync infra) and `src/api/**` (the
+   TanStack `queryFn`/`mutationFn` layer; the only place an app-level backend `fetch` is allowed).
+2. **Contain `@tanstack/react-query` like a vendor SDK** — add it to the `VENDOR` map and restrict it
+   everywhere except `src/hooks/**` and `src/api/**` (via the existing `vendorExcept` mechanism), so
+   screens/components/utils must consume a hook rather than calling `useQuery`/`useMutation` directly.
+
+Net effect: the only legal path for online API work is `src/api/**` (fetch allowed) → exposed as a hook
+(TanStack import allowed) → consumed by screens. Known ceiling: ESLint enforces containment +
+access-path, not that a given `fetch` is literally wrapped in a `queryFn`.
+
+**Temporary exemption:** the pre-existing raw-`fetch` in `src/utils/userSearch.ts` is added to a closed,
+documented path-exemption for rule (1) with a `TODO(FE-5)` marker. **FE-5 (NEB-153) migrates it onto
+`src/api/**` + TanStack Query and removes the exemption\*\* — tracked there in scope + acceptance criteria.
+
+This whole section (foundation + hard-check) is a deliberate expansion beyond NEB-149's literal
+data-layer scope, taken because FE-1 is the foundation slice and FE-2 should drop its
+`connection-requests` client straight onto the standard. Recorded as a decision on NEB-149.
 
 ### 6. Minimal screen neutralization (keep `npm run check` green)
 
@@ -135,4 +155,5 @@ downstream stories (FE-4/5/6/7).
 - [ ] No code path issues a local write to `user_connections`; the connector guards against it (test covers it).
 - [ ] Connections list reads the normalized pair and resolves the other participant in both directions (test covers it).
 - [ ] `@tanstack/react-query` added; `QueryClientProvider` at the app root; convention documented.
+- [ ] Lint hard-check: raw `fetch` banned outside `src/database/connector.ts` + `src/api/**`; `@tanstack/react-query` contained to `src/hooks/**` + `src/api/**`; `userSearch.ts` exempted with `TODO(FE-5)`; FE-5 (NEB-153) updated to migrate it + drop the exemption.
 - [ ] Old-model test files rewritten/removed; `src/database/schemas/**` ≥90%; `npm run check` passes.
