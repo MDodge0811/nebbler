@@ -1,40 +1,18 @@
 import { z } from 'zod';
 
-export const ConnectionStatusSchema = z.enum(['pending', 'accepted', 'declined', 'blocked']);
-
 /**
- * Full row shape for a user_connections record as synced from PowerSync.
+ * Read-only synced row for `user_connections` (the contract's normalized pair).
+ * Clients NEVER write this table — all mutations are online REST (FE-2). The
+ * pair is normalized server-side (`user_a_id < user_b_id`); direction is not
+ * meaningful. `deleted_at` is never synced — removal manifests as the row
+ * leaving the bucket, so there is no soft-delete field or input schema here.
  */
 export const UserConnectionSchema = z.object({
   id: z.string().uuid(),
-  requester_id: z.string().uuid(),
-  addressee_id: z.string().uuid(),
-  status: ConnectionStatusSchema,
-  blocker_id: z.string().uuid().nullable(),
-  deleted_at: z.string().nullable(),
+  user_a_id: z.string().uuid(),
+  user_b_id: z.string().uuid(),
   inserted_at: z.string(),
   updated_at: z.string(),
 });
 
-/**
- * Minimal insert payload for creating a new connection request.
- * Only 'pending' is allowed as an initial status.
- */
-export const CreateUserConnectionInputSchema = z.object({
-  id: z.string().uuid(),
-  requester_id: z.string().uuid(),
-  addressee_id: z.string().uuid(),
-  status: z.literal('pending'),
-});
-
-/**
- * Partial update payload for an existing connection record.
- */
-export const UpdateUserConnectionInputSchema = z.object({
-  status: ConnectionStatusSchema.optional(),
-  blocker_id: z.string().uuid().nullable().optional(),
-  deleted_at: z.string().nullable().optional(),
-});
-
-export type ConnectionStatus = z.infer<typeof ConnectionStatusSchema>;
 export type UserConnection = z.infer<typeof UserConnectionSchema>;

@@ -11,11 +11,4 @@ export {
 export { CreateEventSchema, type CreateEventFormData } from './eventSchemas';
 export { CreateCalendarSchema, type CreateCalendarFormData } from './calendarSchemas';
 export { UpdateCalendarSchema, type UpdateCalendarFormData } from './updateCalendarSchema';
-export {
-  UserConnectionSchema,
-  CreateUserConnectionInputSchema,
-  UpdateUserConnectionInputSchema,
-  ConnectionStatusSchema,
-  type UserConnection,
-  type ConnectionStatus,
-} from './userConnectionSchemas';
+export { UserConnectionSchema, type UserConnection } from './userConnectionSchemas';
