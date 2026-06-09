@@ -20,3 +20,11 @@ export { CreateEventSchema, type CreateEventFormData } from './eventSchemas';
 export { CreateCalendarSchema, type CreateCalendarFormData } from './calendarSchemas';
 export { UpdateCalendarSchema, type UpdateCalendarFormData } from './updateCalendarSchema';
 export { UserConnectionSchema, type UserConnection } from './userConnectionSchemas';
+export {
+  ConnectionRequestSchema,
+  type ConnectionRequest,
+  ConnectionRequestItemSchema,
+  type ConnectionRequestItem,
+  ConnectionRequestListResponseSchema,
+  type ConnectionRequestListResponse,
+} from './connectionRequestSchemas';
