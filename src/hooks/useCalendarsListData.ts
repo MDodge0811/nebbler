@@ -50,8 +50,8 @@ export function useCalendarsListData() {
     const map: Record<string, string[]> = {};
     for (const m of allMemberships) {
       if (!m.calendar_group_id || !m.calendar_id) continue;
-      map[m.calendar_group_id] ??= [];
-      map[m.calendar_group_id]!.push(m.calendar_id);
+      const list = (map[m.calendar_group_id] ??= []);
+      list.push(m.calendar_id);
     }
     return map;
   }, [allMemberships]);

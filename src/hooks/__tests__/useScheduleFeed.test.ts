@@ -49,16 +49,17 @@ describe('buildSections', () => {
   it('creates a section for each date in the range', () => {
     const sections = buildSections([], '2026-02-24', '2026-02-26');
     expect(sections).toHaveLength(3);
-    expect(sections[0]!.title).toBe('2026-02-24');
-    expect(sections[1]!.title).toBe('2026-02-25');
-    expect(sections[2]!.title).toBe('2026-02-26');
+    expect(sections[0]?.title).toBe('2026-02-24');
+    expect(sections[1]?.title).toBe('2026-02-25');
+    expect(sections[2]?.title).toBe('2026-02-26');
   });
 
   it('fills empty days with a sentinel item', () => {
     const sections = buildSections([], '2026-02-24', '2026-02-24');
-    expect(sections[0]!.data).toHaveLength(1);
-    expect(isEmptySentinel(sections[0]!.data[0]!)).toBe(true);
-    expect(sections[0]!.eventCount).toBe(0);
+    expect(sections[0]?.data).toHaveLength(1);
+    const firstItem = sections[0]?.data[0];
+    expect(firstItem && isEmptySentinel(firstItem)).toBe(true);
+    expect(sections[0]?.eventCount).toBe(0);
   });
 
   it('groups events into their respective date sections', () => {
@@ -69,17 +70,19 @@ describe('buildSections', () => {
     ];
     const sections = buildSections(events, '2026-02-24', '2026-02-25');
 
-    expect(sections[0]!.data).toHaveLength(2);
-    expect(sections[0]!.eventCount).toBe(2);
-    expect(sections[1]!.data).toHaveLength(1);
-    expect(sections[1]!.eventCount).toBe(1);
-    expect(isEmptySentinel(sections[0]!.data[0]!)).toBe(false);
+    expect(sections[0]?.data).toHaveLength(2);
+    expect(sections[0]?.eventCount).toBe(2);
+    expect(sections[1]?.data).toHaveLength(1);
+    expect(sections[1]?.eventCount).toBe(1);
+    const firstItem = sections[0]?.data[0];
+    expect(firstItem && isEmptySentinel(firstItem)).toBe(false);
   });
 
   it('skips events with null start_time', () => {
     const events = [makeFeedEvent({ start_time: null as unknown as string })];
     const sections = buildSections(events, '2026-02-24', '2026-02-24');
-    expect(isEmptySentinel(sections[0]!.data[0]!)).toBe(true);
+    const firstItem = sections[0]?.data[0];
+    expect(firstItem && isEmptySentinel(firstItem)).toBe(true);
   });
 
   it('preserves insertion order of events within a day section', () => {
@@ -89,7 +92,7 @@ describe('buildSections', () => {
       makeFeedEvent({ id: 'evt-mid', start_time: '2026-02-24T12:00:00Z' }),
     ];
     const sections = buildSections(events, '2026-02-24', '2026-02-24');
-    const ids = sections[0]!.data.map((item) => item.id);
+    const ids = sections[0]?.data.map((item) => item.id);
     // buildSections preserves input order — callers (the SQL query) are
     // responsible for sorting by start_time ASC
     expect(ids).toEqual(['evt-early', 'evt-late', 'evt-mid']);
@@ -98,14 +101,14 @@ describe('buildSections', () => {
   it('narrows sections to displayStartDate when provided', () => {
     const sections = buildSections([], '2026-02-20', '2026-02-26', '2026-02-24');
     expect(sections).toHaveLength(3);
-    expect(sections[0]!.title).toBe('2026-02-24');
-    expect(sections[2]!.title).toBe('2026-02-26');
+    expect(sections[0]?.title).toBe('2026-02-24');
+    expect(sections[2]?.title).toBe('2026-02-26');
   });
 
   it('ignores displayStartDate when it precedes startDate', () => {
     const sections = buildSections([], '2026-02-24', '2026-02-26', '2026-02-22');
     expect(sections).toHaveLength(3);
-    expect(sections[0]!.title).toBe('2026-02-24');
+    expect(sections[0]?.title).toBe('2026-02-24');
   });
 
   it('ignores events outside the date range', () => {

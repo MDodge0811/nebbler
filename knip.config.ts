@@ -1,7 +1,11 @@
 import type { KnipConfig } from 'knip';
 
 const config: KnipConfig = {
-  entry: ['App.tsx'],
+  // App.tsx is the runtime entry. The per-layer `index.ts` barrels are the
+  // project's documented public API (see AGENTS.md "Re-export all hooks from
+  // src/hooks/index.ts") — treat them as entry points so their re-exports count
+  // as used rather than flagging the intentional barrel surface as dead.
+  entry: ['App.tsx', 'src/**/index.ts'],
   project: ['src/**/*.{ts,tsx}'],
   ignore: [
     'babel.config.js',
@@ -39,6 +43,9 @@ const config: KnipConfig = {
     'react-native-worklets',
     'react-stately',
     'tailwind-variants',
+    // Expo config plugins referenced by app config, resolved natively by Expo
+    'expo-updates',
+    'expo-system-ui',
   ],
   ignoreExportsUsedInFile: true,
 };

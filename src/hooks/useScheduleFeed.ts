@@ -77,7 +77,7 @@ export function buildSections(
     const count = dayEvents?.length ?? 0;
     return {
       title: date,
-      data: count > 0 ? dayEvents! : [{ _empty: true, id: `empty-${date}` }],
+      data: count > 0 && dayEvents ? dayEvents : [{ _empty: true, id: `empty-${date}` }],
       eventCount: count,
     };
   });

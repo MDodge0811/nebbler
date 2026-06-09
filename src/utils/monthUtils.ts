@@ -26,7 +26,7 @@ export function getMonthOffset(monthKey: string, n: number): string {
 export function getRowIndexForDate(dateString: string, monthKey: string): number {
   const grid = getMonthGrid(monthKey);
   for (let r = 0; r < grid.rows.length; r++) {
-    if (grid.rows[r]!.includes(dateString)) return r;
+    if (grid.rows[r]?.includes(dateString)) return r;
   }
   return 0;
 }

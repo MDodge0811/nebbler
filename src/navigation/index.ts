@@ -7,4 +7,5 @@ export type {
   MainTabParamList,
   RootStackScreenProps,
   MainTabScreenProps,
+  PeopleStackScreenProps,
 } from './types';
