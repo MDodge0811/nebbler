@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 
 import { PersonProfileScreen } from '../PersonProfileScreen';
@@ -25,13 +25,6 @@ jest.mock('@hooks/useConnections', () => ({
   useSharedCalendarCount: (...args: unknown[]): unknown => mockUseSharedCalendarCount(...args),
 }));
 
-const mockRemove = jest.fn();
-const mockBlock = jest.fn();
-jest.mock('@utils/connections', () => ({
-  removeConnection: (...args: unknown[]): unknown => mockRemove(...args),
-  blockUser: (...args: unknown[]): unknown => mockBlock(...args),
-}));
-
 const mockShowToast = jest.fn();
 jest.mock('@/components/ui/toast', () => ({
   useToast: () => ({ show: (opts: unknown): unknown => mockShowToast(opts) }),
@@ -45,33 +38,16 @@ beforeEach(() => {
     last_name: 'Chen',
     avatar_color: '#A78BFA',
   });
-  mockUseConnectionWith.mockReturnValue({
-    id: 'c1',
-    status: 'accepted',
-    requester_id: 'me',
-    addressee_id: 'them',
-    updated_at: '2026-01-15T00:00:00Z',
-  });
+  mockUseConnectionWith.mockReturnValue({ id: 'c1' });
   mockUseSharedCalendars.mockReturnValue([]);
   mockUseSharedCalendarCount.mockReturnValue(0);
 });
 
 describe('PersonProfileScreen', () => {
-  it('renders the profile card with name and Connected pill', () => {
+  it('renders the profile card with name and Connected pill when connected', () => {
     const { getByText } = render(<PersonProfileScreen />);
     expect(getByText('Sarah Chen')).toBeTruthy();
     expect(getByText('Connected')).toBeTruthy();
-  });
-
-  it('renders Request Pending pill when status is pending', () => {
-    mockUseConnectionWith.mockReturnValue({
-      id: 'c1',
-      status: 'pending',
-      requester_id: 'me',
-      addressee_id: 'them',
-    });
-    const { getByText } = render(<PersonProfileScreen />);
-    expect(getByText('Request Pending')).toBeTruthy();
   });
 
   it('renders Not connected text when no connection', () => {
@@ -80,10 +56,10 @@ describe('PersonProfileScreen', () => {
     expect(getByText(/Not connected/i)).toBeTruthy();
   });
 
-  it('renders the Since tile only when accepted', () => {
-    const { getByText } = render(<PersonProfileScreen />);
-    expect(getByText('Since')).toBeTruthy();
-    expect(getByText('January 2026')).toBeTruthy();
+  it('does NOT render a pending pill — only Connected or Not connected', () => {
+    mockUseConnectionWith.mockReturnValue(null);
+    const { queryByText } = render(<PersonProfileScreen />);
+    expect(queryByText(/Request Pending/i)).toBeNull();
   });
 
   it('Find a Time tap shows Coming Soon toast', () => {
@@ -118,29 +94,21 @@ describe('PersonProfileScreen', () => {
     expect(getByText(/You don't share any calendars/i)).toBeTruthy();
   });
 
-  it('Remove tap shows Alert; confirm calls removeConnection and goBack', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_, __, buttons) => {
-      const remove = buttons?.find((b) => b.text === 'Remove');
-      remove?.onPress?.();
-    });
+  it('Remove tap shows a Coming Soon alert — does NOT call any mutation', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
     const { getByText } = render(<PersonProfileScreen />);
     fireEvent.press(getByText('Remove Connection'));
-    expect(alertSpy).toHaveBeenCalled();
-    await waitFor(() => expect(mockRemove).toHaveBeenCalledWith('c1'));
-    await waitFor(() => expect(mockGoBack).toHaveBeenCalled());
+    expect(alertSpy).toHaveBeenCalledWith('Coming Soon', expect.any(String));
+    expect(mockGoBack).not.toHaveBeenCalled();
     alertSpy.mockRestore();
   });
 
-  it('Block tap shows Alert; confirm calls blockUser(otherUserId, currentUserId) and goBack', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_, __, buttons) => {
-      const block = buttons?.find((b) => b.text === 'Block');
-      block?.onPress?.();
-    });
+  it('Block tap shows a Coming Soon alert — does NOT call any mutation', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
     const { getByText } = render(<PersonProfileScreen />);
     fireEvent.press(getByText('Block'));
-    expect(alertSpy).toHaveBeenCalled();
-    await waitFor(() => expect(mockBlock).toHaveBeenCalledWith('them', 'me'));
-    await waitFor(() => expect(mockGoBack).toHaveBeenCalled());
+    expect(alertSpy).toHaveBeenCalledWith('Coming Soon', expect.any(String));
+    expect(mockGoBack).not.toHaveBeenCalled();
     alertSpy.mockRestore();
   });
 

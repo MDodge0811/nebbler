@@ -20,6 +20,7 @@ module.exports = function (api) {
             '@types': './src/types',
             '@database': './src/database',
             '@stores': './src/stores',
+            '@api': './src/api',
             '@/components/ui': './components/ui',
             '@/global.css': './global.css',
             '@': './src',

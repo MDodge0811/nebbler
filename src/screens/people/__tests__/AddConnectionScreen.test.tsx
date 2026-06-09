@@ -1,4 +1,5 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 
 import { RateLimitedError } from '@utils/userSearch';
 
@@ -26,20 +27,8 @@ jest.mock('@utils/userSearch', () => {
   };
 });
 
-const mockUseConnections = jest.fn();
-jest.mock('@hooks/useConnections', () => ({
-  useConnections: (...args: unknown[]): unknown => mockUseConnections(...args),
-}));
-
 jest.mock('@hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({ user: { id: 'me' } }),
-}));
-
-const mockSend = jest.fn();
-const mockAccept = jest.fn();
-jest.mock('@utils/connections', () => ({
-  sendConnectionRequest: (...args: unknown[]): unknown => mockSend(...args),
-  acceptConnection: (...args: unknown[]): unknown => mockAccept(...args),
 }));
 
 const mockShowToast = jest.fn();
@@ -49,12 +38,6 @@ jest.mock('@/components/ui/toast', () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockUseConnections.mockReturnValue({
-    pendingIncoming: [],
-    accepted: [],
-    pendingOutgoing: [],
-    isLoading: false,
-  });
 });
 
 function typeQuery(
@@ -84,7 +67,7 @@ describe('AddConnectionScreen', () => {
     await waitFor(() => expect(mockSearchUsers).toHaveBeenCalledWith('sa'));
   });
 
-  it('renders Connect chip for a user with no connection', async () => {
+  it('renders Connect placeholder for each search result', async () => {
     mockSearchUsers.mockResolvedValue([
       { id: 'u1', first_name: 'Sarah', last_name: 'Chen', avatar_color: null },
     ]);
@@ -93,84 +76,19 @@ describe('AddConnectionScreen', () => {
     expect(await findByText('Connect')).toBeTruthy();
   });
 
-  it('renders Connected chip when accepted', async () => {
-    mockUseConnections.mockReturnValue({
-      pendingIncoming: [],
-      accepted: [
-        {
-          id: 'c1',
-          requester_id: 'me',
-          addressee_id: 'u1',
-          status: 'accepted',
-          other_user_id: 'u1',
-        },
-      ],
-      pendingOutgoing: [],
-      isLoading: false,
-    });
+  it('Connect placeholder shows a Coming Soon alert when pressed', async () => {
     mockSearchUsers.mockResolvedValue([
       { id: 'u1', first_name: 'Sarah', last_name: 'Chen', avatar_color: null },
     ]);
-    const { getByPlaceholderText, findByText } = render(<AddConnectionScreen />);
-    typeQuery(getByPlaceholderText, 'sa');
-    expect(await findByText('Connected')).toBeTruthy();
-  });
-
-  it('renders Pending chip for outgoing requests', async () => {
-    mockUseConnections.mockReturnValue({
-      pendingIncoming: [],
-      accepted: [],
-      pendingOutgoing: [
-        {
-          id: 'c2',
-          requester_id: 'me',
-          addressee_id: 'u1',
-          status: 'pending',
-          other_user_id: 'u1',
-        },
-      ],
-      isLoading: false,
-    });
-    mockSearchUsers.mockResolvedValue([
-      { id: 'u1', first_name: 'Sarah', last_name: 'Chen', avatar_color: null },
-    ]);
-    const { getByPlaceholderText, findByText } = render(<AddConnectionScreen />);
-    typeQuery(getByPlaceholderText, 'sa');
-    expect(await findByText('Pending')).toBeTruthy();
-  });
-
-  it('renders Accept chip for incoming requests; tap accepts the connection', async () => {
-    mockUseConnections.mockReturnValue({
-      pendingIncoming: [
-        {
-          id: 'c3',
-          requester_id: 'u1',
-          addressee_id: 'me',
-          status: 'pending',
-          other_user_id: 'u1',
-        },
-      ],
-      accepted: [],
-      pendingOutgoing: [],
-      isLoading: false,
-    });
-    mockSearchUsers.mockResolvedValue([
-      { id: 'u1', first_name: 'Sarah', last_name: 'Chen', avatar_color: null },
-    ]);
-    const { getByPlaceholderText, findByText } = render(<AddConnectionScreen />);
-    typeQuery(getByPlaceholderText, 'sa');
-    fireEvent.press(await findByText('Accept'));
-    await waitFor(() => expect(mockAccept).toHaveBeenCalledWith('c3'));
-  });
-
-  it('calls sendConnectionRequest with (addresseeId, requesterId) on Connect tap', async () => {
-    mockSearchUsers.mockResolvedValue([
-      { id: 'u1', first_name: 'Sarah', last_name: 'Chen', avatar_color: null },
-    ]);
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     const { getByPlaceholderText, findByText } = render(<AddConnectionScreen />);
     typeQuery(getByPlaceholderText, 'sa');
     fireEvent.press(await findByText('Connect'));
-    await waitFor(() => expect(mockSend).toHaveBeenCalledWith('u1', 'me'));
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Coming Soon',
+      expect.stringContaining('Connecting will be available shortly')
+    );
+    alertSpy.mockRestore();
   });
 
   it('shows a toast on RateLimitedError', async () => {

@@ -69,7 +69,7 @@ export function ProfileScreen() {
   const { signOut, user: authUser } = useAuth();
   const { updateAvatarColor } = useCurrentUserMutations();
   const profile = useUserProfile(me?.id);
-  const { pendingIncoming, accepted } = useConnections(me?.id);
+  const { connections } = useConnections(me?.id);
 
   const [expanded, setExpanded] = useState(false);
 
@@ -132,17 +132,10 @@ export function ProfileScreen() {
       <Pressable className={cardClass} onPress={handleConnectionsRowTap}>
         <Box className="flex-row items-center gap-2 px-4 pb-1 pt-3.5">
           <Text className="flex-1 text-[15px] font-medium text-brand-text">Connections</Text>
-          {pendingIncoming.length > 0 && (
-            <Box className="h-[22px] min-w-[22px] items-center justify-center rounded-full bg-brand-danger px-1.5">
-              <Text className="text-xs font-bold text-typography-white">
-                {pendingIncoming.length}
-              </Text>
-            </Box>
-          )}
           <Text className={chevronClass}>›</Text>
         </Box>
         <Text className="px-4 pb-3.5 text-[13px] text-brand-text-muted">
-          {accepted.length} connected
+          {connections.length} connected
         </Text>
       </Pressable>
 

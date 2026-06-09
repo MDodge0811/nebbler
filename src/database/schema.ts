@@ -113,11 +113,8 @@ const eventResponses = new Table({
 });
 
 const userConnections = new Table({
-  requester_id: column.text,
-  addressee_id: column.text,
-  status: column.text,
-  blocker_id: column.text,
-  deleted_at: column.text,
+  user_a_id: column.text,
+  user_b_id: column.text,
   inserted_at: column.text,
   updated_at: column.text,
 });
@@ -155,4 +152,4 @@ export type Event = Database['events'];
 export type EventResponse = Database['event_responses'];
 
 // UserConnection type is sourced from Zod schema (single source of truth)
-export type { UserConnection, ConnectionStatus } from '@database/schemas/userConnectionSchemas';
+export type { UserConnection } from '@database/schemas/userConnectionSchemas';

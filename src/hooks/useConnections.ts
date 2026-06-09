@@ -3,11 +3,7 @@ import { useMemo } from 'react';
 
 export type HydratedConnection = {
   id: string;
-  requester_id: string;
-  addressee_id: string;
-  status: 'pending' | 'accepted' | 'declined' | 'blocked';
-  blocker_id: string | null;
-  // Other party's profile (joined locally)
+  // Other party (resolved from the normalized pair) + their synced profile.
   other_user_id: string;
   first_name: string | null;
   last_name: string | null;
@@ -15,93 +11,52 @@ export type HydratedConnection = {
 };
 
 /**
- * Reactive query returning the current user's connections, partitioned
- * by status. Each row is hydrated with the other party's name + avatar
- * via a local SQLite JOIN onto the synced `users` table.
+ * Reactive list of the current user's active connections, read from the synced
+ * normalized `user_connections` pair. Direction is not meaningful: the other
+ * party is resolved as `user_a_id === me ? user_b_id : user_a_id`. Pending
+ * requests are NOT here — they are online REST (FE-2/FE-4).
  *
- * Sync rules already exclude soft-deleted and blocker-side-blocked rows,
- * but we filter `deleted_at IS NULL` defensively.
+ * INNER JOIN on `users`: a connected user's basic info is synced (contract), so
+ * in steady state the row is always present. During the brief window where the
+ * connection row arrives before the other party's `users` row, that connection
+ * is transiently hidden (not dropped) until sync catches up — acceptable here.
  */
 export function useConnections(currentUserId: string | undefined) {
-  const incoming = useQuery<HydratedConnection>(
+  const connected = useQuery<HydratedConnection>(
     currentUserId
-      ? `SELECT c.id, c.requester_id, c.addressee_id, c.status, c.blocker_id,
-                c.requester_id AS other_user_id,
+      ? `SELECT c.id,
+                CASE WHEN c.user_a_id = ? THEN c.user_b_id ELSE c.user_a_id END AS other_user_id,
                 u.first_name, u.last_name, u.avatar_color
          FROM user_connections c
-         JOIN users u ON u.id = c.requester_id
-         WHERE c.addressee_id = ? AND c.status = 'pending' AND c.deleted_at IS NULL
-         ORDER BY c.inserted_at DESC`
-      : `SELECT 1 WHERE 0`,
-    currentUserId ? [currentUserId] : []
-  );
-
-  const accepted = useQuery<HydratedConnection>(
-    currentUserId
-      ? `SELECT c.id, c.requester_id, c.addressee_id, c.status, c.blocker_id,
-                CASE WHEN c.requester_id = ? THEN c.addressee_id ELSE c.requester_id END AS other_user_id,
-                u.first_name, u.last_name, u.avatar_color
-         FROM user_connections c
-         JOIN users u ON u.id = (CASE WHEN c.requester_id = ? THEN c.addressee_id ELSE c.requester_id END)
-         WHERE (c.requester_id = ? OR c.addressee_id = ?)
-           AND c.status = 'accepted'
-           AND c.deleted_at IS NULL
+         JOIN users u ON u.id = (CASE WHEN c.user_a_id = ? THEN c.user_b_id ELSE c.user_a_id END)
+         WHERE (c.user_a_id = ? OR c.user_b_id = ?)
          ORDER BY u.last_name ASC, u.first_name ASC`
       : `SELECT 1 WHERE 0`,
     currentUserId ? [currentUserId, currentUserId, currentUserId, currentUserId] : []
   );
 
-  const outgoing = useQuery<HydratedConnection>(
-    currentUserId
-      ? `SELECT c.id, c.requester_id, c.addressee_id, c.status, c.blocker_id,
-                c.addressee_id AS other_user_id,
-                u.first_name, u.last_name, u.avatar_color
-         FROM user_connections c
-         JOIN users u ON u.id = c.addressee_id
-         WHERE c.requester_id = ? AND c.status = 'pending' AND c.deleted_at IS NULL
-         ORDER BY c.inserted_at DESC`
-      : `SELECT 1 WHERE 0`,
-    currentUserId ? [currentUserId] : []
-  );
-
   return useMemo(
-    () => ({
-      pendingIncoming: incoming.data,
-      accepted: accepted.data,
-      pendingOutgoing: outgoing.data,
-      isLoading: incoming.isLoading || accepted.isLoading || outgoing.isLoading,
-    }),
-    [
-      incoming.data,
-      accepted.data,
-      outgoing.data,
-      incoming.isLoading,
-      accepted.isLoading,
-      outgoing.isLoading,
-    ]
+    () => ({ connections: connected.data, isLoading: connected.isLoading }),
+    [connected.data, connected.isLoading]
   );
 }
 
 /**
- * Active connection row between current user and `otherUserId`, either direction.
- * Filters explicitly by both parties so behavior does not depend on sync-rule scope.
+ * The active connection row between the current user and `otherUserId`, either
+ * direction. Presence of a row means "connected". The `connection_id` is NOT
+ * stable across a remove → re-add cycle (contract) — resolve it fresh, never
+ * cache it as durable.
  */
 export function useConnectionWith(
   currentUserId: string | undefined,
   otherUserId: string | undefined
 ) {
-  const { data } = useQuery<{
-    id: string;
-    status: 'pending' | 'accepted' | 'declined' | 'blocked';
-    requester_id: string;
-    addressee_id: string;
-  }>(
+  const { data } = useQuery<{ id: string }>(
     currentUserId && otherUserId
-      ? `SELECT id, status, requester_id, addressee_id
+      ? `SELECT id
          FROM user_connections
-         WHERE ((requester_id = ? AND addressee_id = ?)
-             OR (requester_id = ? AND addressee_id = ?))
-           AND deleted_at IS NULL
+         WHERE (user_a_id = ? AND user_b_id = ?)
+            OR (user_a_id = ? AND user_b_id = ?)
          LIMIT 1`
       : `SELECT 1 WHERE 0`,
     currentUserId && otherUserId ? [currentUserId, otherUserId, otherUserId, currentUserId] : []

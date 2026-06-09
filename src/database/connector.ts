@@ -9,6 +9,14 @@ import { powersyncConfig } from '@constants/config';
 import { FetchCredentialsResponseSchema } from '@database/schemas';
 
 /**
+ * Tables the client may read via sync but must NEVER upload. The contract
+ * forbids client writes to `user_connections` (all mutations are online REST,
+ * FE-2). This is defense-in-depth: even a stray local write is dropped here
+ * before it can hit `/api/data/user_connections/:id`.
+ */
+const READ_ONLY_TABLES = new Set<string>(['user_connections']);
+
+/**
  * Credentials returned from Clerk's JWT template endpoint.
  */
 export interface PowerSyncCredentials {
@@ -176,6 +184,13 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
    */
   private async uploadCrudEntry(entry: CrudEntry): Promise<void> {
     const { op, table, id, opData } = entry;
+
+    if (READ_ONLY_TABLES.has(table)) {
+      console.warn(
+        `[PowerSync] Blocked local write to read-only table "${table}" (${id}) — skipping. Connections mutations are online REST (FE-2).`
+      );
+      return;
+    }
 
     const methodMap: Record<UpdateType, string> = {
       [UpdateType.PUT]: 'PUT',

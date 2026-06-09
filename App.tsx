@@ -3,6 +3,7 @@ import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { PowerSyncContext } from '@powersync/react';
 import { type PowerSyncDatabase } from '@powersync/react-native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,6 +13,7 @@ import { Box } from '@/components/ui/box';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
+import { queryClient } from '@api/queryClient';
 import {
   initializeDatabase,
   connectDatabase,
@@ -109,11 +111,13 @@ export default function App() {
     <GestureHandlerRootView style={rootStyle}>
       <GluestackUIProvider mode="light">
         <ClerkProvider {...(tokenCache ? { tokenCache } : {})}>
-          <PowerSyncContext.Provider value={database}>
-            <ClerkPowerSyncBridge />
-            <StatusBar style="auto" />
-            <AppNavigator />
-          </PowerSyncContext.Provider>
+          <QueryClientProvider client={queryClient}>
+            <PowerSyncContext.Provider value={database}>
+              <ClerkPowerSyncBridge />
+              <StatusBar style="auto" />
+              <AppNavigator />
+            </PowerSyncContext.Provider>
+          </QueryClientProvider>
         </ClerkProvider>
       </GluestackUIProvider>
     </GestureHandlerRootView>

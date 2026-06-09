@@ -16,90 +16,63 @@ jest.mock('@powersync/react', () => ({
   useQuery: jest.fn(),
 }));
 
-describe('useConnections', () => {
+describe('useConnections (reads-only connected list)', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('partitions rows into pendingIncoming / accepted / pendingOutgoing', () => {
-    (useQuery as jest.Mock)
-      .mockReturnValueOnce({
-        // pending incoming
-        data: [
-          {
-            id: '1',
-            requester_id: 'other',
-            addressee_id: 'me',
-            status: 'pending',
-            first_name: 'Sara',
-            last_name: 'Lee',
-            avatar_color: '#00DB74',
-          },
-        ],
-        isLoading: false,
-      })
-      .mockReturnValueOnce({
-        // accepted
-        data: [
-          {
-            id: '2',
-            requester_id: 'me',
-            addressee_id: 'friend',
-            status: 'accepted',
-            first_name: 'Joe',
-            last_name: 'B',
-            avatar_color: null,
-          },
-        ],
-        isLoading: false,
-      })
-      .mockReturnValueOnce({
-        // pending outgoing
-        data: [],
-        isLoading: false,
-      });
-
+  it('returns the connected list and resolves other_user_id when me = user_a', () => {
+    (useQuery as jest.Mock).mockReturnValue({
+      data: [
+        { id: '1', other_user_id: 'friend', first_name: 'Joe', last_name: 'B', avatar_color: null },
+      ],
+      isLoading: false,
+    });
     const { result } = renderHook(() => useConnections('me'));
-    expect(result.current.pendingIncoming).toHaveLength(1);
-    expect(result.current.accepted).toHaveLength(1);
-    expect(result.current.pendingOutgoing).toHaveLength(0);
-    expect(result.current.accepted[0]?.first_name).toBe('Joe');
+    expect(result.current.connections).toHaveLength(1);
+    expect(result.current.connections[0]?.other_user_id).toBe('friend');
+  });
+
+  it('binds the query with me on both sides of the pair', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false });
+    renderHook(() => useConnections('me'));
+    expect(useQuery as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('user_a_id'), [
+      'me',
+      'me',
+      'me',
+      'me',
+    ]);
+  });
+
+  it('is inert (no rows) when currentUserId is undefined', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false });
+    const { result } = renderHook(() => useConnections(undefined));
+    expect(result.current.connections).toHaveLength(0);
   });
 });
 
-describe('useConnectionWith', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+describe('useConnectionWith (presence = connected)', () => {
+  beforeEach(() => jest.clearAllMocks());
 
-  it('returns null when otherUserId is undefined', () => {
-    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false, error: undefined });
+  it('returns null when either id is undefined', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false });
     const { result } = renderHook(() => useConnectionWith('me', undefined));
     expect(result.current).toBeNull();
   });
 
-  it('returns null when currentUserId is undefined', () => {
-    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false, error: undefined });
-    const { result } = renderHook(() => useConnectionWith(undefined, 'them'));
-    expect(result.current).toBeNull();
-  });
-
-  it('binds query to both currentUserId and otherUserId in both directions', () => {
-    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false, error: undefined });
+  it('binds both directions of the pair', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [], isLoading: false });
     renderHook(() => useConnectionWith('me', 'them'));
-    expect(useQuery as jest.Mock).toHaveBeenCalledWith(
-      expect.stringContaining('requester_id = ?'),
-      ['me', 'them', 'them', 'me']
-    );
+    expect(useQuery as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('user_a_id = ?'), [
+      'me',
+      'them',
+      'them',
+      'me',
+    ]);
   });
 
-  it('returns the first matching row when present', () => {
-    (useQuery as jest.Mock).mockReturnValue({
-      data: [{ id: 'c1', status: 'accepted', requester_id: 'me', addressee_id: 'them' }],
-      isLoading: false,
-      error: undefined,
-    });
+  it('returns the connection id when a row exists', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [{ id: 'c1' }], isLoading: false });
     const { result } = renderHook(() => useConnectionWith('me', 'them'));
     expect(result.current?.id).toBe('c1');
-    expect(result.current?.status).toBe('accepted');
   });
 });
 
