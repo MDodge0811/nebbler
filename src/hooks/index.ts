@@ -45,3 +45,15 @@ export {
 } from './useConnections';
 export type { HydratedConnection } from './useConnections';
 export { useDebouncedValue } from './useDebouncedValue';
+
+// Connection REST hooks (TanStack Query — online-only). `useUserProfileApi` is
+// the online REST profile fetch, distinct from the PowerSync-backed
+// `useUserProfile` (offline synced read) re-exported from `./useConnections`.
+export {
+  connectionsKeys,
+  useConnectionRequests,
+  useUserProfileApi,
+  useSendRequest,
+  useResolveRequest,
+  useRemoveConnection,
+} from './useConnectionsApi';
