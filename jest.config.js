@@ -16,6 +16,7 @@ module.exports = {
     '^@types/(.*)$': '<rootDir>/src/types/$1',
     '^@database/(.*)$': '<rootDir>/src/database/$1',
     '^@stores/(.*)$': '<rootDir>/src/stores/$1',
+    '^@api/(.*)$': '<rootDir>/src/api/$1',
   },
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@powersync/.*|@op-engineering/.*|nativewind|tailwind-variants|react-aria|react-stately|@react-aria/.*|@react-stately/.*|@legendapp/.*|@gluestack-ui/.*|@clerk/.*)',
@@ -67,6 +68,6 @@ module.exports = {
     },
   },
   testMatch: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
-  testPathIgnorePatterns: ['/node_modules/', '/.claude/worktrees/'],
-  modulePathIgnorePatterns: ['/.claude/worktrees/'],
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/.claude/worktrees/'],
+  modulePathIgnorePatterns: ['<rootDir>/.claude/worktrees/'],
 };

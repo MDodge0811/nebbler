@@ -13,5 +13,6 @@ Rules are organized by domain. Each domain has a top-level file with core patter
 | UI Components | `.claude/rules/ui-components.md`       | Working with `src/components/`, icons, Gluestack UI, calendars           |
 | State Mgmt    | `.claude/rules/state-management.md`    | Working with `src/stores/` (Zustand)                                     |
 | Code Quality  | `.claude/rules/code-quality.md`        | Modifying ESLint, Prettier, TS, Knip configs, Zod schemas, CI            |
+| API Data      | `.claude/rules/api-data.md`            | Working with online REST / `@tanstack/react-query` / `src/api/**`        |
 
 PowerSync, UI Components, and State Management have deep-dive sub-files — start with their entry points for an index of deeper references.

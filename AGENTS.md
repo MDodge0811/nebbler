@@ -63,6 +63,7 @@ Always use path aliases instead of relative imports. These are configured in `ts
 | `@types/*`      | `src/types/*`      |
 | `@database/*`   | `src/database/*`   |
 | `@stores/*`     | `src/stores/*`     |
+| `@api/*`        | `src/api/*`        |
 
 **If you add a new path alias**, you must update all three files: `tsconfig.json`, `babel.config.js`, and `jest.config.js` (`moduleNameMapper`).
 
@@ -112,10 +113,11 @@ chore: update dependencies
 | `@powersync/op-sqlite`, `@powersync/react-native`, `@op-engineering/op-sqlite` (engine) | `src/database/**`, `App.tsx`                                   |
 | `@powersync/react` (`useQuery`/`usePowerSync`/`useStatus`)                              | `src/hooks/**`, `src/database/**`, `App.tsx`                   |
 | `expo-secure-store`                                                                     | `src/utils/secureStorage.ts`                                   |
+| `@tanstack/react-query`                                                                 | `src/hooks/**`, `src/api/**`, `App.tsx`                        |
 
 Everything else reaches these through an adapter: `useAuth()` / `useSignInFlow()` / … for auth, a hook for PowerSync, `secureStorage` for storage.
 
-**Layer direction (`eslint-plugin-boundaries`, default-disallow).** `src/` is tagged into element types (`type`, `constant`, `util`, `store`, `data`, `hook`, `component`, `screen`, `nav`) with an allow-list in `eslint.config.js`. Anything not allowed errors; a new file in an unclassified location errors (`no-unknown-files`). Notable prohibitions: `component`↛`screen`/`nav`, `util`↛`hook`/`component`/`screen`, `type`↛anything, `data`↛anything but `constant`/`type`. To add a new layer or edge, edit the allow-list — that file is the source of truth; the prose here just summarizes it.
+**Layer direction (`eslint-plugin-boundaries`, default-disallow).** `src/` is tagged into element types (`type`, `constant`, `util`, `store`, `data`, `api`, `hook`, `component`, `screen`, `nav`) with an allow-list in `eslint.config.js`. Anything not allowed errors; a new file in an unclassified location errors (`no-unknown-files`). Notable prohibitions: `component`↛`screen`/`nav`, `util`↛`hook`/`component`/`screen`, `type`↛anything, `data`↛anything but `constant`/`type`. To add a new layer or edge, edit the allow-list — that file is the source of truth; the prose here just summarizes it.
 
 ## Domain-Specific Rules
 

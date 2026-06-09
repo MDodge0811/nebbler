@@ -37,6 +37,11 @@ const VENDOR = {
     message:
       'Wrap device storage behind src/utils/secureStorage.ts instead of importing expo-secure-store directly.',
   },
+  tanstackQuery: {
+    group: ['@tanstack/react-query'],
+    message:
+      'TanStack Query is the online-REST data layer. Import @tanstack/react-query only in src/hooks/** or src/api/**. Screens/components/utils must consume a hook. See .claude/rules/api-data.md.',
+  },
 };
 
 const ALL_VENDOR = Object.values(VENDOR);
@@ -190,6 +195,11 @@ module.exports = tseslint.config(
           message:
             'StyleSheet.create is banned — use tva() + className (NativeWind). See .claude/rules/ui-components.md.',
         },
+        {
+          selector: "CallExpression[callee.name='fetch']",
+          message:
+            'Raw fetch is banned for app API work — it belongs in src/api/** (TanStack query/mutation fns) or src/database/connector.ts (PowerSync upload). Consume a TanStack Query hook instead. See .claude/rules/api-data.md.',
+        },
       ],
       // Distinct rule key from `no-restricted-imports` (vendor containment) so
       // both stay active without one clobbering the other.
@@ -233,7 +243,7 @@ module.exports = tseslint.config(
   },
   {
     files: ['src/hooks/**/*.{ts,tsx}'],
-    rules: { 'no-restricted-imports': vendorExcept('powersyncReact') },
+    rules: { 'no-restricted-imports': vendorExcept('powersyncReact', 'tanstackQuery') },
   },
   {
     // The auth adapter is the only non-root place Clerk may be imported.
@@ -243,6 +253,38 @@ module.exports = tseslint.config(
   {
     files: ['src/utils/secureStorage.ts'],
     rules: { 'no-restricted-imports': vendorExcept('secureStore') },
+  },
+  {
+    // The API layer (TanStack query/mutation fns) is the one place app-level
+    // fetch + @tanstack/react-query live together.
+    files: ['src/api/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': vendorExcept('tanstackQuery'),
+      // fetch is intentionally allowed here (src/api/** is the fetch home); the
+      // StyleSheet.create ban still applies — re-declare it so 'off' doesn't
+      // silently lift it too.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create']",
+          message:
+            'StyleSheet.create is banned — use tva() + className (NativeWind). See .claude/rules/ui-components.md.',
+        },
+      ],
+    },
+  },
+  {
+    // PowerSync upload path: connector legitimately calls fetch to our backend.
+    files: ['src/database/connector.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
+  },
+  {
+    // TEMPORARY: userSearch.ts predates the TanStack standard (raw fetch).
+    // TODO(FE-5 / NEB-153): migrate to src/api/** + TanStack Query and DELETE
+    // this exemption. This list is closed — do not add entries.
+    files: ['src/utils/userSearch.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
   },
   {
     // Composition root wires the providers together; it may import anything.
@@ -265,6 +307,7 @@ module.exports = tseslint.config(
         { type: 'util', pattern: 'src/utils/**' },
         { type: 'store', pattern: 'src/stores/**' },
         { type: 'data', pattern: 'src/database/**' },
+        { type: 'api', pattern: 'src/api/**' },
         { type: 'hook', pattern: 'src/hooks/**' },
         { type: 'component', pattern: 'src/components/**' },
         { type: 'screen', pattern: 'src/screens/**' },
@@ -294,8 +337,10 @@ module.exports = tseslint.config(
             { from: ['store'], allow: ['store', 'type', 'data'] },
             // data/engine layer stays low-level.
             { from: ['data'], allow: ['data', 'type', 'constant'] },
+            // api: TanStack query/mutation functions — online REST layer.
+            { from: ['api'], allow: ['api', 'type', 'constant', 'util'] },
             // hooks: the data-access + logic layer.
-            { from: ['hook'], allow: ['hook', 'type', 'constant', 'util', 'data'] },
+            { from: ['hook'], allow: ['hook', 'type', 'constant', 'util', 'data', 'api'] },
             // components: presentational — may use hooks/stores/utils,
             // but NEVER screens or navigation.
             {
