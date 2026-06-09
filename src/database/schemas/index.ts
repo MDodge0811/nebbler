@@ -4,9 +4,17 @@ export {
   type FetchCredentialsResponse,
   ApiErrorResponseSchema,
   type ApiErrorResponse,
+  RelationshipStateSchema,
+  type RelationshipState,
+  RelationshipSchema,
+  type Relationship,
+  BasicUserSchema,
+  type BasicUser,
   UserSearchResultSchema,
   UserSearchResponseSchema,
   type UserSearchResult,
+  UserProfileResponseSchema,
+  type UserProfileResponse,
 } from './apiSchemas';
 export { CreateEventSchema, type CreateEventFormData } from './eventSchemas';
 export { CreateCalendarSchema, type CreateCalendarFormData } from './calendarSchemas';

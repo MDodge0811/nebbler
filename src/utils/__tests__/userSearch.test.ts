@@ -39,9 +39,11 @@ describe('searchUsers', () => {
   it('returns parsed results on a 200 response', async () => {
     const mockUser = {
       id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+      username: 'alice',
       first_name: 'Alice',
       last_name: 'Smith',
       avatar_color: '#00DB74',
+      relationship: { state: 'none', request_id: null, connection_id: null },
     };
     fetchSpy.mockResolvedValue({
       ok: true,
