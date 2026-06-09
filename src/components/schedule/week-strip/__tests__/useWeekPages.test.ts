@@ -13,10 +13,10 @@ describe('useWeekPages', () => {
   it('centers on the anchor date week', () => {
     const { result } = renderHook(() => useWeekPages(anchor));
     const { weeks, centerIndex } = result.current;
-    const centerWeek = weeks[centerIndex]!;
+    const centerWeek = weeks[centerIndex];
     // 2026-02-24 is a Tuesday; its week starts on 2026-02-22 (Sunday)
-    expect(centerWeek.key).toBe('2026-02-22');
-    expect(centerWeek.dates).toContain('2026-02-24');
+    expect(centerWeek?.key).toBe('2026-02-22');
+    expect(centerWeek?.dates).toContain('2026-02-24');
   });
 
   it('each week page has 7 dates', () => {
@@ -30,7 +30,9 @@ describe('useWeekPages', () => {
     const { result } = renderHook(() => useWeekPages(anchor));
     const { weeks } = result.current;
     for (let i = 1; i < weeks.length; i++) {
-      expect(weeks[i]!.key > weeks[i - 1]!.key).toBe(true);
+      const cur = weeks[i];
+      const prev = weeks[i - 1];
+      expect(cur && prev && cur.key > prev.key).toBe(true);
     }
   });
 
@@ -72,7 +74,7 @@ describe('useWeekPages', () => {
 
     it('returns 0 for the earliest buffered week', () => {
       const { result } = renderHook(() => useWeekPages(anchor));
-      const earliestKey = result.current.weeks[0]!.key;
+      const earliestKey = result.current.weeks[0]?.key ?? '';
       expect(result.current.getPageIndexForDate(earliestKey)).toBe(0);
     });
   });

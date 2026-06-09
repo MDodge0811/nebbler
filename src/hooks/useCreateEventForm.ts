@@ -54,8 +54,9 @@ export function useCreateEventForm(onDone: () => void) {
     writableCalendars.find((c) => c.id === selectedCalendarId) ?? writableCalendars.at(0);
 
   useEffect(() => {
-    if (!selectedCalendarId && writableCalendars.length > 0) {
-      setSelectedCalendarId(writableCalendars[0]!.id);
+    const firstCalendar = writableCalendars[0];
+    if (!selectedCalendarId && firstCalendar) {
+      setSelectedCalendarId(firstCalendar.id);
     }
   }, [selectedCalendarId, writableCalendars]);
 

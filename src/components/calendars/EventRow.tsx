@@ -42,9 +42,12 @@ export function EventRow({
   onPress,
 }: EventRowProps) {
   // Free/busy variant shows time only (no weekday/date) to keep it minimal
-  const timeText = isFreeBusy
-    ? formatTimeRange(event.start_time!, event.end_time!)
-    : formatEventDateTime(event.start_time!, event.end_time!);
+  let timeText = '';
+  if (event.start_time && event.end_time) {
+    timeText = isFreeBusy
+      ? formatTimeRange(event.start_time, event.end_time)
+      : formatEventDateTime(event.start_time, event.end_time);
+  }
   const title = isFreeBusy ? 'Busy' : (event.title ?? '');
 
   return (
