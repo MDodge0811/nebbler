@@ -134,3 +134,16 @@ Detailed patterns are in `.claude/rules/` — auto-loaded when you work on match
 | Code Quality  | config files, `src/database/schemas/`                                               | ESLint, Prettier, TS, Knip, Zod, CI/CD                                                 |
 
 See `.claude/rules/rules.md` for the full index.
+
+## Reporting Dev Pain Points
+
+Help make this repo more efficient to work in. When you hit friction during a task — something
+that **wasted tokens** (re-reads, broad searches, big dumps), **cost time** (slow builds, flaky
+tests), **was unclear** (docs/CLAUDE.md missing or wrong), or where **tooling fought back** —
+log it with the **`log-pain-point`** skill (`/log-pain-point`). It appends a structured entry to
+`docs/dev-pain-points.md`, creating the file if needed.
+
+- Log **when it happens** or at **wrap-up** when reflecting on the cycle. After opening a PR, a
+  hook will remind you.
+- Each entry needs a **concrete suggested fix** — the log is reviewed periodically to actually
+  fix these. One entry per distinct pain point; don't log vague grumbles or noise.
