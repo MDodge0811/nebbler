@@ -18,21 +18,21 @@
     {
       "id": 3,
       "subject": "Task 3: Relationship helper (relationship.ts)",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1],
       "description": "**Goal:** UI-agnostic relationshipToAction + otherParticipant helpers.\n\n**Files:** create nebbler/src/utils/relationship.ts + __tests__\n\n**Verify:** cd nebbler && npx jest src/utils/__tests__/relationship.test.ts && npx tsc --noEmit\n\n```json:metadata\n{\"files\": [\"nebbler/src/utils/relationship.ts\", \"nebbler/src/utils/__tests__/relationship.test.ts\"], \"verifyCommand\": \"cd nebbler && npx jest src/utils/__tests__/relationship.test.ts && npx tsc --noEmit\", \"acceptanceCriteria\": [\"RelationshipAction union connect/cancel/respond/open\", \"relationshipToAction maps all 4 states + throws on inconsistent payload\", \"otherParticipant resolves both directions\", \"no fetch/React imports; utils coverage thresholds met\"]}\n```"
     },
     {
       "id": 4,
       "subject": "Task 4: src/api/connections.ts — REST client (typed errors + 5 calls) + api→data boundary",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1, 2],
       "description": "**Goal:** Online REST client in src/api/connections.ts (sanctioned fetch layer, NO exemption): typed errors + auth/fetch/error-mapping core + sendRequest/listRequests/resolveRequest/removeConnection/getUserProfile. Add api→data boundary edge.\n\n**Files:** create nebbler/src/api/connections.ts + src/api/__tests__/connections.test.ts; modify nebbler/eslint.config.js (api allow-list += 'data')\n\n**Verify:** cd nebbler && npx jest src/api/__tests__/connections.test.ts && npm run lint && npx tsc --noEmit\n\n```json:metadata\n{\"files\": [\"nebbler/src/api/connections.ts\", \"nebbler/eslint.config.js\", \"nebbler/src/api/__tests__/connections.test.ts\"], \"verifyCommand\": \"cd nebbler && npx jest src/api/__tests__/connections.test.ts && npm run lint && npx tsc --noEmit\", \"acceptanceCriteria\": [\"Typed errors incl distinct InboundRequestExistsError\", \"all 5 calls send/list/resolve/remove/profile\", \"Zod-validated; bearer token; missing token throws before fetch\", \"src/api/** with NO no-restricted-syntax exemption\", \"eslint api allow-list gains data edge\", \"jest+lint+tsc pass\"]}\n```"
     },
     {
       "id": 5,
       "subject": "Task 5: TanStack Query hooks (useConnectionsApi) + full gate",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [4],
       "description": "**Goal:** Expose src/api/connections.ts fns as TanStack Query hooks (connectionsKeys + query/mutation hooks w/ cache invalidation), then run npm run check.\n\n**Files:** create nebbler/src/hooks/useConnectionsApi.ts + src/hooks/__tests__/useConnectionsApi.test.tsx; modify nebbler/src/hooks/index.ts (only if it re-exports hooks)\n\n**Verify:** cd nebbler && npm run check\n\n```json:metadata\n{\"files\": [\"nebbler/src/hooks/useConnectionsApi.ts\", \"nebbler/src/hooks/__tests__/useConnectionsApi.test.tsx\", \"nebbler/src/hooks/index.ts\"], \"verifyCommand\": \"cd nebbler && npm run check\", \"acceptanceCriteria\": [\"connectionsKeys factory\", \"useConnectionRequests + useUserProfile queries (enabled gate)\", \"useSendRequest/useResolveRequest/useRemoveConnection mutations invalidate caches\", \"hook tests via renderHook + QueryClientProvider wrapper mocking @api/connections\", \"npm run check passes\"]}\n```"
     }
