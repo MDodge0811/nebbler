@@ -8,7 +8,6 @@ import { Box } from '@/components/ui/box';
 import { DynamicColorView } from '@/components/ui/dynamic';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
-import { useToast } from '@/components/ui/toast';
 import { AvatarCircle } from '@components/ui/AvatarCircle';
 import {
   useUserProfile,
@@ -66,8 +65,6 @@ export function PersonProfileScreen() {
   const { user: me } = useCurrentUser();
   const currentUserId = me?.id;
   const userId = route.params.userId;
-  const toast = useToast();
-
   const user = useUserProfile(userId);
   const connection = useConnectionWith(currentUserId, userId);
   const sharedCalendars = useSharedCalendars(currentUserId, userId);
@@ -91,11 +88,7 @@ export function PersonProfileScreen() {
   const isConnected = connection !== null;
 
   const handleFindTime = () => {
-    toast.show({
-      id: 'find-a-time-coming-soon',
-      placement: 'top',
-      title: 'Find a Time is coming soon.',
-    });
+    navigation.navigate('CreateEvent', { mode: 'create', preselectedPeople: [userId] });
   };
 
   const handleRemove = () => {
@@ -128,13 +121,15 @@ export function PersonProfileScreen() {
         </Box>
       </Box>
 
-      <Pressable
-        className="m-3 flex-row items-center justify-center gap-2.5 rounded-[14px] bg-brand-primary py-3.5 opacity-50"
-        onPress={handleFindTime}
-      >
-        <ClockIcon />
-        <Text className="text-base font-bold text-typography-white">Find a Time</Text>
-      </Pressable>
+      {isConnected && (
+        <Pressable
+          className="m-3 flex-row items-center justify-center gap-2.5 rounded-[14px] bg-brand-primary py-3.5"
+          onPress={handleFindTime}
+        >
+          <ClockIcon />
+          <Text className="text-base font-bold text-typography-white">Find a Time</Text>
+        </Pressable>
+      )}
 
       <Text className={sectionLabelStyle}>SHARED CALENDARS</Text>
       <Box className={sectionCardStyle}>

@@ -25,11 +25,6 @@ jest.mock('@hooks/useConnections', () => ({
   useSharedCalendarCount: (...args: unknown[]): unknown => mockUseSharedCalendarCount(...args),
 }));
 
-const mockShowToast = jest.fn();
-jest.mock('@/components/ui/toast', () => ({
-  useToast: () => ({ show: (opts: unknown): unknown => mockShowToast(opts) }),
-}));
-
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseUserProfile.mockReturnValue({
@@ -62,12 +57,19 @@ describe('PersonProfileScreen', () => {
     expect(queryByText(/Request Pending/i)).toBeNull();
   });
 
-  it('Find a Time tap shows Coming Soon toast', () => {
+  it('Find a Time tap navigates to CreateEvent with the person pre-selected', () => {
     const { getByText } = render(<PersonProfileScreen />);
     fireEvent.press(getByText(/Find a Time/i));
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'find-a-time-coming-soon' })
-    );
+    expect(mockNavigate).toHaveBeenCalledWith('CreateEvent', {
+      mode: 'create',
+      preselectedPeople: ['them'],
+    });
+  });
+
+  it('Find a Time button is hidden when not connected', () => {
+    mockUseConnectionWith.mockReturnValue(null);
+    const { queryByText } = render(<PersonProfileScreen />);
+    expect(queryByText(/Find a Time/i)).toBeNull();
   });
 
   it('renders Shared Calendars list when present', () => {
