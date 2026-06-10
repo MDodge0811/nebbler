@@ -85,6 +85,20 @@ function endOfDay(date: Date): Date {
   return d;
 }
 
+/** Immutable snapshot of the form's original values, captured once at init. */
+interface OriginalSnapshot {
+  title: string;
+  description: string;
+  peopleIds: string[];
+  location: string | null;
+  startTime: number;
+  endTime: number;
+  calendarId: string | null;
+  isAllDay: boolean;
+  showAs: ShowAs;
+}
+
+/** Live form values compared against the original snapshot to derive dirtiness. */
 interface DirtyInput {
   title: string;
   description: string;
@@ -92,19 +106,30 @@ interface DirtyInput {
   location: string | null;
   startTime: Date;
   endTime: Date;
-  defaultStart: Date;
-  defaultEnd: Date;
+  calendarId: string | null;
+  isAllDay: boolean;
+  showAs: ShowAs;
 }
 
-/** Whether the user has touched any field away from its create-mode default. */
-function computeIsDirty(s: DirtyInput): boolean {
+/** Compare two id lists ignoring order (set semantics). */
+function sameIds(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const setB = new Set(b);
+  return a.every((id) => setB.has(id));
+}
+
+/** Whether any live field differs from the captured original snapshot. */
+function computeIsDirty(s: DirtyInput, original: OriginalSnapshot): boolean {
   return (
-    s.title.trim() !== '' ||
-    s.description.trim() !== '' ||
-    s.peopleIds.length > 0 ||
-    s.location !== null ||
-    s.startTime.getTime() !== s.defaultStart.getTime() ||
-    s.endTime.getTime() !== s.defaultEnd.getTime()
+    s.title.trim() !== original.title.trim() ||
+    s.description.trim() !== original.description.trim() ||
+    !sameIds(s.peopleIds, original.peopleIds) ||
+    s.location !== original.location ||
+    s.startTime.getTime() !== original.startTime ||
+    s.endTime.getTime() !== original.endTime ||
+    s.calendarId !== original.calendarId ||
+    s.isAllDay !== original.isAllDay ||
+    s.showAs !== original.showAs
   );
 }
 
@@ -156,42 +181,99 @@ export function CreateEventFormProvider({ params, children }: ProviderProps) {
   const [showAs, setShowAs] = useState<ShowAs>('busy');
   const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
 
+  // Baseline of the form's original values. `isDirty` is computed against this,
+  // not the create-mode defaults, so a pristine edit (or create) is never dirty.
+  const originalRef = useRef<OriginalSnapshot | null>(null);
+  const [baselineReady, setBaselineReady] = useState(false);
+
   // Load + prefill the event being edited (edit mode only).
   const editEvent = useEventById(mode === 'edit' && routeEventId ? routeEventId : undefined);
   const prefilledRef = useRef(false);
   useEffect(() => {
     if (mode !== 'edit' || prefilledRef.current || !editEvent) return;
     prefilledRef.current = true;
-    setTitle(editEvent.title ?? '');
-    setDescription(editEvent.description ?? '');
-    setCalendarId(editEvent.calendar_id ?? null);
-    if (editEvent.start_time) setStartTime(new Date(editEvent.start_time));
-    if (editEvent.end_time) setEndTime(new Date(editEvent.end_time));
-    setIsAllDay(editEvent.is_all_day === 1);
-    setShowAs(editEvent.show_as === 'free' ? 'free' : 'busy');
+    const nextTitle = editEvent.title ?? '';
+    const nextDescription = editEvent.description ?? '';
+    const nextCalendarId = editEvent.calendar_id ?? null;
+    const nextStart = editEvent.start_time ? new Date(editEvent.start_time) : startTime;
+    const nextEnd = editEvent.end_time ? new Date(editEvent.end_time) : endTime;
+    const nextIsAllDay = editEvent.is_all_day === 1;
+    const nextShowAs: ShowAs = editEvent.show_as === 'free' ? 'free' : 'busy';
+    setTitle(nextTitle);
+    setDescription(nextDescription);
+    setCalendarId(nextCalendarId);
+    setStartTime(nextStart);
+    setEndTime(nextEnd);
+    setIsAllDay(nextIsAllDay);
+    setShowAs(nextShowAs);
+    // Capture the baseline from the prefilled values so a pristine edit isn't dirty.
+    originalRef.current = {
+      title: nextTitle,
+      description: nextDescription,
+      peopleIds: [...peopleIds],
+      location,
+      startTime: nextStart.getTime(),
+      endTime: nextEnd.getTime(),
+      calendarId: nextCalendarId,
+      isAllDay: nextIsAllDay,
+      showAs: nextShowAs,
+    };
+    setBaselineReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, editEvent]);
 
-  // Default the calendar to the first writable one in create mode if none chosen.
+  // Default the calendar to the first writable one in create mode if none chosen,
+  // then capture the create-mode baseline once (from the resolved initial values).
   useEffect(() => {
-    if (mode !== 'create' || calendarId) return;
-    const first = writableCalendars[0];
-    if (first) setCalendarId(first.id);
+    if (mode !== 'create') return;
+    let resolvedCalendarId = calendarId;
+    if (!resolvedCalendarId) {
+      const first = writableCalendars[0];
+      if (first) {
+        resolvedCalendarId = first.id;
+        setCalendarId(first.id);
+      }
+    }
+    if (originalRef.current === null) {
+      originalRef.current = {
+        title,
+        description,
+        peopleIds: [...peopleIds],
+        location,
+        startTime: startTime.getTime(),
+        endTime: endTime.getTime(),
+        calendarId: resolvedCalendarId,
+        isAllDay,
+        showAs,
+      };
+      setBaselineReady(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, calendarId, writableCalendars]);
 
   const isScreen1Valid = title.trim().length > 0 && !!calendarId;
   const isScreen2Valid = endTime > startTime;
   const endTimeError = endTime <= startTime ? 'End time must be after start time' : undefined;
 
-  const isDirty = computeIsDirty({
-    title,
-    description,
-    peopleIds,
-    location,
-    startTime,
-    endTime,
-    defaultStart,
-    defaultEnd,
-  });
+  // `baselineReady` is read so isDirty recomputes on the render that first sets
+  // the ref-stored baseline; the ref itself wouldn't trigger a re-render.
+  const isDirty =
+    !baselineReady || originalRef.current === null
+      ? false
+      : computeIsDirty(
+          {
+            title,
+            description,
+            peopleIds,
+            location,
+            startTime,
+            endTime,
+            calendarId,
+            isAllDay,
+            showAs,
+          },
+          originalRef.current
+        );
 
   const save = useCallback(async () => {
     if (!currentUserId || !calendarId) {
@@ -227,10 +309,11 @@ export function CreateEventFormProvider({ params, children }: ProviderProps) {
       showAs,
     });
 
-    if (newEventId) {
-      for (const personId of peopleIds) {
-        await createResponse(newEventId, personId, 'pending');
-      }
+    if (!newEventId) {
+      throw new Error('Event created but no id returned — invites not written');
+    }
+    for (const personId of peopleIds) {
+      await createResponse(newEventId, personId, 'pending');
     }
   }, [
     currentUserId,

@@ -1,5 +1,5 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, BackHandler, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +28,8 @@ function CreateEventShellInner() {
   const [page, setPage] = useState(0);
   const translateX = useSharedValue(0);
   const pageRef = useRef(0);
+  // When true, the next dismissal bypasses the discard guard (e.g. after a save).
+  const bypassGuardRef = useRef(false);
 
   const goToPage = useCallback(
     (next: 0 | 1) => {
@@ -38,35 +40,49 @@ function CreateEventShellInner() {
     [translateX, width]
   );
 
-  const runDiscardGuard = useCallback(() => {
-    if (form.isDirty) {
-      Alert.alert('Discard event?', 'Your changes will be lost.', [
-        { text: 'Keep editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
-      ]);
-    } else {
-      navigation.goBack();
-    }
-  }, [form.isDirty, navigation]);
-
   // iOS: disable the swipe-to-dismiss gesture while on page 1 so the OS swipe
   // doesn't dismiss the whole flow — Screen 2's Back button handles return.
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: page === 0 });
   }, [navigation, page]);
 
-  // Android hardware back: page 1 → page 0; page 0 → discard guard.
+  // Single source of truth for the discard prompt. Guards every dismissal —
+  // X button, Android back on page 0, iOS edge swipe, and programmatic goBack.
+  useEffect(() => {
+    const unsub = navigation.addListener('beforeRemove', (e) => {
+      if (!form.isDirty || bypassGuardRef.current) return;
+      e.preventDefault();
+      Alert.alert('Discard event?', 'Your changes will be lost.', [
+        { text: 'Keep editing', style: 'cancel' },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: () => navigation.dispatch(e.data.action),
+        },
+      ]);
+    });
+    return unsub;
+  }, [navigation, form.isDirty]);
+
+  // Android hardware back: page 1 → page 0 (consume); page 0 → goBack (the
+  // beforeRemove listener owns the discard Alert).
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (pageRef.current === 1) {
         goToPage(0);
         return true;
       }
-      runDiscardGuard();
+      navigation.goBack();
       return true;
     });
     return () => sub.remove();
-  }, [goToPage, runDiscardGuard]);
+  }, [goToPage, navigation]);
+
+  const handleSaved = useCallback(() => {
+    // A successful save leaves the form dirty; skip the discard guard.
+    bypassGuardRef.current = true;
+    navigation.goBack();
+  }, [navigation]);
 
   const sliderStyle = useAnimatedStyle(() => ({
     flexDirection: 'row',
@@ -74,16 +90,16 @@ function CreateEventShellInner() {
     flex: 1,
     transform: [{ translateX: translateX.value }],
   }));
-  const pageStyle = useAnimatedStyle(() => ({ width }));
+  const pageStyle = useMemo(() => ({ width }), [width]);
 
   return (
     <DynamicColorView className="flex-1 bg-background-0" paddingTop={insets.top}>
       <Animated.View style={sliderStyle}>
         <Animated.View style={pageStyle}>
-          <Screen1WhatWho onNext={() => goToPage(1)} onClose={runDiscardGuard} />
+          <Screen1WhatWho onNext={() => goToPage(1)} onClose={() => navigation.goBack()} />
         </Animated.View>
         <Animated.View style={pageStyle}>
-          <Screen2When onBack={() => goToPage(0)} onSaved={() => navigation.goBack()} />
+          <Screen2When onBack={() => goToPage(0)} onSaved={handleSaved} />
         </Animated.View>
       </Animated.View>
     </DynamicColorView>

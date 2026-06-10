@@ -102,6 +102,42 @@ describe('CreateEventFormContext — create mode', () => {
     expect(mockCreateResponse).toHaveBeenCalledWith('evt-new', 'p-1', 'pending');
     expect(mockCreateResponse).toHaveBeenCalledWith('evt-new', 'p-2', 'pending');
   });
+
+  it('save() rejects when createEvent returns no id (invites not silently skipped)', async () => {
+    mockCreateEvent.mockResolvedValue(undefined);
+    renderProvider();
+    act(() => {
+      ctx.setTitle('Lunch');
+      ctx.setPeopleIds(['p-1']);
+    });
+
+    await act(async () => {
+      await expect(ctx.save()).rejects.toThrow(/no id returned/);
+    });
+
+    expect(mockCreateResponse).not.toHaveBeenCalled();
+  });
+
+  describe('isDirty', () => {
+    it('is false when pristine (defaults + preselected people only)', () => {
+      renderProvider({ preselectedPeople: ['p-1', 'p-2'] });
+      expect(ctx.isDirty).toBe(false);
+    });
+
+    it('becomes true after the title changes', () => {
+      renderProvider();
+      expect(ctx.isDirty).toBe(false);
+      act(() => ctx.setTitle('Lunch'));
+      expect(ctx.isDirty).toBe(true);
+    });
+
+    it('becomes true after the calendar changes', () => {
+      renderProvider();
+      expect(ctx.isDirty).toBe(false);
+      act(() => ctx.setCalendarId('cal-other'));
+      expect(ctx.isDirty).toBe(true);
+    });
+  });
 });
 
 describe('CreateEventFormContext — edit mode', () => {
@@ -124,6 +160,18 @@ describe('CreateEventFormContext — edit mode', () => {
     expect(ctx.title).toBe('Standup');
     expect(ctx.description).toBe('Daily');
     expect(ctx.showAs).toBe('free');
+  });
+
+  it('is not dirty after a pristine prefill', () => {
+    renderProvider({ mode: 'edit', eventId: 'evt-7' });
+    expect(ctx.isDirty).toBe(false);
+  });
+
+  it('becomes dirty after changing a prefilled field', () => {
+    renderProvider({ mode: 'edit', eventId: 'evt-7' });
+    expect(ctx.isDirty).toBe(false);
+    act(() => ctx.setTitle('Standup (moved)'));
+    expect(ctx.isDirty).toBe(true);
   });
 
   it('save() updates the existing event and does not create responses', async () => {
