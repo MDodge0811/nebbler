@@ -16,7 +16,15 @@ export type DrawerParamList = {
 export type RootStackParamList = {
   Main: NavigatorScreenParams<DrawerParamList>;
   Profile: undefined;
-  CreateEvent: undefined;
+  CreateEvent:
+    | {
+        mode?: 'create' | 'edit';
+        eventId?: string;
+        preselectedCalendarId?: string;
+        preselectedPeople?: string[];
+        socialContext?: { calendarId: string };
+      }
+    | undefined;
   CreateCalendar: undefined;
   EventDetail: { eventId: string };
   CalendarDetail: { calendarId: string };
