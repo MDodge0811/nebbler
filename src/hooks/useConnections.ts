@@ -160,7 +160,10 @@ export function useUserProfile(userId: string | undefined) {
     avatar_color: string | null;
   }>(
     userId
-      ? `SELECT id, username, first_name, last_name, avatar_color FROM users WHERE id = ? AND deleted_at IS NULL`
+      ? // No `deleted_at` filter: the client `users` schema deliberately omits that
+        // column (soft-deleted users never sync at all), so filtering on it would
+        // match zero rows. Any synced users row is already a live user.
+        `SELECT id, username, first_name, last_name, avatar_color FROM users WHERE id = ?`
       : `SELECT 1 WHERE 0`,
     userId ? [userId] : []
   );
