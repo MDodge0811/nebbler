@@ -52,9 +52,9 @@ export function useConnectionWith(
   currentUserId: string | undefined,
   otherUserId: string | undefined
 ) {
-  const { data } = useQuery<{ id: string }>(
+  const { data } = useQuery<{ id: string; inserted_at: string }>(
     currentUserId && otherUserId
-      ? `SELECT id
+      ? `SELECT id, inserted_at
          FROM user_connections
          WHERE (user_a_id = ? AND user_b_id = ?)
             OR (user_a_id = ? AND user_b_id = ?)
