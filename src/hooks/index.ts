@@ -40,6 +40,7 @@ export {
   useConnections,
   useConnectionWith,
   useSharedCalendarCount,
+  useSharedCalendarCounts,
   useSharedCalendars,
   useUserProfile,
 } from './useConnections';

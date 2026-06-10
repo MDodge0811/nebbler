@@ -93,6 +93,35 @@ export function useSharedCalendarCount(
 }
 
 /**
+ * Shared-calendar count per other user, for the whole connection list in one
+ * synced query (avoids a per-row hook). Returns a map keyed by the other user's
+ * id; absent keys mean zero shared calendars. Counts calendars where both the
+ * current user and that user have an active `calendar_members` row.
+ */
+export function useSharedCalendarCounts(currentUserId: string | undefined) {
+  const { data } = useQuery<{ other_user_id: string; count: number }>(
+    currentUserId
+      ? `SELECT cm_other.user_id AS other_user_id,
+                COUNT(DISTINCT cm_other.calendar_id) AS count
+         FROM calendar_members cm_self
+         JOIN calendar_members cm_other
+           ON cm_other.calendar_id = cm_self.calendar_id
+          AND cm_other.user_id <> cm_self.user_id
+          AND cm_other.deleted_at IS NULL
+         WHERE cm_self.user_id = ? AND cm_self.deleted_at IS NULL
+         GROUP BY cm_other.user_id`
+      : `SELECT 1 WHERE 0`,
+    currentUserId ? [currentUserId] : []
+  );
+
+  return useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const row of data) counts[row.other_user_id] = row.count;
+    return counts;
+  }, [data]);
+}
+
+/**
  * Full list of shared calendars between currentUserId and otherUserId.
  * Requires BOTH users to have an active calendar_members row — never
  * relies on sync-scope assumptions.
