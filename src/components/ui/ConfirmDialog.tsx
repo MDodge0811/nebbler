@@ -1,0 +1,68 @@
+import { Modal } from 'react-native';
+
+import { Box } from '@/components/ui/box';
+import { Pressable } from '@/components/ui/pressable';
+import { Text } from '@/components/ui/text';
+
+interface ConfirmDialogProps {
+  visible: boolean;
+  title: string;
+  message: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  /** Disable the confirm button (e.g. offline, or a mutation already in flight). */
+  confirmDisabled?: boolean;
+}
+
+/**
+ * Generic destructive-confirm dialog (Remove / Block). Mirrors the app's existing
+ * confirm-modal pattern (`DeleteCalendarConfirmModal`) with a reusable API so the
+ * People-tab Remove/Block flows share one component. `confirmDisabled` covers the
+ * online-gated states (offline / in-flight) per FE-3.
+ */
+export function ConfirmDialog({
+  visible,
+  title,
+  message,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+  confirmDisabled = false,
+}: ConfirmDialogProps) {
+  if (!visible) return null;
+  return (
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={onCancel}>
+      <Box className="flex-1 items-center justify-center bg-brand-scrim/40 p-6">
+        <Box
+          className="w-full max-w-[320px] rounded-[20px] bg-background-0 p-6"
+          testID="confirm-dialog"
+        >
+          <Text className="mb-2 text-center text-[17px] font-bold text-brand-text">{title}</Text>
+          <Text className="mb-5 text-center text-sm leading-[21px] text-brand-text-secondary">
+            {message}
+          </Text>
+          <Box className="flex-row gap-2.5">
+            <Pressable
+              className="flex-1 items-center rounded-xl border border-brand-border bg-typography-50 px-4 py-3"
+              onPress={onCancel}
+              testID="confirm-dialog-cancel"
+            >
+              <Text className="text-[15px] font-semibold text-brand-text">Cancel</Text>
+            </Pressable>
+            <Pressable
+              className={`flex-1 items-center rounded-xl bg-brand-danger px-4 py-3 ${
+                confirmDisabled ? 'opacity-50' : ''
+              }`}
+              disabled={confirmDisabled}
+              onPress={onConfirm}
+              testID="confirm-dialog-confirm"
+            >
+              <Text className="text-[15px] font-bold text-typography-white">{confirmLabel}</Text>
+            </Pressable>
+          </Box>
+        </Box>
+      </Box>
+    </Modal>
+  );
+}

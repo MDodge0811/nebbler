@@ -8,6 +8,12 @@ import { ProfileScreen } from '../ProfileScreen';
 const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate }),
+  useFocusEffect: (cb: () => void) => cb(),
+}));
+
+const mockUseConnectionRequests = jest.fn();
+jest.mock('@hooks/useConnectionsApi', () => ({
+  useConnectionRequests: (...args: unknown[]): unknown => mockUseConnectionRequests(...args),
 }));
 
 const mockSignOut = jest.fn();
@@ -39,6 +45,10 @@ beforeEach(() => {
   mockUseConnections.mockReturnValue({
     connections: [],
     isLoading: false,
+  });
+  mockUseConnectionRequests.mockReturnValue({
+    data: { incoming: [], outgoing: [] },
+    refetch: jest.fn().mockResolvedValue(undefined),
   });
 });
 
@@ -74,16 +84,30 @@ describe('ProfileScreen', () => {
     expect(getByText('3 connected')).toBeTruthy();
   });
 
-  it('does NOT render a pending badge', () => {
-    mockUseConnections.mockReturnValue({
-      connections: [{ id: 'a1' }],
-      isLoading: false,
+  it('renders a pending badge from the REST incoming-request count', () => {
+    mockUseConnectionRequests.mockReturnValue({
+      data: { incoming: [{ id: 'r1' }, { id: 'r2' }], outgoing: [] },
+      refetch: jest.fn().mockResolvedValue(undefined),
     });
-    // The pending badge from the old design has been removed; just confirm the count row is present
-    const { queryByText } = render(<ProfileScreen />);
-    // There should be no standalone badge number (no red circle with a count)
-    // The count text "1 connected" is present, but no separate badge
-    expect(queryByText('1 connected')).toBeTruthy();
+    const { getByTestId, getByText } = render(<ProfileScreen />);
+    expect(getByTestId('pending-badge')).toBeTruthy();
+    expect(getByText(/2 pending/)).toBeTruthy();
+  });
+
+  it('hides the pending badge when there are no incoming requests', () => {
+    const { queryByTestId } = render(<ProfileScreen />);
+    expect(queryByTestId('pending-badge')).toBeNull();
+  });
+
+  it('degrades gracefully offline: count shows, no badge, no crash', () => {
+    mockUseConnections.mockReturnValue({ connections: [{ id: 'a1' }], isLoading: false });
+    mockUseConnectionRequests.mockReturnValue({
+      data: undefined,
+      refetch: jest.fn().mockResolvedValue(undefined),
+    });
+    const { getByText, queryByTestId } = render(<ProfileScreen />);
+    expect(getByText('1 connected')).toBeTruthy();
+    expect(queryByTestId('pending-badge')).toBeNull();
   });
 
   it('navigates to People > Connections when Connections row tapped', () => {

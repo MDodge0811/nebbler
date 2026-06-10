@@ -4,6 +4,8 @@ import {
   resolveRequest,
   removeConnection,
   getUserProfile,
+  blockUser,
+  connectionErrorMessage,
   NotAuthenticatedError,
   InboundRequestExistsError,
   AlreadyConnectedError,
@@ -200,6 +202,53 @@ describe('getUserProfile', () => {
   it('throws NotFoundError on 404', async () => {
     fetchSpy.mockResolvedValue({ status: 404, ...errorBody('not_found') });
     await expect(getUserProfile('missing')).rejects.toThrow(NotFoundError);
+  });
+});
+
+describe('blockUser', () => {
+  it('POSTs blockee_id and resolves on 201 (newly created)', async () => {
+    fetchSpy.mockResolvedValue({ ok: true, status: 201, json: jest.fn().mockResolvedValue({}) });
+    await expect(blockUser('blockee-id')).resolves.toBeUndefined();
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/api/blocks'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ blockee_id: 'blockee-id' }),
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+      })
+    );
+  });
+  it('resolves on 200 (block already existed — idempotent)', async () => {
+    fetchSpy.mockResolvedValue({ ok: true, status: 200, json: jest.fn().mockResolvedValue({}) });
+    await expect(blockUser('blockee-id')).resolves.toBeUndefined();
+  });
+  it('throws ValidationError on 422 self_block', async () => {
+    fetchSpy.mockResolvedValue({
+      status: 422,
+      ...errorBody('self_block', 'Cannot block yourself'),
+    });
+    await expect(blockUser('me')).rejects.toThrow(ValidationError);
+  });
+  it('throws NotAuthenticatedError when no token', async () => {
+    mockGetApiToken.mockResolvedValue(null);
+    await expect(blockUser('blockee-id')).rejects.toThrow(NotAuthenticatedError);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('connectionErrorMessage', () => {
+  it('maps known typed errors to friendly copy', () => {
+    expect(connectionErrorMessage(new InboundRequestExistsError())).toMatch(/accept it instead/i);
+    expect(connectionErrorMessage(new AlreadyConnectedError())).toMatch(/already connected/i);
+    expect(connectionErrorMessage(new OutboundRequestExistsError())).toMatch(/pending request/i);
+    expect(connectionErrorMessage(new RequestNotPendingError())).toMatch(/already handled/i);
+    expect(connectionErrorMessage(new ForbiddenError())).toMatch(/not allowed/i);
+    expect(connectionErrorMessage(new NotFoundError())).toMatch(/no longer available/i);
+    expect(connectionErrorMessage(new NotAuthenticatedError())).toMatch(/sign in/i);
+  });
+  it('falls back to a network message for unknown/non-api errors', () => {
+    expect(connectionErrorMessage(new Error('boom'))).toMatch(/reach the server/i);
+    expect(connectionErrorMessage('weird')).toMatch(/reach the server/i);
   });
 });
 

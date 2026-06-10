@@ -40,6 +40,7 @@ export {
   useConnections,
   useConnectionWith,
   useSharedCalendarCount,
+  useSharedCalendarCounts,
   useSharedCalendars,
   useUserProfile,
 } from './useConnections';
@@ -56,4 +57,12 @@ export {
   useSendRequest,
   useResolveRequest,
   useRemoveConnection,
+  useBlockUser,
 } from './useConnectionsApi';
+
+// Online-required mutation UX primitive (FE-3).
+export { useOnlineAction } from './useOnlineAction';
+export type { OnlineActionResult } from './useOnlineAction';
+
+// Online user search (FE-5 — TanStack standard).
+export { useUserSearch } from './useUserSearch';

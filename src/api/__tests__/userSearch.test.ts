@@ -1,5 +1,5 @@
+import { searchUsers, RateLimitedError } from '@api/userSearch';
 import { getApiToken } from '@database/index';
-import { searchUsers, RateLimitedError } from '@utils/userSearch';
 
 // Mock the database module so getApiToken is controllable. jest.mock is hoisted
 // above these imports, so getApiToken resolves to the mock at runtime.
