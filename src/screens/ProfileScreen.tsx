@@ -1,6 +1,6 @@
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, LayoutAnimation, Platform, ScrollView, UIManager } from 'react-native';
 
 import { Box } from '@/components/ui/box';
@@ -10,6 +10,7 @@ import { AvatarCircle } from '@components/ui/AvatarCircle';
 import { ColorSwatchGrid } from '@components/ui/ColorSwatchGrid';
 import { useAuth } from '@hooks/useAuth';
 import { useConnections, useUserProfile } from '@hooks/useConnections';
+import { useConnectionRequests } from '@hooks/useConnectionsApi';
 import { useCurrentUser, useCurrentUserMutations } from '@hooks/useCurrentUser';
 import type { RootStackParamList } from '@navigation/types';
 import { displayName } from '@utils/displayName';
@@ -70,8 +71,17 @@ export function ProfileScreen() {
   const { updateAvatarColor } = useCurrentUserMutations();
   const profile = useUserProfile(me?.id);
   const { connections } = useConnections(me?.id);
+  const { data: requests, refetch } = useConnectionRequests();
+  const pendingCount = requests?.incoming.length ?? 0;
 
   const [expanded, setExpanded] = useState(false);
+
+  // Poll-on-open: refresh the pending-request badge whenever the screen focuses.
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch])
+  );
 
   const toggleExpanded = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -132,10 +142,19 @@ export function ProfileScreen() {
       <Pressable className={cardClass} onPress={handleConnectionsRowTap}>
         <Box className="flex-row items-center gap-2 px-4 pb-1 pt-3.5">
           <Text className="flex-1 text-[15px] font-medium text-brand-text">Connections</Text>
+          {pendingCount > 0 && (
+            <Box
+              testID="pending-badge"
+              className="min-w-[18px] items-center rounded-[10px] bg-brand-primary px-[7px] py-px"
+            >
+              <Text className="text-[11px] font-bold text-typography-white">{pendingCount}</Text>
+            </Box>
+          )}
           <Text className={chevronClass}>›</Text>
         </Box>
         <Text className="px-4 pb-3.5 text-[13px] text-brand-text-muted">
           {connections.length} connected
+          {pendingCount > 0 ? ` · ${pendingCount} pending` : ''}
         </Text>
       </Pressable>
 
