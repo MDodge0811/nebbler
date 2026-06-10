@@ -12,6 +12,8 @@ const ev: Event = {
   description: null,
   start_time: '2026-06-01T19:00:00Z',
   end_time: '2026-06-01T22:00:00Z',
+  show_as: 'busy',
+  is_all_day: 0,
   rrule: null,
   duration_minutes: null,
   recurring_event_id: null,

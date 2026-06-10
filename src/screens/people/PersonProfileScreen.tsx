@@ -107,7 +107,9 @@ export function PersonProfileScreen() {
           block={block}
           toast={toast}
           onOpenCalendar={(calendarId) => navigation.navigate('CalendarDetail', { calendarId })}
-          onFindTime={() => toast('find-a-time-coming-soon', 'Find a Time is coming soon.')}
+          onFindTime={() =>
+            navigation.navigate('CreateEvent', { mode: 'create', preselectedPeople: [userId] })
+          }
         />
       ) : (
         <NonConnectedActions

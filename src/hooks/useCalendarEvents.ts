@@ -76,6 +76,21 @@ export function useMarkedDates(events: Event[]) {
 }
 
 /**
+ * Reactive query for a single event by id (non-deleted). Returns `null` until
+ * loaded or when `eventId` is undefined. Used by the CreateEvent edit flow.
+ */
+export function useEventById(eventId: string | undefined): Event | null {
+  const { data } = useQuery<Event>(
+    eventId
+      ? 'SELECT * FROM events WHERE id = ? AND deleted_at IS NULL'
+      : 'SELECT * FROM events WHERE 0',
+    eventId ? [eventId] : []
+  );
+
+  return data[0] ?? null;
+}
+
+/**
  * CRUD mutations for events.
  */
 export function useEventMutations() {
@@ -88,14 +103,16 @@ export function useEventMutations() {
     description?: string;
     startTime: string;
     endTime: string;
+    showAs?: 'busy' | 'free';
+    isAllDay?: boolean;
   }) => {
     const now = new Date().toISOString();
 
     const result = await powerSync.execute(
       `INSERT INTO events
          (id, calendar_id, created_by_user_id, title, description,
-          start_time, end_time, inserted_at, updated_at)
-       VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+          start_time, end_time, show_as, is_all_day, inserted_at, updated_at)
+       VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         attrs.calendarId,
         attrs.createdByUserId,
@@ -103,6 +120,8 @@ export function useEventMutations() {
         attrs.description ?? null,
         attrs.startTime,
         attrs.endTime,
+        attrs.showAs ?? 'busy',
+        attrs.isAllDay ? 1 : 0,
         now,
         now,
       ]
@@ -135,6 +154,14 @@ export function useEventMutations() {
     if (updates.calendar_id !== undefined) {
       setClauses.push('calendar_id = ?');
       values.push(updates.calendar_id);
+    }
+    if (updates.show_as !== undefined) {
+      setClauses.push('show_as = ?');
+      values.push(updates.show_as);
+    }
+    if (updates.is_all_day !== undefined) {
+      setClauses.push('is_all_day = ?');
+      values.push(updates.is_all_day);
     }
 
     if (setClauses.length === 0) return;

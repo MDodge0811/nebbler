@@ -85,12 +85,13 @@ describe('PersonProfileScreen — connected', () => {
     expect(mockSetOptions).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sarah Chen' }));
   });
 
-  it('Find a Time shows a coming-soon toast', () => {
+  it('Find a Time opens CreateEvent with the person pre-selected', () => {
     const { getByText } = render(<PersonProfileScreen />);
     fireEvent.press(getByText('Find a Time'));
-    expect(mockShow).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'find-a-time-coming-soon' })
-    );
+    expect(mockNavigate).toHaveBeenCalledWith('CreateEvent', {
+      mode: 'create',
+      preselectedPeople: ['them'],
+    });
   });
 
   it('renders shared calendars and navigates on tap', () => {

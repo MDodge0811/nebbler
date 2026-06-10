@@ -150,8 +150,14 @@ export function CalendarDetailScreen() {
           upcomingEvents={upcomingEvents}
           permissions={permissions}
           onEventPress={(eventId) => navigation.navigate('EventDetail', { eventId })}
-          // TODO: NEB-62 — pass { calendarId } once CreateEvent accepts the param.
-          onCreateEvent={() => navigation.navigate('CreateEvent')}
+          // Social calendars auto-include all members (NEB-133); pass socialContext
+          // so the CreateEvent flow locks the calendar and includes members. Non-
+          // social calendars keep the existing behavior (NEB-62 scope, untouched).
+          onCreateEvent={() =>
+            calendar.type === 'social'
+              ? navigation.navigate('CreateEvent', { socialContext: { calendarId: calendar.id } })
+              : navigation.navigate('CreateEvent')
+          }
         />
       ) : (
         <CalendarDetailEditBody calendar={calendar} form={form} permissions={permissions} />

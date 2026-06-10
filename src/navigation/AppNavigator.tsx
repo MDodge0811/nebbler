@@ -19,7 +19,7 @@ import { useAuth } from '@hooks/useAuth';
 import { CalendarDetailScreen } from '@screens/CalendarDetailScreen';
 import { CalendarsScreen } from '@screens/CalendarsScreen';
 import { CreateCalendarScreen } from '@screens/CreateCalendarScreen';
-import { CreateEventScreen } from '@screens/CreateEventScreen';
+import { CreateEventScreen } from '@screens/createEvent/CreateEventScreen';
 import { EventDetailScreen } from '@screens/EventDetailScreen';
 import { PeopleTabNavigator } from '@screens/PeopleTabNavigator';
 import { ProfileScreen } from '@screens/ProfileScreen';
@@ -90,7 +90,11 @@ function MainNavigator() {
       <Stack.Navigator>
         <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
-        <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
+        <Stack.Screen
+          name="CreateEvent"
+          component={CreateEventScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="EventDetail" component={EventDetailScreen} />
         <Stack.Screen name="CalendarDetail" component={CalendarDetailScreen} />
         <Stack.Screen name="CreateCalendar" component={CreateCalendarScreen} />

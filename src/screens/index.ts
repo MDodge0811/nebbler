@@ -6,7 +6,7 @@ export { CreateCalendarScreen } from './CreateCalendarScreen';
 export { PeopleTabNavigator } from './PeopleTabNavigator';
 export * from './people';
 export { ProfileScreen } from './ProfileScreen';
-export { CreateEventScreen } from './CreateEventScreen';
+export { CreateEventScreen } from './createEvent/CreateEventScreen';
 export { EventDetailScreen } from './EventDetailScreen';
 export { LoginScreen } from './auth/LoginScreen';
 export { SignUpScreen } from './auth/SignUpScreen';

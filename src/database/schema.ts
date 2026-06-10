@@ -93,6 +93,8 @@ const events = new Table({
   description: column.text,
   start_time: column.text, // ISO 8601 datetime string (UTC)
   end_time: column.text, // ISO 8601 datetime string (UTC)
+  show_as: column.text, // 'busy' | 'free' — availability contribution (defaults to 'busy' server-side)
+  is_all_day: column.integer, // SQLite boolean 0/1
   rrule: column.text,
   duration_minutes: column.integer,
   recurring_event_id: column.text,
