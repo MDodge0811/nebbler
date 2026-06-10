@@ -143,4 +143,13 @@ describe('useUserProfile', () => {
     const { result } = renderHook(() => useUserProfile('missing'));
     expect(result.current).toBeNull();
   });
+
+  it('queries by id WITHOUT a deleted_at filter (client users schema omits that column)', () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: [] });
+    renderHook(() => useUserProfile('user-1'));
+    const calls = (useQuery as jest.Mock).mock.calls as Array<[string, unknown[]]>;
+    const sql = calls.at(-1)?.[0] ?? '';
+    expect(sql).toContain('FROM users WHERE id = ?');
+    expect(sql).not.toContain('deleted_at');
+  });
 });

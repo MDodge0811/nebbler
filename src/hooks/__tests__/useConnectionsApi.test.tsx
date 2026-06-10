@@ -10,6 +10,7 @@ import {
   useSendRequest,
   useResolveRequest,
   useRemoveConnection,
+  useBlockUser,
 } from '@hooks/useConnectionsApi';
 
 const profileKey = [...connectionsKeys.all, 'profile'];
@@ -111,5 +112,20 @@ describe('useRemoveConnection', () => {
     await result.current.mutateAsync('conn-1');
     expect(mockedApi.removeConnection).toHaveBeenCalledWith('conn-1');
     await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: profileKey }));
+  });
+});
+
+describe('useBlockUser', () => {
+  it('calls blockUser and invalidates requests + profiles on success', async () => {
+    mockedApi.blockUser.mockResolvedValue(undefined);
+    const { queryClient, Wrapper } = createWrapper();
+    const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+    const { result } = renderHook(() => useBlockUser(), { wrapper: Wrapper });
+    await result.current.mutateAsync('blockee-1');
+    expect(mockedApi.blockUser).toHaveBeenCalledWith('blockee-1');
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: connectionsKeys.requests() })
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: profileKey });
   });
 });

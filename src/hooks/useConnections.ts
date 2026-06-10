@@ -5,6 +5,7 @@ export type HydratedConnection = {
   id: string;
   // Other party (resolved from the normalized pair) + their synced profile.
   other_user_id: string;
+  username: string | null;
   first_name: string | null;
   last_name: string | null;
   avatar_color: string | null;
@@ -26,7 +27,7 @@ export function useConnections(currentUserId: string | undefined) {
     currentUserId
       ? `SELECT c.id,
                 CASE WHEN c.user_a_id = ? THEN c.user_b_id ELSE c.user_a_id END AS other_user_id,
-                u.first_name, u.last_name, u.avatar_color
+                u.username, u.first_name, u.last_name, u.avatar_color
          FROM user_connections c
          JOIN users u ON u.id = (CASE WHEN c.user_a_id = ? THEN c.user_b_id ELSE c.user_a_id END)
          WHERE (c.user_a_id = ? OR c.user_b_id = ?)
@@ -51,9 +52,9 @@ export function useConnectionWith(
   currentUserId: string | undefined,
   otherUserId: string | undefined
 ) {
-  const { data } = useQuery<{ id: string }>(
+  const { data } = useQuery<{ id: string; inserted_at: string }>(
     currentUserId && otherUserId
-      ? `SELECT id
+      ? `SELECT id, inserted_at
          FROM user_connections
          WHERE (user_a_id = ? AND user_b_id = ?)
             OR (user_a_id = ? AND user_b_id = ?)
@@ -92,6 +93,35 @@ export function useSharedCalendarCount(
 }
 
 /**
+ * Shared-calendar count per other user, for the whole connection list in one
+ * synced query (avoids a per-row hook). Returns a map keyed by the other user's
+ * id; absent keys mean zero shared calendars. Counts calendars where both the
+ * current user and that user have an active `calendar_members` row.
+ */
+export function useSharedCalendarCounts(currentUserId: string | undefined) {
+  const { data } = useQuery<{ other_user_id: string; count: number }>(
+    currentUserId
+      ? `SELECT cm_other.user_id AS other_user_id,
+                COUNT(DISTINCT cm_other.calendar_id) AS count
+         FROM calendar_members cm_self
+         JOIN calendar_members cm_other
+           ON cm_other.calendar_id = cm_self.calendar_id
+          AND cm_other.user_id <> cm_self.user_id
+          AND cm_other.deleted_at IS NULL
+         WHERE cm_self.user_id = ? AND cm_self.deleted_at IS NULL
+         GROUP BY cm_other.user_id`
+      : `SELECT 1 WHERE 0`,
+    currentUserId ? [currentUserId] : []
+  );
+
+  return useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const row of data) counts[row.other_user_id] = row.count;
+    return counts;
+  }, [data]);
+}
+
+/**
  * Full list of shared calendars between currentUserId and otherUserId.
  * Requires BOTH users to have an active calendar_members row — never
  * relies on sync-scope assumptions.
@@ -124,12 +154,16 @@ export function useSharedCalendars(
 export function useUserProfile(userId: string | undefined) {
   const { data } = useQuery<{
     id: string;
+    username: string | null;
     first_name: string | null;
     last_name: string | null;
     avatar_color: string | null;
   }>(
     userId
-      ? `SELECT id, first_name, last_name, avatar_color FROM users WHERE id = ? AND deleted_at IS NULL`
+      ? // No `deleted_at` filter: the client `users` schema deliberately omits that
+        // column (soft-deleted users never sync at all), so filtering on it would
+        // match zero rows. Any synced users row is already a live user.
+        `SELECT id, username, first_name, last_name, avatar_color FROM users WHERE id = ?`
       : `SELECT 1 WHERE 0`,
     userId ? [userId] : []
   );

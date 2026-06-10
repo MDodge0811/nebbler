@@ -36,6 +36,18 @@ describe('PersonRow', () => {
     expect(getByTestId('person-row')).toBeTruthy();
   });
 
+  it('renders a string subtitle under the name', () => {
+    const { getByText } = render(
+      <PersonRow user={sarah} trailing={<Text>x</Text>} subtitle="@sarah · 2 shared" />
+    );
+    expect(getByText('@sarah · 2 shared')).toBeTruthy();
+  });
+
+  it('omits the subtitle slot when not provided', () => {
+    const { queryByText } = render(<PersonRow user={sarah} trailing={<Text>x</Text>} />);
+    expect(queryByText('@sarah · 2 shared')).toBeNull();
+  });
+
   it('truncates long names to a single line', () => {
     const longName = {
       ...sarah,
