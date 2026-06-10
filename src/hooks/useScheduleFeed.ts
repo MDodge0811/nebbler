@@ -1,14 +1,14 @@
 import { useQuery } from '@powersync/react';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 
 import type { Event } from '@database/schema';
 import { useCalendarGroupMemberships } from '@hooks/useCalendarGroups';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import type { FeedEvent, ResponseRow, BuildFeedRowsOutput, QueryWindow } from '@utils/scheduleFeed';
+import { buildFeedRows, calcStickyWindow } from '@utils/scheduleFeed';
 
-export interface FeedEvent extends Event {
-  calendar_name: string;
-  calendar_type: string;
-}
+// Re-export legacy types so existing consumers don't break
+export type { FeedEvent } from '@utils/scheduleFeed';
 
 export interface EmptySentinel {
   _empty: true;
@@ -22,7 +22,7 @@ export interface DateSection {
 }
 
 export function isEmptySentinel(item: FeedEvent | EmptySentinel): item is EmptySentinel {
-  return '_empty' in item && item._empty;
+  return '_empty' in item;
 }
 
 /**
@@ -43,7 +43,7 @@ function getDateRange(startDate: string, endDate: string): string[] {
 }
 
 /**
- * Groups events into DateSection[] for SectionList consumption.
+ * Groups events into DateSection[] for SectionList consumption (legacy path).
  * Every date in the range gets a section — empty days include a sentinel item.
  */
 export function buildSections(
@@ -83,51 +83,225 @@ export function buildSections(
   });
 }
 
-/**
- * Two-stage reactive query that fetches events from all calendars
- * in the user's primary calendar group, joined with calendar metadata.
- *
- * Stage 1: useCalendarGroupMemberships → calendar IDs
- * Stage 2: useQuery with dynamic WHERE calendar_id IN (...) → events JOIN calendars
- */
-export function useScheduleFeed(startDate: string, endDate: string, displayStartDate?: string) {
-  const { user, error: userError } = useCurrentUser();
-  const primaryGroupId = user?.primary_calendar_group_id;
+// ---------------------------------------------------------------------------
+// SQL builders — extracted to keep hook functions under complexity limit
+// ---------------------------------------------------------------------------
 
-  // Stage 1: get calendar IDs in the primary group
-  const { data: memberships = [], error: membershipsError } = useCalendarGroupMemberships(
-    primaryGroupId ?? undefined
-  );
+const EMPTY_CALENDAR_EVENTS_SQL = `SELECT e.*,
+         c.name AS calendar_name, c.type AS calendar_type,
+         c.color AS calendar_color,
+         c.default_view_mode AS calendar_default_view_mode
+  FROM events e JOIN calendars c ON 0 WHERE 0`;
 
-  const calendarIds = useMemo(() => memberships.map((m) => m.calendar_id), [memberships]);
-
-  // Stage 2: query events joined with calendars
-  const hasCalendars = calendarIds.length > 0;
-  const placeholders = calendarIds.map(() => '?').join(', ');
-  const startDateTime = `${startDate}T00:00:00Z`;
-  const endDateTime = `${endDate}T23:59:59Z`;
-
-  // Range-overlap query: an event overlaps the visible window when
-  // event.start_time <= window.end AND event.end_time >= window.start.
-  const sql = hasCalendars
-    ? `SELECT e.*, c.name AS calendar_name, c.type AS calendar_type
+function buildEventsSql(placeholders: string): string {
+  return `SELECT e.*,
+              c.name AS calendar_name,
+              c.type AS calendar_type,
+              c.color AS calendar_color,
+              c.default_view_mode AS calendar_default_view_mode
        FROM events e
        JOIN calendars c ON e.calendar_id = c.id
        WHERE e.calendar_id IN (${placeholders})
          AND e.deleted_at IS NULL
          AND e.start_time <= ?
          AND e.end_time >= ?
-       ORDER BY e.start_time ASC`
-    : 'SELECT e.*, c.name AS calendar_name, c.type AS calendar_type FROM events e JOIN calendars c ON 0 WHERE 0';
+       ORDER BY e.start_time ASC`;
+}
 
-  const params = hasCalendars ? [...calendarIds, endDateTime, startDateTime] : [];
+function buildMemberSql(placeholders: string): string {
+  return `SELECT cm.calendar_id, cm.view_mode
+       FROM calendar_members cm
+       WHERE cm.user_id = ?
+         AND cm.calendar_id IN (${placeholders})
+         AND cm.deleted_at IS NULL`;
+}
 
-  const { data: events = [], isLoading, error } = useQuery<FeedEvent>(sql, params);
+const EMPTY_MEMBER_SQL = 'SELECT calendar_id, view_mode FROM calendar_members WHERE 0';
 
-  const sections = useMemo(
-    () => buildSections(events, startDate, endDate, displayStartDate),
-    [events, startDate, endDate, displayStartDate]
+const EMPTY_RESPONSE_SQL =
+  'SELECT er.event_id, er.user_id, er.status, u.first_name, u.last_name, u.avatar_color FROM event_responses er JOIN users u ON 0 WHERE 0';
+
+function buildResponseSql(eventPlaceholders: string): string {
+  return `SELECT er.event_id, er.user_id, er.status,
+              u.first_name, u.last_name, u.avatar_color
+       FROM event_responses er
+       JOIN users u ON er.user_id = u.id
+       WHERE er.event_id IN (${eventPlaceholders})
+         AND er.deleted_at IS NULL`;
+}
+
+// ---------------------------------------------------------------------------
+// Response row type
+// ---------------------------------------------------------------------------
+
+interface ResponseJoinRow {
+  event_id: string;
+  user_id: string;
+  status: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_color: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Sub-hook: calendar events + member view modes
+// ---------------------------------------------------------------------------
+
+interface CalendarEventsResult {
+  rawEvents: FeedEvent[];
+  viewModeByCalendar: Record<string, string | null>;
+  isLoading: boolean;
+  error: Error | undefined;
+}
+
+function useCalendarEvents(
+  calendarIds: string[],
+  userId: string | null | undefined,
+  windowStart: string,
+  windowEnd: string
+): CalendarEventsResult {
+  const hasCalendars = calendarIds.length > 0;
+  const placeholders = calendarIds.map(() => '?').join(', ');
+  const startDateTime = `${windowStart}T00:00:00Z`;
+  const endDateTime = `${windowEnd}T23:59:59Z`;
+
+  const eventSql = hasCalendars ? buildEventsSql(placeholders) : EMPTY_CALENDAR_EVENTS_SQL;
+  const eventParams = hasCalendars ? [...calendarIds, endDateTime, startDateTime] : [];
+
+  const {
+    data: rawEvents = [],
+    isLoading,
+    error: eventsError,
+  } = useQuery<FeedEvent>(eventSql, eventParams);
+
+  const memberSql = hasCalendars && userId ? buildMemberSql(placeholders) : EMPTY_MEMBER_SQL;
+  const memberParams = hasCalendars && userId ? [userId, ...calendarIds] : [];
+
+  const { data: memberRows = [], error: memberError } = useQuery<{
+    calendar_id: string;
+    view_mode: string | null;
+  }>(memberSql, memberParams);
+
+  const viewModeByCalendar = useMemo(() => {
+    const map: Record<string, string | null> = {};
+    for (const row of memberRows) {
+      map[row.calendar_id] = row.view_mode;
+    }
+    return map;
+  }, [memberRows]);
+
+  const error = eventsError ?? memberError ?? undefined;
+  return { rawEvents, viewModeByCalendar, isLoading, error };
+}
+
+// ---------------------------------------------------------------------------
+// Sub-hook: event responses
+// ---------------------------------------------------------------------------
+
+function useEventResponsesByEvent(rawEvents: FeedEvent[]): Record<string, ResponseRow[]> {
+  const eventIds = useMemo(() => rawEvents.map((e) => (e as Event).id), [rawEvents]);
+  const hasEvents = eventIds.length > 0;
+  const eventPlaceholders = eventIds.map(() => '?').join(', ');
+  const responseSql = hasEvents ? buildResponseSql(eventPlaceholders) : EMPTY_RESPONSE_SQL;
+  const responseParams = hasEvents ? eventIds : [];
+
+  const { data: responseRows = [] } = useQuery<ResponseJoinRow>(responseSql, responseParams);
+
+  return useMemo(() => {
+    const map: Record<string, ResponseRow[]> = {};
+    for (const row of responseRows) {
+      const arr = map[row.event_id] ?? [];
+      arr.push(row);
+      map[row.event_id] = arr;
+    }
+    return map;
+  }, [responseRows]);
+}
+
+// ---------------------------------------------------------------------------
+// Main hook
+// ---------------------------------------------------------------------------
+
+/**
+ * Multi-stage reactive query that fetches events from all calendars
+ * in the user's primary calendar group, joined with calendar metadata.
+ *
+ * Stage 1: useCalendarGroupMemberships → calendar IDs
+ * Stage 2: events JOIN calendars (with calendar_color, calendar_default_view_mode)
+ * Stage 3: calendar_members for current user (view_mode resolution)
+ * Stage 4: event_responses JOIN users (attendee chips)
+ *
+ * Sticky window: re-centers only when selectedDate comes within 7 days of
+ * either window edge. Previous rows are retained while a new window loads.
+ */
+export function useScheduleFeed(startDate: string, endDate: string, displayStartDate?: string) {
+  const { user, error: userError } = useCurrentUser();
+  const { data: memberships = [], error: membershipsError } = useCalendarGroupMemberships(
+    user?.primary_calendar_group_id ?? undefined
   );
 
-  return { sections, events, isLoading, error: userError ?? membershipsError ?? error };
+  const calendarIds = useMemo(
+    () => memberships.map((m) => m.calendar_id).filter((id): id is string => id !== null),
+    [memberships]
+  );
+
+  // Sticky window — only re-center when near the edge
+  const windowRef = useRef<QueryWindow | null>(null);
+  const window = useMemo(() => {
+    const next = calcStickyWindow(startDate, windowRef.current);
+    windowRef.current = next;
+    return next;
+  }, [startDate]);
+
+  const {
+    rawEvents,
+    viewModeByCalendar,
+    isLoading: eventsLoading,
+    error: eventsError,
+  } = useCalendarEvents(calendarIds, user?.id, window.start, window.end);
+
+  const responsesByEvent = useEventResponsesByEvent(rawEvents);
+
+  // Sticky rows — keep previous rows while a new window is loading
+  const previousRowsRef = useRef<BuildFeedRowsOutput | null>(null);
+
+  // Legacy SectionList path (kept for ScheduleScreen until S4 cutover)
+  const sections = useMemo(
+    () => buildSections(rawEvents, startDate, endDate, displayStartDate),
+    [rawEvents, startDate, endDate, displayStartDate]
+  );
+
+  // New FeedRow path (S3/S4 consumers)
+  const feedOutput = useMemo<BuildFeedRowsOutput>(() => {
+    if (eventsLoading && previousRowsRef.current) {
+      return previousRowsRef.current;
+    }
+    const output = buildFeedRows({
+      events: rawEvents,
+      responsesByEvent,
+      starredIds: new Set<string>(), // useEventStars called by consumer; pass empty here
+      viewModeByCalendar,
+      dateRange: { start: startDate, end: endDate },
+      today: startDate, // caller passes today explicitly in S4; use startDate as fallback
+      now: new Date(),
+      starredOnly: false,
+    });
+    previousRowsRef.current = output;
+    return output;
+  }, [rawEvents, responsesByEvent, viewModeByCalendar, startDate, endDate, eventsLoading]);
+
+  const error = userError ?? membershipsError ?? eventsError ?? undefined;
+
+  return {
+    // Legacy SectionList output (ScheduleScreen, EventFeed)
+    sections,
+    events: rawEvents,
+    // New FeedRow output (S3/S4 consumers)
+    rows: feedOutput.rows,
+    indexByDate: feedOutput.indexByDate,
+    viewModeByCalendar,
+    responsesByEvent,
+    isLoading: eventsLoading,
+    error,
+  };
 }

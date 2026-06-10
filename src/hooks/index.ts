@@ -70,3 +70,6 @@ export type { OnlineActionResult } from './useOnlineAction';
 
 // Online user search (FE-5 — TanStack standard).
 export { useUserSearch } from './useUserSearch';
+
+// Event stars (NEB-177)
+export { useEventStars } from './useEventStars';
