@@ -275,6 +275,24 @@ describe('CalendarDetailScreen — save & delete', () => {
   });
 });
 
+describe('CalendarDetailScreen — FAB navigation', () => {
+  it('passes socialContext when FAB pressed on a social calendar', () => {
+    mockDetail = detail({ calendar: { ...baseCalendar, type: 'social' } });
+    const { getByTestId } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('add-event-fab'));
+    expect(mockNavigate).toHaveBeenCalledWith('CreateEvent', {
+      socialContext: { calendarId: 'cal-1' },
+    });
+  });
+
+  it('passes no params when FAB pressed on a non-social calendar', () => {
+    mockDetail = detail({ calendar: { ...baseCalendar, type: 'private' } });
+    const { getByTestId } = render(<CalendarDetailScreen />);
+    fireEvent.press(getByTestId('add-event-fab'));
+    expect(mockNavigate).toHaveBeenCalledWith('CreateEvent');
+  });
+});
+
 describe('CalendarDetailScreen — reactive pop-back', () => {
   it('calls goBack when calendar becomes null after having loaded', () => {
     mockDetail = detail();

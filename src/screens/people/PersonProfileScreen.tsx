@@ -9,6 +9,7 @@ import { DynamicColorView } from '@/components/ui/dynamic';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { AvatarCircle } from '@components/ui/AvatarCircle';
+import { calendarsUIColors } from '@constants/calendarsUI';
 import {
   useUserProfile,
   useConnectionWith,
@@ -142,8 +143,8 @@ export function PersonProfileScreen() {
             >
               <DynamicColorView
                 className="h-9 w-9 rounded-[10px] border-[1.5px]"
-                backgroundColor={`${cal.color ?? '#9B9BA8'}15`}
-                borderColor={`${cal.color ?? '#9B9BA8'}30`}
+                backgroundColor={`${cal.color ?? calendarsUIColors.textMuted}15`}
+                borderColor={`${cal.color ?? calendarsUIColors.textMuted}30`}
               />
               <Text className="flex-1 text-[15px] font-medium text-brand-text">{cal.name}</Text>
               <Text className="text-base text-brand-text-muted">›</Text>
