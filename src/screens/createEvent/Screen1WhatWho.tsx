@@ -1,27 +1,18 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, TextInput } from 'react-native';
 
 import { Box } from '@/components/ui/box';
 import { DynamicColorText, DynamicColorView } from '@/components/ui/dynamic';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
-import { CalendarPickerSheet } from '@components/CalendarPickerSheet';
 import { ConnectionPicker } from '@components/people/ConnectionPicker';
 import { calendarsUIColors } from '@constants/calendarsUI';
 import { useCurrentUser } from '@hooks/useCurrentUser';
-import { useWritableCalendars, type WritableCalendar } from '@hooks/useWritableCalendars';
+import { useWritableCalendars } from '@hooks/useWritableCalendars';
 import { getCalendarColor } from '@utils/calendarColor';
 
 import { useCreateEventFormContext } from './CreateEventFormContext';
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  CloseIcon,
-  HeatmapIcon,
-  LocationIcon,
-  NextArrowIcon,
-} from './icons';
+import { ChevronRightIcon, CloseIcon, HeatmapIcon, LocationIcon, NextArrowIcon } from './icons';
 
 const labelStyle = tva({
   base: 'mb-2 text-[13px] font-semibold uppercase tracking-wide text-brand-text-muted',
@@ -91,21 +82,23 @@ function Screen1Header({ isEdit, canAdvance, onClose, onNext }: Screen1HeaderPro
   );
 }
 
-interface CalendarRowProps {
+const calTriggerStyle = tva({ base: 'flex-row items-center gap-3 px-4 py-3.5' });
+
+interface CalendarFieldProps {
   isSocial: boolean;
   calColor: string;
   calendarName: string;
-  onOpenPicker: () => void;
+  onPress: () => void;
 }
 
 /**
- * Calendar field: a non-interactive indicator (color dot, name, "Social" badge)
- * when launched from a social calendar — the calendar is locked (NEB-133) — or a
- * tappable picker row otherwise.
+ * Calendar field. In social mode it's a non-interactive indicator (color dot,
+ * name, "Social" badge) — the calendar is locked (NEB-133). Otherwise it's a
+ * tappable row that pushes the Select Calendar page.
  */
-function CalendarRow({ isSocial, calColor, calendarName, onOpenPicker }: CalendarRowProps) {
+function CalendarField({ isSocial, calColor, calendarName, onPress }: CalendarFieldProps) {
   const inner = (
-    <Box className="flex-row items-center gap-3">
+    <Box className={calTriggerStyle({})}>
       <Box className="flex-1">
         <Text className={calRowLabelStyle({})}>Calendar</Text>
         <Box className="flex-row items-center gap-2">
@@ -117,19 +110,28 @@ function CalendarRow({ isSocial, calColor, calendarName, onOpenPicker }: Calenda
           {isSocial ? <Text className={socialBadgeStyle({})}>Social</Text> : null}
         </Box>
       </Box>
-      {isSocial ? null : <ChevronDownIcon />}
+      {isSocial ? null : <ChevronRightIcon />}
     </Box>
   );
 
   if (isSocial) {
     return (
-      <Box className={cardStyle({})} accessibilityState={{ disabled: true }}>
+      <Box
+        className="overflow-hidden rounded-[14px] border border-brand-border bg-background-0"
+        accessibilityState={{ disabled: true }}
+      >
         {inner}
       </Box>
     );
   }
+
   return (
-    <Pressable onPress={onOpenPicker} accessibilityRole="button" className={cardStyle({})}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Select calendar"
+      className="overflow-hidden rounded-[14px] border border-brand-border bg-background-0"
+    >
       {inner}
     </Pressable>
   );
@@ -146,22 +148,17 @@ function findTimeSubtitle(isSocial: boolean, memberCount: number, peopleCount: n
 interface Screen1Props {
   onNext: () => void;
   onClose: () => void;
+  onOpenCalendarPicker: () => void;
 }
 
-export function Screen1WhatWho({ onNext, onClose }: Screen1Props) {
+export function Screen1WhatWho({ onNext, onClose, onOpenCalendarPicker }: Screen1Props) {
   const form = useCreateEventFormContext();
   const { authUser } = useCurrentUser();
   const { data: writableCalendars = [] } = useWritableCalendars(authUser?.id);
-  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
 
   const selectedCalendar = writableCalendars.find((c) => c.id === form.calendarId) ?? null;
   const calColor = form.calendarId ? getCalendarColor(form.calendarId) : calendarsUIColors.primary;
   const calendarName = selectedCalendar?.name ?? 'Select calendar';
-
-  const handleCalendarSelect = (cal: WritableCalendar) => {
-    form.setCalendarId(cal.id);
-    setShowCalendarPicker(false);
-  };
 
   const peopleCount = form.peopleIds.length;
   // Social mode always shows Find a Time (members are implicit); default mode
@@ -194,12 +191,12 @@ export function Screen1WhatWho({ onNext, onClose }: Screen1Props) {
         contentContainerClassName="gap-5 px-4 pb-24 pt-4"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Calendar row — non-interactive indicator in social mode, picker otherwise. */}
-        <CalendarRow
+        {/* Calendar field — locked indicator in social mode, pushes Select Calendar otherwise. */}
+        <CalendarField
           isSocial={form.isSocial}
           calColor={calColor}
           calendarName={calendarName}
-          onOpenPicker={() => setShowCalendarPicker(true)}
+          onPress={onOpenCalendarPicker}
         />
 
         {/* Title */}
@@ -275,14 +272,6 @@ export function Screen1WhatWho({ onNext, onClose }: Screen1Props) {
           </Pressable>
         ) : null}
       </ScrollView>
-
-      <CalendarPickerSheet
-        visible={showCalendarPicker}
-        calendars={writableCalendars}
-        selectedCalendarId={form.calendarId}
-        onSelect={handleCalendarSelect}
-        onClose={() => setShowCalendarPicker(false)}
-      />
     </KeyboardAvoidingView>
   );
 }
