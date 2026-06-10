@@ -48,6 +48,7 @@ export function ScheduleScreen() {
   const viewMode = useScheduleStore((s) => s.viewMode);
   const displayMonth = useScheduleStore((s) => s.displayMonth);
   const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
+  const starredOnly = useScheduleStore((s) => s.starredOnly);
   const queryAnchor = viewMode === 'month' ? displayMonth : selectedDate;
   const monthKey = monthKeyOf(queryAnchor);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memoize by month, not by day
@@ -57,7 +58,7 @@ export function ScheduleScreen() {
     indexByDate,
     isLoading,
     error: feedError,
-  } = useScheduleFeed(startDate, endDate, today);
+  } = useScheduleFeed(startDate, endDate, today, starredOnly);
 
   // Calendar event dots — shared date range with the feed query
   const { data: calendarEvents = [], error: calendarEventsError } = useCalendarEvents(
@@ -72,10 +73,6 @@ export function ScheduleScreen() {
     if (calendarEventsError)
       console.error('[ScheduleScreen] Calendar events query failed:', calendarEventsError);
   }, [feedError, calendarEventsError]);
-
-  const handleNavigateToProfile = useCallback(() => {
-    navigation.navigate('Profile');
-  }, [navigation]);
 
   const handleEventPress = useCallback(
     (event: FeedEvent) => {
@@ -179,7 +176,7 @@ export function ScheduleScreen() {
 
   return (
     <Box className={containerStyle({})}>
-      <ScheduleHeader onNavigateToProfile={handleNavigateToProfile} />
+      <ScheduleHeader />
       <CalendarContainer onDateSelected={handleDateSelected} markedDates={markedDates} />
       {error && (
         <Box className={errorBannerStyle({})}>

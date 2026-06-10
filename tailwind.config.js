@@ -17,7 +17,7 @@ module.exports = {
     },
     {
       pattern:
-        /(bg|border|text|stroke|fill)-brand-(primary-light|primary-mid|primary-border|primary|danger-light|danger-border|danger-text|danger|surface-muted|surface-subtle|divider|handle|text-secondary|text-muted|text|border|background|pending-bg|pending-border|pending-dot|pending-text|success-text|role-admin-bg|role-admin-text|role-admin-border|type-social-bg|type-social-text|type-public-bg|type-public-text|rsvp-maybe-bg|rsvp-maybe-text|rsvp-maybe-border|scrim)/,
+        /(bg|border|text|stroke|fill)-brand-(primary-light|primary-mid|primary-border|primary|danger-light|danger-border|danger-text|danger|surface-muted|surface-subtle|divider|handle|text-secondary|text-muted|text|border|background|pending-bg|pending-border|pending-dot|pending-text|success-text|role-admin-bg|role-admin-text|role-admin-border|type-social-bg|type-social-text|type-public-bg|type-public-text|rsvp-maybe-bg|rsvp-maybe-text|rsvp-maybe-border|star-active-bg|star-active-border|scrim)/,
     },
   ],
   theme: {
@@ -210,6 +210,8 @@ module.exports = {
           'rsvp-maybe-bg': 'rgb(var(--color-brand-rsvp-maybe-bg)/<alpha-value>)',
           'rsvp-maybe-text': 'rgb(var(--color-brand-rsvp-maybe-text)/<alpha-value>)',
           'rsvp-maybe-border': 'rgb(var(--color-brand-rsvp-maybe-border)/<alpha-value>)',
+          'star-active-bg': 'rgb(var(--color-brand-star-active-bg)/<alpha-value>)',
+          'star-active-border': 'rgb(var(--color-brand-star-active-border)/<alpha-value>)',
           scrim: 'rgb(var(--color-brand-scrim)/<alpha-value>)',
         },
       },

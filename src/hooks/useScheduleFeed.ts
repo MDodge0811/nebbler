@@ -4,6 +4,7 @@ import { useMemo, useRef } from 'react';
 import type { Event } from '@database/schema';
 import { useCalendarGroupMemberships } from '@hooks/useCalendarGroups';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useEventStars } from '@hooks/useEventStars';
 import type { FeedEvent, ResponseRow, BuildFeedRowsOutput, QueryWindow } from '@utils/scheduleFeed';
 import { buildFeedRows, calcStickyWindow } from '@utils/scheduleFeed';
 
@@ -163,11 +164,17 @@ function useEventResponsesByEvent(rawEvents: FeedEvent[]): Record<string, Respon
  *
  * Returns flat FeedRow[] and indexByDate Map for FlashList consumption.
  */
-export function useScheduleFeed(startDate: string, endDate: string, today?: string) {
+export function useScheduleFeed(
+  startDate: string,
+  endDate: string,
+  today?: string,
+  starredOnly = false
+) {
   const { user, error: userError } = useCurrentUser();
   const { data: memberships = [], error: membershipsError } = useCalendarGroupMemberships(
     user?.primary_calendar_group_id ?? undefined
   );
+  const starredIds = useEventStars();
 
   const calendarIds = useMemo(
     () => memberships.map((m) => m.calendar_id).filter((id): id is string => id !== null),
@@ -201,16 +208,26 @@ export function useScheduleFeed(startDate: string, endDate: string, today?: stri
     const output = buildFeedRows({
       events: rawEvents,
       responsesByEvent,
-      starredIds: new Set<string>(), // useEventStars called by consumer; pass empty here
+      starredIds,
       viewModeByCalendar,
       dateRange: { start: startDate, end: endDate },
       today: today ?? startDate,
       now: new Date(),
-      starredOnly: false,
+      starredOnly,
     });
     previousRowsRef.current = output;
     return output;
-  }, [rawEvents, responsesByEvent, viewModeByCalendar, startDate, endDate, today, eventsLoading]);
+  }, [
+    rawEvents,
+    responsesByEvent,
+    starredIds,
+    viewModeByCalendar,
+    startDate,
+    endDate,
+    today,
+    eventsLoading,
+    starredOnly,
+  ]);
 
   const error = userError ?? membershipsError ?? eventsError ?? undefined;
 
