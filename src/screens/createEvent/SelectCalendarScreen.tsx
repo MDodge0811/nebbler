@@ -1,5 +1,6 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Box } from '@/components/ui/box';
 import { DynamicColorView } from '@/components/ui/dynamic';
@@ -40,6 +41,7 @@ export function SelectCalendarScreen({ onClose }: SelectCalendarScreenProps) {
   const form = useCreateEventFormContext();
   const { authUser } = useCurrentUser();
   const { data: writableCalendars = [] } = useWritableCalendars(authUser?.id);
+  const insets = useSafeAreaInsets();
 
   const select = (cal: WritableCalendar) => {
     form.setCalendarId(cal.id);
@@ -47,7 +49,7 @@ export function SelectCalendarScreen({ onClose }: SelectCalendarScreenProps) {
   };
 
   return (
-    <Box className="flex-1 bg-background-0">
+    <DynamicColorView className="flex-1 bg-background-0" paddingTop={insets.top}>
       <Box className="flex-row items-center gap-2 border-b border-brand-divider px-4 pb-3 pt-2">
         <Pressable
           onPress={onClose}
@@ -83,6 +85,6 @@ export function SelectCalendarScreen({ onClose }: SelectCalendarScreenProps) {
           ))
         )}
       </ScrollView>
-    </Box>
+    </DynamicColorView>
   );
 }
