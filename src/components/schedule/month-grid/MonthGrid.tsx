@@ -45,7 +45,7 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
 
   const handleDayPress = useCallback(
     (date: string) => {
-      if (useScheduleStore.getState().isSyncLocked) return;
+      if (useScheduleStore.getState().programmaticScrollTarget !== null) return;
 
       const currentMonth = useScheduleStore.getState().displayMonth;
       if (!isDateInMonth(date, currentMonth)) {

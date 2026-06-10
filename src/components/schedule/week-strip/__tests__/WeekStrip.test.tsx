@@ -11,7 +11,7 @@ describe('WeekStrip', () => {
       selectedDate: '2026-02-24',
       visibleDate: '2026-02-24',
       today: '2026-02-24',
-      isSyncLocked: false,
+      programmaticScrollTarget: null,
     });
   });
 
@@ -45,8 +45,8 @@ describe('WeekStrip', () => {
     expect(onDateSelected).toHaveBeenCalledWith('2026-02-25');
   });
 
-  it('does not call selectDate when isSyncLocked is true', () => {
-    useScheduleStore.setState({ isSyncLocked: true });
+  it('does not call selectDate while programmatic scroll is in flight', () => {
+    useScheduleStore.setState({ programmaticScrollTarget: '2026-02-28' });
     const { getByLabelText } = render(<WeekStrip markedDates={{}} />);
     act(() => {
       fireEvent.press(getByLabelText('2026-02-25'));
@@ -54,8 +54,8 @@ describe('WeekStrip', () => {
     expect(useScheduleStore.getState().selectedDate).toBe('2026-02-24');
   });
 
-  it('does not call onDateSelected when isSyncLocked is true', () => {
-    useScheduleStore.setState({ isSyncLocked: true });
+  it('does not call onDateSelected while programmatic scroll is in flight', () => {
+    useScheduleStore.setState({ programmaticScrollTarget: '2026-02-28' });
     const onDateSelected = jest.fn();
     const { getByLabelText } = render(
       <WeekStrip markedDates={{}} onDateSelected={onDateSelected} />

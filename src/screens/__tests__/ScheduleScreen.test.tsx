@@ -1,15 +1,26 @@
 import { render, act } from '@testing-library/react-native';
 import React from 'react';
 import type { ForwardedRef } from 'react';
-import type { ViewToken } from 'react-native';
 
 import { useScheduleStore } from '@stores/useScheduleStore';
+import type { FeedRow } from '@utils/scheduleFeed';
 
 // ---- Captured refs (set by mock render callbacks) ----
 
-let capturedOnViewableItemsChanged: ((info: { viewableItems: ViewToken[] }) => void) | undefined;
-let capturedScrollToSection: jest.Mock;
+let capturedOnViewableItemsChanged:
+  | ((info: {
+      viewableItems: Array<{
+        item: FeedRow;
+        isViewable: boolean;
+        key: string;
+        index: number | null;
+        timestamp: number;
+      }>;
+    }) => void)
+  | undefined;
+let capturedScrollToIndex: jest.Mock;
 let capturedOnDateSelected: ((date: string) => void) | undefined;
+let capturedOnMomentumScrollEnd: (() => void) | undefined;
 
 // ---- Mocks ----
 
@@ -21,16 +32,17 @@ jest.mock('@components/schedule/EventFeed', () => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- require() needed inside hoisted jest.mock factory
   const { View } = require('react-native') as typeof import('react-native');
 
-  const scrollToSection = jest.fn();
-  capturedScrollToSection = scrollToSection;
+  const scrollToIndex = jest.fn();
+  capturedScrollToIndex = scrollToIndex;
 
   const EventFeed = forwardRef(function EventFeed(
     props: Record<string, unknown>,
-    ref: ForwardedRef<{ scrollToSection: jest.Mock }>
+    ref: ForwardedRef<{ scrollToIndex: jest.Mock }>
   ) {
     capturedOnViewableItemsChanged =
       props.onViewableItemsChanged as typeof capturedOnViewableItemsChanged;
-    useImperativeHandle(ref, () => ({ scrollToSection }));
+    capturedOnMomentumScrollEnd = props.onMomentumScrollEnd as (() => void) | undefined;
+    useImperativeHandle(ref, () => ({ scrollToIndex }));
     return <View testID="event-feed" />;
   });
 
@@ -54,13 +66,22 @@ jest.mock('@components/schedule/CalendarContainer', () => {
   };
 });
 
+// Three dates in the mock feed; indexByDate maps each date's day-header
+const mockRows: FeedRow[] = [
+  { kind: 'day-header', date: '2026-02-27', summary: { countLabel: 'Nothing scheduled yet' } },
+  { kind: 'day-header', date: '2026-02-28', summary: { countLabel: '1 event' } },
+  { kind: 'day-header', date: '2026-03-01', summary: { countLabel: 'Nothing scheduled yet' } },
+];
+const mockIndexByDate = new Map<string, number>([
+  ['2026-02-27', 0],
+  ['2026-02-28', 1],
+  ['2026-03-01', 2],
+]);
+
 jest.mock('@hooks/useScheduleFeed', () => ({
   useScheduleFeed: () => ({
-    sections: [
-      { title: '2026-02-27', data: [{ id: 'e1', _empty: true }] },
-      { title: '2026-02-28', data: [{ id: 'e2', _empty: true }] },
-      { title: '2026-03-01', data: [{ id: 'e3', _empty: true }] },
-    ],
+    rows: mockRows,
+    indexByDate: mockIndexByDate,
     events: [],
     isLoading: false,
     error: null,
@@ -83,14 +104,27 @@ jest.mock('@utils/dateRange', () => ({
 
 // ---- Helpers ----
 
-function fireViewableItemsChanged(dates: string[]) {
-  const viewableItems: ViewToken[] = dates.map((date, i) => ({
-    item: { id: `item-${i}` },
-    key: `item-${i}`,
-    index: i,
+function makeViewToken(
+  date: string,
+  index: number
+): {
+  item: FeedRow;
+  isViewable: boolean;
+  key: string;
+  index: number;
+  timestamp: number;
+} {
+  return {
+    item: { kind: 'day-header', date, summary: { countLabel: 'Nothing scheduled yet' } },
+    key: `day-header:${date}:`,
+    index,
     isViewable: true,
-    section: { title: date, data: [] },
-  }));
+    timestamp: Date.now(),
+  };
+}
+
+function fireViewableItemsChanged(dates: string[]) {
+  const viewableItems = dates.map((date, i) => makeViewToken(date, i));
   capturedOnViewableItemsChanged?.({ viewableItems });
 }
 
@@ -102,25 +136,20 @@ const { ScheduleScreen } = require('../ScheduleScreen') as {
   ScheduleScreen: () => React.ReactElement;
 };
 
-describe('ScheduleScreen scroll-date sync', () => {
+describe('ScheduleScreen scroll-date sync (lock-free)', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
     useScheduleStore.setState({
       selectedDate: storeToday,
       visibleDate: storeToday,
       today: storeToday,
       viewMode: 'week',
       displayMonth: '2026-02-01',
-      isSyncLocked: false,
+      programmaticScrollTarget: null,
     });
-    capturedScrollToSection.mockClear();
+    capturedScrollToIndex.mockClear();
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it('updates selectedDate when feed scrolls to a new section', () => {
+  it('updates selectedDate when feed scrolls to a new day-header row', () => {
     render(<ScheduleScreen />);
 
     act(() => {
@@ -130,59 +159,73 @@ describe('ScheduleScreen scroll-date sync', () => {
     expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
   });
 
-  it('sync lock prevents feedback loops during feed scroll', () => {
+  it('suppresses viewable-items updates while programmaticScrollTarget is set', () => {
     render(<ScheduleScreen />);
 
-    // First update goes through and locks sync
+    // Set a programmatic target
+    act(() => {
+      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
+    });
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-02-28');
+
+    // Scroll callback fires — should be suppressed (selectedDate stays as storeToday)
+    act(() => {
+      fireViewableItemsChanged(['2026-03-01']);
+    });
+    expect(useScheduleStore.getState().selectedDate).toBe(storeToday);
+  });
+
+  it('safety-clears programmaticScrollTarget when target header becomes visible', () => {
+    render(<ScheduleScreen />);
+
+    act(() => {
+      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
+    });
+
+    // Target header becomes visible — should clear the target
     act(() => {
       fireViewableItemsChanged(['2026-02-28']);
     });
-    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
-    expect(useScheduleStore.getState().isSyncLocked).toBe(true);
 
-    // While locked, subsequent updates are ignored
-    act(() => {
-      fireViewableItemsChanged(['2026-03-01']);
-    });
-    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
-
-    // After unlock delay, updates go through again
-    act(() => {
-      jest.advanceTimersByTime(100); // FEED_SYNC_UNLOCK_DELAY_MS
-    });
-    expect(useScheduleStore.getState().isSyncLocked).toBe(false);
-
-    act(() => {
-      fireViewableItemsChanged(['2026-03-01']);
-    });
-    expect(useScheduleStore.getState().selectedDate).toBe('2026-03-01');
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
   });
 
-  it('throttles rapid date taps (300ms)', () => {
+  it('calendar tap sets programmaticScrollTarget and calls scrollToIndex', () => {
     render(<ScheduleScreen />);
 
-    // First tap goes through
     act(() => {
       capturedOnDateSelected?.('2026-02-28');
     });
-    expect(capturedScrollToSection).toHaveBeenCalledWith(1);
 
-    capturedScrollToSection.mockClear();
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-02-28');
+    expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
+  });
 
-    // Second tap within 300ms is ignored
-    act(() => {
-      capturedOnDateSelected?.('2026-03-01');
-    });
-    expect(capturedScrollToSection).not.toHaveBeenCalled();
+  it('momentum scroll end clears programmaticScrollTarget', () => {
+    render(<ScheduleScreen />);
 
-    // After 300ms, next tap goes through
     act(() => {
-      jest.advanceTimersByTime(300);
+      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
     });
+
     act(() => {
-      capturedOnDateSelected?.('2026-03-01');
+      capturedOnMomentumScrollEnd?.();
     });
-    expect(capturedScrollToSection).toHaveBeenCalledWith(2);
+
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
+  });
+
+  it('out-of-window tap sets programmaticScrollTarget without immediate scroll', () => {
+    render(<ScheduleScreen />);
+
+    // '2026-04-01' is not in the mock indexByDate — simulates out-of-window
+    act(() => {
+      capturedOnDateSelected?.('2026-04-01');
+    });
+
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-04-01');
+    // scrollToIndex should NOT have been called for this date (not in window)
+    expect(capturedScrollToIndex).not.toHaveBeenCalled();
   });
 
   it('scrolls feed when date is tapped in month mode', () => {
@@ -196,7 +239,7 @@ describe('ScheduleScreen scroll-date sync', () => {
       capturedOnDateSelected?.('2026-02-28');
     });
 
-    expect(capturedScrollToSection).toHaveBeenCalledWith(1);
+    expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
   });
 
   it('updates selectedDate on feed scroll in month mode', () => {

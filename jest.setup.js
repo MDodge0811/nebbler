@@ -90,3 +90,27 @@ jest.mock('@gorhom/bottom-sheet', () => {
     BottomSheetBackdrop: View,
   };
 });
+
+// Mock @shopify/flash-list (New Architecture native module not available in Jest)
+// Returns null from render so tests that check store state work;
+// components that need rendered rows should mock FlashList in their own test files.
+jest.mock('@shopify/flash-list', () => {
+  const React = require('react');
+
+  const FlashList = React.forwardRef(function FlashList(props, ref) {
+    const scrollToIndexMock = jest.fn();
+    React.useImperativeHandle(ref, () => ({
+      scrollToIndex: scrollToIndexMock,
+      scrollToOffset: jest.fn(),
+      scrollToEnd: jest.fn(),
+      scrollToTop: jest.fn(),
+    }));
+    return null;
+  });
+
+  return {
+    __esModule: true,
+    FlashList,
+    AnimatedFlashList: FlashList,
+  };
+});

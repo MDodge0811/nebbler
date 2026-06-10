@@ -18,7 +18,7 @@ describe('MonthGrid', () => {
       today: storeToday,
       viewMode: 'month',
       displayMonth: storeMonth + '-01',
-      isSyncLocked: false,
+      programmaticScrollTarget: null,
     });
   });
 
@@ -41,8 +41,8 @@ describe('MonthGrid', () => {
     expect(onDateSelected).toHaveBeenCalled();
   });
 
-  it('does not respond to day press when sync is locked', () => {
-    useScheduleStore.setState({ isSyncLocked: true });
+  it('does not respond to day press while programmatic scroll is in flight', () => {
+    useScheduleStore.setState({ programmaticScrollTarget: '2026-03-15' });
     const onDateSelected = jest.fn();
     const { getByLabelText } = render(
       <MonthGrid onDateSelected={onDateSelected} markedDates={{}} />

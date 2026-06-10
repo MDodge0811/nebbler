@@ -7,81 +7,8 @@ import { useCurrentUser } from '@hooks/useCurrentUser';
 import type { FeedEvent, ResponseRow, BuildFeedRowsOutput, QueryWindow } from '@utils/scheduleFeed';
 import { buildFeedRows, calcStickyWindow } from '@utils/scheduleFeed';
 
-// Re-export legacy types so existing consumers don't break
+// Re-export types so consumers don't need to import from utils directly
 export type { FeedEvent } from '@utils/scheduleFeed';
-
-export interface EmptySentinel {
-  _empty: true;
-  id: string;
-}
-
-export interface DateSection {
-  title: string; // YYYY-MM-DD
-  data: (FeedEvent | EmptySentinel)[];
-  eventCount: number;
-}
-
-export function isEmptySentinel(item: FeedEvent | EmptySentinel): item is EmptySentinel {
-  return '_empty' in item;
-}
-
-/**
- * Generates an array of YYYY-MM-DD strings from startDate to endDate inclusive.
- */
-function getDateRange(startDate: string, endDate: string): string[] {
-  const dates: string[] = [];
-  const current = new Date(startDate + 'T12:00:00');
-  const end = new Date(endDate + 'T12:00:00');
-
-  while (current <= end) {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    dates.push(`${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`);
-    current.setDate(current.getDate() + 1);
-  }
-
-  return dates;
-}
-
-/**
- * Groups events into DateSection[] for SectionList consumption (legacy path).
- * Every date in the range gets a section — empty days include a sentinel item.
- */
-export function buildSections(
-  events: FeedEvent[],
-  startDate: string,
-  endDate: string,
-  displayStartDate?: string
-): DateSection[] {
-  if (displayStartDate && displayStartDate > startDate) {
-    startDate = displayStartDate;
-  }
-  const dateRange = getDateRange(startDate, endDate);
-
-  const eventsByDate = new Map<string, FeedEvent[]>();
-  for (const event of events) {
-    if (!event.start_time) continue;
-    // Convert UTC to local date for correct day bucketing
-    const localDate = new Date(event.start_time);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const dateKey = `${localDate.getFullYear()}-${pad(localDate.getMonth() + 1)}-${pad(localDate.getDate())}`;
-    const existing = eventsByDate.get(dateKey);
-    if (existing) {
-      existing.push(event);
-    } else {
-      eventsByDate.set(dateKey, [event]);
-    }
-  }
-
-  return dateRange.map((date) => {
-    const dayEvents = eventsByDate.get(date);
-    const count = dayEvents?.length ?? 0;
-    return {
-      title: date,
-      data: count > 0 && dayEvents ? dayEvents : [{ _empty: true, id: `empty-${date}` }],
-      eventCount: count,
-    };
-  });
-}
 
 // ---------------------------------------------------------------------------
 // SQL builders — extracted to keep hook functions under complexity limit
@@ -154,7 +81,7 @@ interface CalendarEventsResult {
   error: Error | undefined;
 }
 
-function useCalendarEvents(
+function useCalendarEventsQuery(
   calendarIds: string[],
   userId: string | null | undefined,
   windowStart: string,
@@ -233,8 +160,10 @@ function useEventResponsesByEvent(rawEvents: FeedEvent[]): Record<string, Respon
  *
  * Sticky window: re-centers only when selectedDate comes within 7 days of
  * either window edge. Previous rows are retained while a new window loads.
+ *
+ * Returns flat FeedRow[] and indexByDate Map for FlashList consumption.
  */
-export function useScheduleFeed(startDate: string, endDate: string, displayStartDate?: string) {
+export function useScheduleFeed(startDate: string, endDate: string, today?: string) {
   const { user, error: userError } = useCurrentUser();
   const { data: memberships = [], error: membershipsError } = useCalendarGroupMemberships(
     user?.primary_calendar_group_id ?? undefined
@@ -258,20 +187,13 @@ export function useScheduleFeed(startDate: string, endDate: string, displayStart
     viewModeByCalendar,
     isLoading: eventsLoading,
     error: eventsError,
-  } = useCalendarEvents(calendarIds, user?.id, window.start, window.end);
+  } = useCalendarEventsQuery(calendarIds, user?.id, window.start, window.end);
 
   const responsesByEvent = useEventResponsesByEvent(rawEvents);
 
   // Sticky rows — keep previous rows while a new window is loading
   const previousRowsRef = useRef<BuildFeedRowsOutput | null>(null);
 
-  // Legacy SectionList path (kept for ScheduleScreen until S4 cutover)
-  const sections = useMemo(
-    () => buildSections(rawEvents, startDate, endDate, displayStartDate),
-    [rawEvents, startDate, endDate, displayStartDate]
-  );
-
-  // New FeedRow path (S3/S4 consumers)
   const feedOutput = useMemo<BuildFeedRowsOutput>(() => {
     if (eventsLoading && previousRowsRef.current) {
       return previousRowsRef.current;
@@ -282,21 +204,18 @@ export function useScheduleFeed(startDate: string, endDate: string, displayStart
       starredIds: new Set<string>(), // useEventStars called by consumer; pass empty here
       viewModeByCalendar,
       dateRange: { start: startDate, end: endDate },
-      today: startDate, // caller passes today explicitly in S4; use startDate as fallback
+      today: today ?? startDate,
       now: new Date(),
       starredOnly: false,
     });
     previousRowsRef.current = output;
     return output;
-  }, [rawEvents, responsesByEvent, viewModeByCalendar, startDate, endDate, eventsLoading]);
+  }, [rawEvents, responsesByEvent, viewModeByCalendar, startDate, endDate, today, eventsLoading]);
 
   const error = userError ?? membershipsError ?? eventsError ?? undefined;
 
   return {
-    // Legacy SectionList output (ScheduleScreen, EventFeed)
-    sections,
     events: rawEvents,
-    // New FeedRow output (S3/S4 consumers)
     rows: feedOutput.rows,
     indexByDate: feedOutput.indexByDate,
     viewModeByCalendar,

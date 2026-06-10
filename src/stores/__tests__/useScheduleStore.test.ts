@@ -12,7 +12,7 @@ describe('useScheduleStore', () => {
       today: storeToday,
       viewMode: 'week',
       displayMonth: storeDisplayMonth,
-      isSyncLocked: false,
+      programmaticScrollTarget: null,
       cardDisplayMode: {},
       defaultCardMode: 'full',
     });
@@ -66,12 +66,12 @@ describe('useScheduleStore', () => {
     expect(useScheduleStore.getState().displayMonth).toBe('2026-04-01');
   });
 
-  it('lockSync and unlockSync toggle isSyncLocked', () => {
-    expect(useScheduleStore.getState().isSyncLocked).toBe(false);
-    useScheduleStore.getState().lockSync();
-    expect(useScheduleStore.getState().isSyncLocked).toBe(true);
-    useScheduleStore.getState().unlockSync();
-    expect(useScheduleStore.getState().isSyncLocked).toBe(false);
+  it('setProgrammaticScrollTarget sets and clears the target', () => {
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
+    useScheduleStore.getState().setProgrammaticScrollTarget('2026-03-15');
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-03-15');
+    useScheduleStore.getState().setProgrammaticScrollTarget(null);
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
   });
 
   it('setCardMode stores per-date preferences', () => {
