@@ -7,10 +7,10 @@ import { ScheduleHeader } from '../ScheduleHeader';
 describe('ScheduleHeader', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    useScheduleStore.setState({ displayMonth: '2026-02-01', starredOnly: false });
+    useScheduleStore.setState({ visibleDate: '2026-02-15', starredOnly: false });
   });
 
-  it('renders the current month name and year from displayMonth', () => {
+  it('renders the current month name and year from visibleDate', () => {
     render(<ScheduleHeader />);
     expect(screen.getByText('February')).toBeTruthy();
     expect(screen.getByText('2026')).toBeTruthy();
@@ -65,19 +65,19 @@ describe('ScheduleHeader', () => {
     expect(useScheduleStore.getState().starredOnly).toBe(false);
   });
 
-  it('renders month/year from displayMonth in the store', () => {
-    useScheduleStore.setState({ displayMonth: '2025-06-01' });
+  it('renders month/year from visibleDate in the store', () => {
+    useScheduleStore.setState({ visibleDate: '2025-06-10' });
     render(<ScheduleHeader />);
     expect(screen.getByText('June')).toBeTruthy();
     expect(screen.getByText('2025')).toBeTruthy();
   });
 
-  it('re-renders when displayMonth changes in the store after mount', () => {
+  it('re-renders when visibleDate changes in the store after mount (week-mode scroll)', () => {
     render(<ScheduleHeader />);
     expect(screen.getByText('February')).toBeTruthy();
 
     act(() => {
-      useScheduleStore.setState({ displayMonth: '2026-08-01' });
+      useScheduleStore.setState({ visibleDate: '2026-08-10' });
     });
 
     expect(screen.getByText('August')).toBeTruthy();

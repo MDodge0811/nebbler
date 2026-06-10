@@ -250,6 +250,9 @@ export function useScheduleFeed(
     indexByDate: feedOutput.indexByDate,
     viewModeByCalendar,
     responsesByEvent,
+    // Exposed so the screen's markedDates can reuse this subscription instead of
+    // calling useEventStars() a second time.
+    starredIds,
     isLoading: eventsLoading,
     error,
   };
