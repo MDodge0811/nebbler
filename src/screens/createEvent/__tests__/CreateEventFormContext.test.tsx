@@ -116,6 +116,23 @@ describe('CreateEventFormContext — create mode', () => {
     expect(mockCreateResponse).toHaveBeenCalledWith('evt-new', 'p-2', 'pending');
   });
 
+  it('defaults showAs to busy and persists setShowAs("free") on save', async () => {
+    mockCreateEvent.mockResolvedValue('evt-free');
+    renderProvider();
+    expect(ctx.showAs).toBe('busy');
+    act(() => {
+      ctx.setTitle('Focus');
+      ctx.setShowAs('free');
+    });
+    expect(ctx.showAs).toBe('free');
+
+    await act(async () => {
+      await ctx.save();
+    });
+
+    expect(mockCreateEvent).toHaveBeenCalledWith(expect.objectContaining({ showAs: 'free' }));
+  });
+
   it('save() rejects when createEvent returns no id (invites not silently skipped)', async () => {
     mockCreateEvent.mockResolvedValue(undefined);
     renderProvider();
@@ -246,7 +263,7 @@ describe('CreateEventFormContext — edit mode', () => {
     });
     expect(mockUpdateEvent).toHaveBeenCalledWith(
       'evt-7',
-      expect.objectContaining({ title: 'Standup' })
+      expect.objectContaining({ title: 'Standup', show_as: 'free' })
     );
     expect(mockCreateEvent).not.toHaveBeenCalled();
     expect(mockCreateResponse).not.toHaveBeenCalled();

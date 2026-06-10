@@ -9,10 +9,11 @@ import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import type { PickerTarget } from '@/types/eventForm';
 import { EditDateTimeRow } from '@components/EditDateTimeRow';
+import { SegmentedControl } from '@components/SegmentedControl';
 import { calendarsUIColors } from '@constants/calendarsUI';
 import { formatDateShort } from '@utils/formatTime';
 
-import { useCreateEventFormContext } from './CreateEventFormContext';
+import { useCreateEventFormContext, type ShowAs } from './CreateEventFormContext';
 import { BackIcon, BellIcon, ChevronDownIcon, HeatmapIcon, RepeatIcon, ShowAsIcon } from './icons';
 
 const cardStyle = tva({ base: 'rounded-[14px] border border-brand-border bg-background-0' });
@@ -237,13 +238,19 @@ export function Screen2When({ onBack, onSaved }: Screen2Props) {
                 <Text className={moreRowValueStyle({})}>Does not repeat</Text>
               </Box>
               <Box className={`mx-4 ${dividerStyle({})}`} />
-              <Box
-                className="flex-row items-center gap-3 px-4 py-3.5"
-                accessibilityState={{ disabled: true }}
-              >
-                <ShowAsIcon />
-                <Text className={moreRowLabelStyle({})}>Show as</Text>
-                <Text className={moreRowValueStyle({})}>Busy</Text>
+              <Box className="gap-2.5 px-4 py-3.5">
+                <Box className="flex-row items-center gap-3">
+                  <ShowAsIcon />
+                  <Text className={moreRowLabelStyle({})}>Show as</Text>
+                </Box>
+                <SegmentedControl
+                  options={[
+                    { label: 'Busy', value: 'busy' },
+                    { label: 'Free', value: 'free' },
+                  ]}
+                  value={form.showAs}
+                  onChange={(v) => form.setShowAs(v as ShowAs)}
+                />
               </Box>
               <Box className={`mx-4 ${dividerStyle({})}`} />
               <Box
