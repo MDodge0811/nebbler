@@ -10,9 +10,13 @@ import {
 } from 'react';
 
 import { useEventById, useEventMutations } from '@hooks/useCalendarEvents';
+import { useCalendarMemberUserIds } from '@hooks/useCalendarMembers';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useEventResponseMutations } from '@hooks/useEventResponses';
 import { useWritableCalendars } from '@hooks/useWritableCalendars';
+
+/** `calendars.type` value that denotes a multi-member / social calendar. */
+const SOCIAL_CALENDAR_TYPE = 'social';
 
 export type ShowAs = 'busy' | 'free';
 
@@ -51,6 +55,18 @@ export interface CreateEventFormValue {
   setReminderMinutes: (v: number | null) => void;
   mode: 'create' | 'edit';
   eventId: string | null;
+  // Social calendar context (NEB-133). `isSocial` is true when launched from a
+  // social-calendar FAB; all calendar members are then auto-included.
+  isSocial: boolean;
+  /** Member count, EXCLUDING the requester/current user. */
+  memberCount: number;
+  /** Social calendar member user ids, EXCLUDING the requester. */
+  socialMemberIds: string[];
+  /**
+   * Derived invited set used at save time: social members ∪ extra guests, minus
+   * the requester. NEB-166's heatmap consumes this member-inclusive list as-is.
+   */
+  invitedUserIds: string[];
   // Derived
   isScreen1Valid: boolean;
   isScreen2Valid: boolean;
@@ -133,6 +149,48 @@ function computeIsDirty(s: DirtyInput, original: OriginalSnapshot): boolean {
   );
 }
 
+/**
+ * Compute the invited user-id set (NEB-133). In social mode this is the union
+ * of calendar members and manually added guests; otherwise just the guests.
+ * The requester is always excluded. NEB-166's heatmap consumes the same set.
+ */
+function deriveInvitedUserIds(
+  isSocial: boolean,
+  socialMemberIds: string[],
+  peopleIds: string[],
+  requesterId: string | undefined
+): string[] {
+  const merged = isSocial ? [...socialMemberIds, ...peopleIds] : peopleIds;
+  return Array.from(new Set(merged)).filter((id) => id !== requesterId);
+}
+
+/**
+ * Resolve social-calendar context for the CreateEvent flow (NEB-133): whether
+ * the flow is social, the member ids (minus the requester), and their count.
+ * Kept as a hook so the provider stays under the complexity ceiling.
+ */
+function useSocialMembers(
+  socialCalendarId: string | null,
+  calendarId: string | null,
+  writableCalendars: { id: string; type: string | null }[],
+  requesterId: string | undefined
+): { isSocial: boolean; socialMemberIds: string[]; memberCount: number } {
+  const resolvedCalendar = useMemo(
+    () => writableCalendars.find((c) => c.id === calendarId) ?? null,
+    [writableCalendars, calendarId]
+  );
+  const isSocial = !!socialCalendarId || resolvedCalendar?.type === SOCIAL_CALENDAR_TYPE;
+
+  // Load the calendar's members (only when social — empty otherwise).
+  const memberUserIds = useCalendarMemberUserIds(isSocial ? (calendarId ?? undefined) : undefined);
+  // socialMemberIds = members − requester. Counts only; never per-person data.
+  const socialMemberIds = useMemo(
+    () => (isSocial ? memberUserIds.filter((id) => id !== requesterId) : []),
+    [isSocial, memberUserIds, requesterId]
+  );
+  return { isSocial, socialMemberIds, memberCount: socialMemberIds.length };
+}
+
 const CreateEventFormContext = createContext<CreateEventFormValue | null>(null);
 
 interface ProviderProps {
@@ -142,11 +200,14 @@ interface ProviderProps {
 
 /** Resolve `mode` + initial ids from the route params (pure). */
 function resolveInitial(params: CreateEventRouteParams | undefined) {
+  const socialCalendarId = params?.socialContext?.calendarId ?? null;
+  const mode = params?.mode === 'edit' ? ('edit' as const) : ('create' as const);
   return {
-    mode: params?.mode === 'edit' ? ('edit' as const) : ('create' as const),
+    mode,
     routeEventId: params?.eventId ?? null,
-    initialCalendarId: params?.preselectedCalendarId ?? params?.socialContext?.calendarId ?? null,
+    initialCalendarId: params?.preselectedCalendarId ?? socialCalendarId,
     initialPeople: params?.preselectedPeople ?? [],
+    socialCalendarId,
   };
 }
 
@@ -161,7 +222,7 @@ export function CreateEventFormProvider({ params, children }: ProviderProps) {
   const { createEvent, updateEvent } = useEventMutations();
   const { createResponse } = useEventResponseMutations();
 
-  const { mode, routeEventId, initialCalendarId, initialPeople } = useMemo(
+  const { mode, routeEventId, initialCalendarId, initialPeople, socialCalendarId } = useMemo(
     () => resolveInitial(params),
     [params]
   );
@@ -251,6 +312,22 @@ export function CreateEventFormProvider({ params, children }: ProviderProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, calendarId, writableCalendars]);
 
+  // Social mode: launched from a social-calendar FAB, or the resolved calendar
+  // is itself a social calendar. Members are then auto-included (NEB-133).
+  const { isSocial, socialMemberIds, memberCount } = useSocialMembers(
+    socialCalendarId,
+    calendarId,
+    writableCalendars,
+    currentUserId
+  );
+
+  // Derived invited set used at save time + handed to the (future) heatmap:
+  // social members ∪ extra guests, minus the requester. NEB-166 consumes this.
+  const invitedUserIds = useMemo(
+    () => deriveInvitedUserIds(isSocial, socialMemberIds, peopleIds, currentUserId),
+    [isSocial, socialMemberIds, peopleIds, currentUserId]
+  );
+
   const isScreen1Valid = title.trim().length > 0 && !!calendarId;
   const isScreen2Valid = endTime > startTime;
   const endTimeError = endTime <= startTime ? 'End time must be after start time' : undefined;
@@ -312,7 +389,9 @@ export function CreateEventFormProvider({ params, children }: ProviderProps) {
     if (!newEventId) {
       throw new Error('Event created but no id returned — invites not written');
     }
-    for (const personId of peopleIds) {
+    // Invite members + extra guests (social) or just selected people (default).
+    // `invitedUserIds` already excludes the requester.
+    for (const personId of invitedUserIds) {
       await createResponse(newEventId, personId, 'pending');
     }
   }, [
@@ -326,7 +405,7 @@ export function CreateEventFormProvider({ params, children }: ProviderProps) {
     mode,
     routeEventId,
     showAs,
-    peopleIds,
+    invitedUserIds,
     createEvent,
     updateEvent,
     createResponse,
@@ -358,6 +437,10 @@ export function CreateEventFormProvider({ params, children }: ProviderProps) {
       setReminderMinutes,
       mode,
       eventId: routeEventId,
+      isSocial,
+      memberCount,
+      socialMemberIds,
+      invitedUserIds,
       isScreen1Valid,
       isScreen2Valid,
       isDirty,
@@ -378,6 +461,10 @@ export function CreateEventFormProvider({ params, children }: ProviderProps) {
       reminderMinutes,
       mode,
       routeEventId,
+      isSocial,
+      memberCount,
+      socialMemberIds,
+      invitedUserIds,
       isScreen1Valid,
       isScreen2Valid,
       isDirty,

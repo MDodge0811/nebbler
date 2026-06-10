@@ -11,6 +11,9 @@ const mockCreateEvent = jest.fn();
 const mockUpdateEvent = jest.fn();
 const mockCreateResponse = jest.fn();
 let mockEditEvent: Record<string, unknown> | null = null;
+// member user ids returned by useCalendarMemberUserIds (includes the requester
+// 'me-1' to verify it's excluded from socialMemberIds/invitedUserIds).
+let mockMemberUserIds: string[] = [];
 
 jest.mock('@hooks/useCalendarEvents', () => ({
   useEventMutations: () => ({
@@ -18,6 +21,10 @@ jest.mock('@hooks/useCalendarEvents', () => ({
     updateEvent: mockUpdateEvent,
   }),
   useEventById: () => mockEditEvent,
+}));
+
+jest.mock('@hooks/useCalendarMembers', () => ({
+  useCalendarMemberUserIds: () => mockMemberUserIds,
 }));
 
 jest.mock('@hooks/useEventResponses', () => ({
@@ -29,7 +36,12 @@ jest.mock('@hooks/useCurrentUser', () => ({
 }));
 
 jest.mock('@hooks/useWritableCalendars', () => ({
-  useWritableCalendars: () => ({ data: [{ id: 'cal-1', name: 'Work' }] }),
+  useWritableCalendars: () => ({
+    data: [
+      { id: 'cal-1', name: 'Work', type: 'private' },
+      { id: 'cal-soc', name: 'Book Club', type: 'social' },
+    ],
+  }),
 }));
 
 // Captures the live context value so tests can drive setters + call save().
@@ -50,6 +62,7 @@ function renderProvider(params?: Parameters<typeof CreateEventFormProvider>[0]['
 beforeEach(() => {
   jest.clearAllMocks();
   mockEditEvent = null;
+  mockMemberUserIds = [];
 });
 
 describe('CreateEventFormContext — create mode', () => {
@@ -137,6 +150,58 @@ describe('CreateEventFormContext — create mode', () => {
       act(() => ctx.setCalendarId('cal-other'));
       expect(ctx.isDirty).toBe(true);
     });
+  });
+});
+
+describe('CreateEventFormContext — social mode (NEB-133)', () => {
+  it('is not social for a default (non-social) launch', () => {
+    renderProvider();
+    expect(ctx.isSocial).toBe(false);
+    expect(ctx.memberCount).toBe(0);
+    expect(ctx.socialMemberIds).toEqual([]);
+  });
+
+  it('detects social mode from socialContext and locks the calendar', () => {
+    mockMemberUserIds = ['me-1', 'm-1', 'm-2'];
+    renderProvider({ socialContext: { calendarId: 'cal-soc' } });
+    expect(ctx.isSocial).toBe(true);
+    expect(ctx.calendarId).toBe('cal-soc');
+  });
+
+  it('excludes the requester from memberCount and socialMemberIds', () => {
+    mockMemberUserIds = ['me-1', 'm-1', 'm-2'];
+    renderProvider({ socialContext: { calendarId: 'cal-soc' } });
+    expect(ctx.socialMemberIds).toEqual(['m-1', 'm-2']);
+    expect(ctx.memberCount).toBe(2);
+  });
+
+  it('invitedUserIds = social members ∪ extra guests, minus requester', () => {
+    mockMemberUserIds = ['me-1', 'm-1', 'm-2'];
+    renderProvider({ socialContext: { calendarId: 'cal-soc' } });
+    act(() => ctx.setPeopleIds(['g-1', 'm-2']));
+    // m-2 is both a member and re-added as a guest → deduped; me-1 excluded.
+    expect([...ctx.invitedUserIds].sort()).toEqual(['g-1', 'm-1', 'm-2']);
+  });
+
+  it('save() invites members AND extra guests (not just guests)', async () => {
+    mockCreateEvent.mockResolvedValue('evt-soc');
+    mockMemberUserIds = ['me-1', 'm-1', 'm-2'];
+    renderProvider({ socialContext: { calendarId: 'cal-soc' } });
+    act(() => {
+      ctx.setTitle('Meetup');
+      ctx.setPeopleIds(['g-1']);
+    });
+
+    await act(async () => {
+      await ctx.save();
+    });
+
+    // 2 members (m-1, m-2) + 1 guest (g-1); requester me-1 never invited.
+    expect(mockCreateResponse).toHaveBeenCalledTimes(3);
+    expect(mockCreateResponse).toHaveBeenCalledWith('evt-soc', 'm-1', 'pending');
+    expect(mockCreateResponse).toHaveBeenCalledWith('evt-soc', 'm-2', 'pending');
+    expect(mockCreateResponse).toHaveBeenCalledWith('evt-soc', 'g-1', 'pending');
+    expect(mockCreateResponse).not.toHaveBeenCalledWith('evt-soc', 'me-1', 'pending');
   });
 });
 

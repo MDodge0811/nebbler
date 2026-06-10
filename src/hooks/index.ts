@@ -20,7 +20,11 @@ export {
   useEventMutations,
 } from './useCalendarEvents';
 export { useCalendars, useCalendar, useCalendarMutations } from './useCalendars';
-export { useCalendarMembers, useCalendarMemberMutations } from './useCalendarMembers';
+export {
+  useCalendarMembers,
+  useCalendarMemberMutations,
+  useCalendarMemberUserIds,
+} from './useCalendarMembers';
 export {
   useCalendarGroups,
   useCalendarGroup,

@@ -1,4 +1,5 @@
 import { useQuery, usePowerSync } from '@powersync/react';
+import { useMemo } from 'react';
 
 import type { CalendarMember } from '@database/schema';
 
@@ -13,6 +14,21 @@ export function useCalendarMembers(calendarId: string | undefined) {
       : 'SELECT * FROM calendar_members WHERE 0',
     calendarId ? [calendarId] : []
   );
+}
+
+/**
+ * Reactive list of `user_id`s for a calendar's members (NEB-133).
+ *
+ * Used by the social CreateEvent flow to auto-include all members. Returns only
+ * counts/ids — never per-person availability — so privacy is preserved upstream.
+ * NEB-166's real heatmap consumes the same member-inclusive userIds.
+ */
+export function useCalendarMemberUserIds(calendarId: string | undefined): string[] {
+  const { data } = useCalendarMembers(calendarId);
+  return useMemo(() => {
+    const ids = data.map((m) => m.user_id).filter((id): id is string => !!id);
+    return Array.from(new Set(ids));
+  }, [data]);
 }
 
 /**

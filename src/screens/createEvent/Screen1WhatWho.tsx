@@ -37,6 +37,9 @@ const descriptionInputStyle = tva({
 });
 const calRowLabelStyle = tva({ base: 'mb-0.5 text-[13px] text-brand-text-muted' });
 const calNameStyle = tva({ base: 'text-[15px] font-medium text-brand-text' });
+const socialBadgeStyle = tva({
+  base: 'rounded-md bg-brand-primary-light px-2 py-[2px] text-[11px] font-semibold uppercase tracking-wide text-brand-primary',
+});
 const placeholderRowLabelStyle = tva({ base: 'mb-0.5 text-[13px] text-brand-text-muted' });
 const placeholderRowValueStyle = tva({ base: 'text-[15px] font-medium text-brand-text-muted' });
 const comingSoonStyle = tva({ base: 'text-[11px] font-semibold uppercase text-brand-text-muted' });
@@ -88,6 +91,58 @@ function Screen1Header({ isEdit, canAdvance, onClose, onNext }: Screen1HeaderPro
   );
 }
 
+interface CalendarRowProps {
+  isSocial: boolean;
+  calColor: string;
+  calendarName: string;
+  onOpenPicker: () => void;
+}
+
+/**
+ * Calendar field: a non-interactive indicator (color dot, name, "Social" badge)
+ * when launched from a social calendar — the calendar is locked (NEB-133) — or a
+ * tappable picker row otherwise.
+ */
+function CalendarRow({ isSocial, calColor, calendarName, onOpenPicker }: CalendarRowProps) {
+  const inner = (
+    <Box className="flex-row items-center gap-3">
+      <Box className="flex-1">
+        <Text className={calRowLabelStyle({})}>Calendar</Text>
+        <Box className="flex-row items-center gap-2">
+          <DynamicColorView
+            className="h-[10px] w-[10px] rounded-[3px]"
+            backgroundColor={calColor}
+          />
+          <Text className={calNameStyle({})}>{calendarName}</Text>
+          {isSocial ? <Text className={socialBadgeStyle({})}>Social</Text> : null}
+        </Box>
+      </Box>
+      {isSocial ? null : <ChevronDownIcon />}
+    </Box>
+  );
+
+  if (isSocial) {
+    return (
+      <Box className={cardStyle({})} accessibilityState={{ disabled: true }}>
+        {inner}
+      </Box>
+    );
+  }
+  return (
+    <Pressable onPress={onOpenPicker} accessibilityRole="button" className={cardStyle({})}>
+      {inner}
+    </Pressable>
+  );
+}
+
+/** Find-a-Time subtitle: member count (social) or "everyone's free" + people count. */
+function findTimeSubtitle(isSocial: boolean, memberCount: number, peopleCount: number): string {
+  if (isSocial) {
+    return `${memberCount} ${memberCount === 1 ? 'member' : 'members'}`;
+  }
+  return `See when everyone's free · ${peopleCount} ${peopleCount === 1 ? 'person' : 'people'}`;
+}
+
 interface Screen1Props {
   onNext: () => void;
   onClose: () => void;
@@ -109,7 +164,9 @@ export function Screen1WhatWho({ onNext, onClose }: Screen1Props) {
   };
 
   const peopleCount = form.peopleIds.length;
-  const showFindTime = peopleCount > 0;
+  // Social mode always shows Find a Time (members are implicit); default mode
+  // gates it behind ≥1 manually added person.
+  const showFindTime = form.isSocial || peopleCount > 0;
 
   const advance = () => {
     if (form.isScreen1Valid) onNext();
@@ -137,26 +194,13 @@ export function Screen1WhatWho({ onNext, onClose }: Screen1Props) {
         contentContainerClassName="gap-5 px-4 pb-24 pt-4"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Calendar picker row */}
-        <Pressable
-          onPress={() => setShowCalendarPicker(true)}
-          accessibilityRole="button"
-          className={cardStyle({})}
-        >
-          <Box className="flex-row items-center gap-3">
-            <Box className="flex-1">
-              <Text className={calRowLabelStyle({})}>Calendar</Text>
-              <Box className="flex-row items-center gap-2">
-                <DynamicColorView
-                  className="h-[10px] w-[10px] rounded-[3px]"
-                  backgroundColor={calColor}
-                />
-                <Text className={calNameStyle({})}>{calendarName}</Text>
-              </Box>
-            </Box>
-            <ChevronDownIcon />
-          </Box>
-        </Pressable>
+        {/* Calendar row — non-interactive indicator in social mode, picker otherwise. */}
+        <CalendarRow
+          isSocial={form.isSocial}
+          calColor={calColor}
+          calendarName={calendarName}
+          onOpenPicker={() => setShowCalendarPicker(true)}
+        />
 
         {/* Title */}
         <TextInput
@@ -203,6 +247,8 @@ export function Screen1WhatWho({ onNext, onClose }: Screen1Props) {
             selectedIds={form.peopleIds}
             onChange={form.setPeopleIds}
             calendarColor={calColor}
+            variant={form.isSocial ? 'social' : 'default'}
+            memberCount={form.memberCount}
           />
         </Box>
 
@@ -219,7 +265,7 @@ export function Screen1WhatWho({ onNext, onClose }: Screen1Props) {
             <Box className="flex-1">
               <Text className={findTimeTitleStyle({})}>Find a Time</Text>
               <Text className={findTimeSubtitleStyle({})}>
-                See when everyone's free · {peopleCount} {peopleCount === 1 ? 'person' : 'people'}
+                {findTimeSubtitle(form.isSocial, form.memberCount, peopleCount)}
               </Text>
             </Box>
             <Box className="flex-row items-center gap-1">
