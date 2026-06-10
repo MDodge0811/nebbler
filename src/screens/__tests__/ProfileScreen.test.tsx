@@ -38,6 +38,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockUseUserProfile.mockReturnValue({
     id: 'me',
+    username: 'maldodge',
     first_name: 'Mal',
     last_name: 'Dodge',
     avatar_color: CALENDAR_PALETTE[0].hex,
@@ -53,22 +54,23 @@ beforeEach(() => {
 });
 
 describe('ProfileScreen', () => {
-  it('renders name and email', () => {
-    const { getByText } = render(<ProfileScreen />);
+  it('renders name and @username (email is not shown on the personal profile)', () => {
+    const { getByText, queryByText } = render(<ProfileScreen />);
     expect(getByText('Mal Dodge')).toBeTruthy();
-    expect(getByText('me@example.com')).toBeTruthy();
+    expect(getByText('@maldodge')).toBeTruthy();
+    expect(queryByText('me@example.com')).toBeNull();
   });
 
-  it('expands the color picker when the avatar row is tapped', () => {
+  it('expands the color picker when "Edit color" is tapped', () => {
     const { getByText, queryAllByTestId } = render(<ProfileScreen />);
     expect(queryAllByTestId(/color-swatch-/)).toHaveLength(0);
-    fireEvent.press(getByText('Mal Dodge'));
+    fireEvent.press(getByText('Edit color'));
     expect(queryAllByTestId(/color-swatch-/).length).toBeGreaterThan(0);
   });
 
   it('updates avatar color via the mutation hook when a swatch is tapped', async () => {
     const { getByText, getByTestId } = render(<ProfileScreen />);
-    fireEvent.press(getByText('Mal Dodge'));
+    fireEvent.press(getByText('Edit color'));
     fireEvent.press(getByTestId(`color-swatch-${CALENDAR_PALETTE[3].hex}`));
     await waitFor(() =>
       expect(mockUpdateAvatarColor).toHaveBeenCalledWith('me', CALENDAR_PALETTE[3].hex)
