@@ -16,6 +16,16 @@ describe('EventCardCompact', () => {
     expect(screen.getByText('Minimal')).toBeTruthy();
   });
 
+  it('renders the star indicator when starred=true', () => {
+    render(<EventCardCompact title="Recital" timeRange="9 AM" tintColor={TINT} starred />);
+    expect(screen.getByLabelText('Starred')).toBeTruthy();
+  });
+
+  it('does not render the star indicator when starred is absent', () => {
+    render(<EventCardCompact title="No Star" timeRange="9 AM" tintColor={TINT} />);
+    expect(screen.queryByLabelText('Starred')).toBeNull();
+  });
+
   it('does not render timeRange text when empty', () => {
     render(<EventCardCompact title="No Time" timeRange="" tintColor={TINT} />);
     expect(screen.queryByText('')).toBeNull();

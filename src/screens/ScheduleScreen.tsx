@@ -1,6 +1,6 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useNavigation } from '@react-navigation/native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
 import { Box } from '@/components/ui/box';
@@ -13,7 +13,6 @@ import {
 } from '@components/schedule/EventFeed';
 import { ScheduleHeader } from '@components/schedule/ScheduleHeader';
 import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
-import { useEventStars } from '@hooks/useEventStars';
 import { useScheduleFeed } from '@hooks/useScheduleFeed';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthBufferRange, monthKeyOf } from '@utils/dateRange';
@@ -22,6 +21,9 @@ import type { FeedEvent } from '@utils/scheduleFeed';
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const errorBannerStyle = tva({ base: 'bg-error-50 px-4 py-2' });
 const errorTextStyle = tva({ base: 'text-sm text-error-600' });
+const emptyZoneStyle = tva({ base: 'flex-1 items-center justify-center px-8' });
+const emptyTitleStyle = tva({ base: 'text-lg font-semibold text-typography-900' });
+const emptyBodyStyle = tva({ base: 'mt-1 text-center text-sm text-typography-500' });
 
 export function ScheduleScreen() {
   const navigation = useNavigation();
@@ -48,6 +50,7 @@ export function ScheduleScreen() {
   const viewMode = useScheduleStore((s) => s.viewMode);
   const displayMonth = useScheduleStore((s) => s.displayMonth);
   const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
+  const starredOnly = useScheduleStore((s) => s.starredOnly);
   const queryAnchor = viewMode === 'month' ? displayMonth : selectedDate;
   const monthKey = monthKeyOf(queryAnchor);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memoize by month, not by day
@@ -55,16 +58,17 @@ export function ScheduleScreen() {
   const {
     rows,
     indexByDate,
+    starredIds,
     isLoading,
     error: feedError,
-  } = useScheduleFeed(startDate, endDate, today);
+  } = useScheduleFeed(startDate, endDate, today, starredOnly);
 
-  // Calendar event dots — shared date range with the feed query
+  // Calendar event dots — shared date range with the feed query. Reuse the
+  // feed's starredIds subscription rather than calling useEventStars again.
   const { data: calendarEvents = [], error: calendarEventsError } = useCalendarEvents(
     startDate,
     endDate
   );
-  const starredIds = useEventStars();
   const markedDates = useMarkedDates(calendarEvents, starredIds);
 
   useEffect(() => {
@@ -72,10 +76,6 @@ export function ScheduleScreen() {
     if (calendarEventsError)
       console.error('[ScheduleScreen] Calendar events query failed:', calendarEventsError);
   }, [feedError, calendarEventsError]);
-
-  const handleNavigateToProfile = useCallback(() => {
-    navigation.navigate('Profile');
-  }, [navigation]);
 
   const handleEventPress = useCallback(
     (event: FeedEvent) => {
@@ -177,9 +177,38 @@ export function ScheduleScreen() {
 
   const error = feedError ?? calendarEventsError;
 
+  let feedBody: ReactNode;
+  if (isLoading && rows.length === 0) {
+    feedBody = (
+      <Box className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" />
+      </Box>
+    );
+  } else if (rows.length === 0 && starredOnly) {
+    // Star filter on with nothing starred in range — explain the empty feed.
+    feedBody = (
+      <Box className={emptyZoneStyle({})}>
+        <Text className={emptyTitleStyle({})}>No starred events</Text>
+        <Text className={emptyBodyStyle({})}>Tap the star on an event to see it here.</Text>
+      </Box>
+    );
+  } else {
+    feedBody = (
+      <EventFeed
+        ref={feedRef}
+        rows={rows}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onEventPress={handleEventPress}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+      />
+    );
+  }
+
   return (
     <Box className={containerStyle({})}>
-      <ScheduleHeader onNavigateToProfile={handleNavigateToProfile} />
+      <ScheduleHeader />
       <CalendarContainer onDateSelected={handleDateSelected} markedDates={markedDates} />
       {error && (
         <Box className={errorBannerStyle({})}>
@@ -188,21 +217,7 @@ export function ScheduleScreen() {
           </Text>
         </Box>
       )}
-      {isLoading && rows.length === 0 ? (
-        <Box className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" />
-        </Box>
-      ) : (
-        <EventFeed
-          ref={feedRef}
-          rows={rows}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          onEventPress={handleEventPress}
-          onViewableItemsChanged={handleViewableItemsChanged}
-          onMomentumScrollEnd={handleMomentumScrollEnd}
-        />
-      )}
+      {feedBody}
     </Box>
   );
 }

@@ -29,6 +29,10 @@ interface ScheduleState {
   /** The month currently shown in MonthGrid (YYYY-MM-01). */
   displayMonth: string;
 
+  // Star filter — NOT persisted; resets to false on app launch.
+  /** When true, the feed shows only starred events. */
+  starredOnly: boolean;
+
   // Lock-free scroll sync — when non-null, a programmatic scroll is in flight.
   // viewable-items callbacks are suppressed until this is cleared.
   programmaticScrollTarget: string | null;
@@ -47,6 +51,8 @@ interface ScheduleState {
   setCardMode: (date: string, mode: CardMode) => void;
   setDefaultCardMode: (mode: CardMode) => void;
   setProgrammaticScrollTarget: (date: string | null) => void;
+  toggleStarredOnly: () => void;
+  setStarredOnly: (value: boolean) => void;
 }
 
 const initialToday = todayString();
@@ -59,6 +65,7 @@ export const useScheduleStore = create<ScheduleState>()(
       today: initialToday,
       viewMode: 'week',
       displayMonth: toMonthStart(initialToday),
+      starredOnly: false,
       programmaticScrollTarget: null,
       cardDisplayMode: {},
       defaultCardMode: 'full',
@@ -72,6 +79,8 @@ export const useScheduleStore = create<ScheduleState>()(
         set((s) => ({ cardDisplayMode: { ...s.cardDisplayMode, [date]: mode } })),
       setDefaultCardMode: (mode) => set({ defaultCardMode: mode }),
       setProgrammaticScrollTarget: (date) => set({ programmaticScrollTarget: date }),
+      toggleStarredOnly: () => set((s) => ({ starredOnly: !s.starredOnly })),
+      setStarredOnly: (value) => set({ starredOnly: value }),
     }),
     {
       name: 'schedule-store',
