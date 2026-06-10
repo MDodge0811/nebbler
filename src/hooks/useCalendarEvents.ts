@@ -4,10 +4,13 @@ import { useMemo } from 'react';
 import type { Event } from '@database/schema';
 import { getCalendarColor } from '@utils/calendarColor';
 
+/** An event joined with its calendar's color (for density dots). */
+export type CalendarEvent = Event & { calendar_color: string | null };
+
 /**
- * Reactive query for events overlapping a date range.
- * Returns all non-deleted events whose time span intersects
- * [startDate 00:00 UTC, endDate 23:59:59 UTC].
+ * Reactive query for events overlapping a date range, joined with the
+ * owning calendar's color. Returns all non-deleted events whose time span
+ * intersects [startDate 00:00 UTC, endDate 23:59:59 UTC].
  * Returns empty results until events are synced from the backend.
  *
  * @param startDate YYYY-MM-DD — start of the query window
@@ -17,12 +20,14 @@ export function useCalendarEvents(startDate: string, endDate: string) {
   const startDateTime = `${startDate}T00:00:00Z`;
   const endDateTime = `${endDate}T23:59:59Z`;
 
-  return useQuery<Event>(
-    `SELECT * FROM events
-     WHERE deleted_at IS NULL
-       AND start_time <= ?
-       AND end_time >= ?
-     ORDER BY start_time ASC`,
+  return useQuery<CalendarEvent>(
+    `SELECT e.*, c.color AS calendar_color
+     FROM events e
+     JOIN calendars c ON e.calendar_id = c.id
+     WHERE e.deleted_at IS NULL
+       AND e.start_time <= ?
+       AND e.end_time >= ?
+     ORDER BY e.start_time ASC`,
     [endDateTime, startDateTime]
   );
 }
@@ -62,14 +67,30 @@ export type MarkedDates = Record<string, MarkedDate>;
  * Compute marked-dates object from an event list and a set of starred event ids.
  *
  * - `colors`: up to 3 distinct calendar colors for events on that date,
- *   derived from `event.calendar_id` via `getCalendarColor`.
+ *   preferring the synced `calendars.color`, falling back to the
+ *   deterministic `getCalendarColor` hash when it is null.
  * - `starred`: true when any event on the date is in the `starredIds` set.
  *
  * Returns a stable empty reference when there are no events.
  */
 const EMPTY_MARKED: MarkedDates = {};
 
-export function useMarkedDates(events: Event[], starredIds?: Set<string>): MarkedDates {
+/** Returns the YYYY-MM-DD day key for an event, or null when invalid. */
+function dayKeyOf(startTime: string | null): string | null {
+  if (!startTime) return null;
+  const key = startTime.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : null;
+}
+
+/** Pushes a color into the list, deduped and capped at 3. */
+function pushDistinctColor(colors: string[], color: string): void {
+  if (colors.length < 3 && !colors.includes(color)) colors.push(color);
+}
+
+export function useMarkedDates(
+  events: Array<Event & { calendar_color?: string | null }>,
+  starredIds?: Set<string>
+): MarkedDates {
   return useMemo(() => {
     if (events.length === 0) return EMPTY_MARKED;
 
@@ -77,23 +98,16 @@ export function useMarkedDates(events: Event[], starredIds?: Set<string>): Marke
     const starredDates = new Set<string>();
 
     for (const event of events) {
-      if (!event.start_time) continue;
-      const key = event.start_time.slice(0, 10);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
+      const key = dayKeyOf(event.start_time);
+      if (!key) continue;
 
-      // Accumulate distinct calendar colors (cap at 3)
-      const color = getCalendarColor(event.calendar_id ?? '');
+      // Prefer the synced calendar color; fall back to the deterministic hash.
+      const color = event.calendar_color ?? getCalendarColor(event.calendar_id ?? '');
       const existing = colorsByDate.get(key);
-      if (!existing) {
-        colorsByDate.set(key, [color]);
-      } else if (existing.length < 3 && !existing.includes(color)) {
-        existing.push(color);
-      }
+      if (existing) pushDistinctColor(existing, color);
+      else colorsByDate.set(key, [color]);
 
-      // Mark date as starred if any event on it is starred
-      if (starredIds?.has(event.id)) {
-        starredDates.add(key);
-      }
+      if (starredIds?.has(event.id)) starredDates.add(key);
     }
 
     const marked: MarkedDates = {};

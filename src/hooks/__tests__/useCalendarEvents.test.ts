@@ -34,7 +34,7 @@ describe('useCalendarEvents', () => {
   it('calls useQuery with correct SQL and date-range parameters', () => {
     renderHook(() => useCalendarEvents('2026-02-01', '2026-02-28'));
 
-    expect(mockUseQuery).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM events'), [
+    expect(mockUseQuery).toHaveBeenCalledWith(expect.stringContaining('FROM events e'), [
       '2026-02-28T23:59:59Z',
       '2026-02-01T00:00:00Z',
     ]);
@@ -75,6 +75,12 @@ describe('useMarkedDates', () => {
     expect(Object.keys(result.current)).toHaveLength(1);
     // Same calendar → same color → deduplicated to 1 color
     expect(result.current['2026-02-15']?.colors).toHaveLength(1);
+  });
+
+  it('prefers the synced calendar_color over the hash fallback', () => {
+    const events = [makeEvent({ calendar_color: '#FF6B6B' } as Partial<Event>)];
+    const { result } = renderHook(() => useMarkedDates(events));
+    expect(result.current['2026-02-15']?.colors).toEqual(['#FF6B6B']);
   });
 
   it('collects distinct calendar colors on the same date (up to 3)', () => {
