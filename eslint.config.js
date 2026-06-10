@@ -280,13 +280,6 @@ module.exports = tseslint.config(
     rules: { 'no-restricted-syntax': 'off' },
   },
   {
-    // TEMPORARY: userSearch.ts predates the TanStack standard (raw fetch).
-    // TODO(FE-5 / NEB-153): migrate to src/api/** + TanStack Query and DELETE
-    // this exemption. This list is closed — do not add entries.
-    files: ['src/utils/userSearch.ts'],
-    rules: { 'no-restricted-syntax': 'off' },
-  },
-  {
     // Composition root wires the providers together; it may import anything.
     files: ['App.tsx', 'index.ts'],
     rules: { 'no-restricted-imports': 'off' },

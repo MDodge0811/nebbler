@@ -17,20 +17,18 @@ export class RateLimitedError extends Error {
 }
 
 /**
- * Search for users by name or email fragment.
+ * GET /api/users/search?q= — search users by name, @username, or email fragment
+ * (email is matched but never returned). Each result carries the server-computed
+ * `relationship` so the UI can render the correct action. The query layer
+ * (`useUserSearch`) gates on length; this returns `[]` for a <2-char query as a
+ * safety net.
  *
- * Returns an empty array immediately (without an API call) when the trimmed
- * query is shorter than 2 characters.
- *
- * @throws {RateLimitedError} When the server returns HTTP 429.
- * @throws {Error} When the user is not authenticated, or on unexpected non-2xx responses.
+ * @throws {RateLimitedError} on HTTP 429.
+ * @throws {Error} when unauthenticated or on an unexpected non-2xx response.
  */
 export async function searchUsers(query: string): Promise<UserSearchResult[]> {
   const trimmed = query.trim();
-
-  if (trimmed.length < 2) {
-    return [];
-  }
+  if (trimmed.length < 2) return [];
 
   const token = await getApiToken();
   if (!token) {
@@ -38,7 +36,6 @@ export async function searchUsers(query: string): Promise<UserSearchResult[]> {
   }
 
   const url = `${powersyncConfig.backendUrl}/api/users/search?q=${encodeURIComponent(trimmed)}`;
-
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -52,14 +49,11 @@ export async function searchUsers(query: string): Promise<UserSearchResult[]> {
     return UserSearchResponseSchema.parse(body);
   }
 
-  if (response.status === 400) {
-    return [];
-  }
+  if (response.status === 400) return [];
 
   if (response.status === 429) {
     // The backend conveys the retry hint via the standard `Retry-After` header
-    // (seconds); the body is the canonical error envelope and no longer carries
-    // `retry_after_seconds`. Fall back to 60s when the header is absent/invalid.
+    // (seconds); fall back to 60s when the header is absent/invalid.
     const header = response.headers.get('Retry-After');
     const parsed = header ? Number.parseInt(header, 10) : Number.NaN;
     const retryAfter = Number.isFinite(parsed) && parsed > 0 ? parsed : 60;
