@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
+  blockUser,
   getUserProfile,
   listRequests,
   removeConnection,
@@ -16,11 +17,18 @@ export const connectionsKeys = {
   profile: (id: string) => [...connectionsKeys.all, 'profile', id] as const,
 };
 
-/** GET /api/connection-requests — pending incoming/outgoing. */
+/**
+ * GET /api/connection-requests — pending incoming/outgoing. Pending requests are
+ * online-only and not pushed yet, so this polls on open: every screen that mounts
+ * this query refetches (the contract's "Polled on app open"). Consumers may also
+ * call `refetch()` from a focus effect for re-entry without a remount.
+ */
 export function useConnectionRequests() {
   return useQuery({
     queryKey: connectionsKeys.requests(),
     queryFn: listRequests,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 }
 
@@ -67,11 +75,28 @@ export function useResolveRequest() {
   });
 }
 
-/** DELETE /api/connections/:id. The synced list updates via PowerSync; refresh profiles. */
+/** PATCH /api/connections/:id (remove). The synced list updates via PowerSync; refresh profiles. */
 export function useRemoveConnection() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (connectionId: string) => removeConnection(connectionId),
     onSuccess: () => invalidateProfiles(queryClient),
+  });
+}
+
+/**
+ * POST /api/blocks (NEB-139). The server severs any connection + cancels pending
+ * requests atomically, so the synced connections list self-updates as the row
+ * de-syncs; we still refresh the REST request list + profiles for relationship
+ * state.
+ */
+export function useBlockUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (blockeeId: string) => blockUser(blockeeId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: connectionsKeys.requests() });
+      invalidateProfiles(queryClient);
+    },
   });
 }

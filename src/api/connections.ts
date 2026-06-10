@@ -224,3 +224,38 @@ export async function getUserProfile(id: string): Promise<UserProfileResponse> {
   }
   throw await toTypedError(response);
 }
+
+/**
+ * POST /api/blocks — block a user (NEB-139). Server-side this severs any active
+ * connection and cancels pending requests in one transaction; the connection row
+ * then de-syncs from both devices. 201 when newly created, 200 when a block
+ * already existed — both are success. The blockee is never notified. Errors:
+ * `self_block`/`invalid_blockee` (422), 401.
+ */
+export async function blockUser(blockeeId: string): Promise<void> {
+  const response = await authedFetch('/api/blocks', {
+    method: 'POST',
+    body: JSON.stringify({ blockee_id: blockeeId }),
+  });
+  if (response.ok) return;
+  throw await toTypedError(response);
+}
+
+/**
+ * Map a connections error (or any thrown value) to user-facing toast copy. Lives
+ * in the api layer so every hook/screen shares one mapping — the hook layer can't
+ * import the toast component, so screens own the surface but reuse this text.
+ */
+export function connectionErrorMessage(error: unknown): string {
+  if (error instanceof NotAuthenticatedError) return 'Please sign in again to continue.';
+  if (error instanceof ForbiddenError) return "You're not allowed to do that.";
+  if (error instanceof NotFoundError) return "That's no longer available.";
+  if (error instanceof InboundRequestExistsError)
+    return 'They already sent you a request — accept it instead.';
+  if (error instanceof AlreadyConnectedError) return "You're already connected.";
+  if (error instanceof OutboundRequestExistsError) return 'You already have a pending request.';
+  if (error instanceof RequestNotPendingError) return 'That request was already handled.';
+  if (error instanceof ValidationError) return error.message || "That didn't work — try again.";
+  if (error instanceof ConnectionsApiError) return error.message || 'Something went wrong.';
+  return "Couldn't reach the server. Check your connection.";
+}
