@@ -1,8 +1,8 @@
 import { useQuery, usePowerSync } from '@powersync/react';
 import { useMemo } from 'react';
 
-import { calendarColors } from '@constants/calendarColors';
 import type { Event } from '@database/schema';
+import { getCalendarColor } from '@utils/calendarColor';
 
 /**
  * Reactive query for events overlapping a date range.
@@ -53,26 +53,55 @@ export function useEvents(calendarId: string | undefined, startDate: string, end
 }
 
 /**
- * Compute marked-dates object from an event list.
- * Returns `{ 'YYYY-MM-DD': { marked: true, dotColor: '...' } }`.
+ * Marked-dates shape: per-date calendar colors (up to 3 distinct) and starred flag.
  */
-const EMPTY_MARKED: Record<string, { marked: true; dotColor: string }> = {};
+export type MarkedDate = { colors: string[]; starred: boolean };
+export type MarkedDates = Record<string, MarkedDate>;
 
-export function useMarkedDates(events: Event[]) {
+/**
+ * Compute marked-dates object from an event list and a set of starred event ids.
+ *
+ * - `colors`: up to 3 distinct calendar colors for events on that date,
+ *   derived from `event.calendar_id` via `getCalendarColor`.
+ * - `starred`: true when any event on the date is in the `starredIds` set.
+ *
+ * Returns a stable empty reference when there are no events.
+ */
+const EMPTY_MARKED: MarkedDates = {};
+
+export function useMarkedDates(events: Event[], starredIds?: Set<string>): MarkedDates {
   return useMemo(() => {
     if (events.length === 0) return EMPTY_MARKED;
 
-    const marked: Record<string, { marked: true; dotColor: string }> = {};
+    const colorsByDate = new Map<string, string[]>();
+    const starredDates = new Set<string>();
 
     for (const event of events) {
       if (!event.start_time) continue;
       const key = event.start_time.slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
-      marked[key] = { marked: true, dotColor: calendarColors.eventDot };
+
+      // Accumulate distinct calendar colors (cap at 3)
+      const color = getCalendarColor(event.calendar_id ?? '');
+      const existing = colorsByDate.get(key);
+      if (!existing) {
+        colorsByDate.set(key, [color]);
+      } else if (existing.length < 3 && !existing.includes(color)) {
+        existing.push(color);
+      }
+
+      // Mark date as starred if any event on it is starred
+      if (starredIds?.has(event.id)) {
+        starredDates.add(key);
+      }
     }
 
+    const marked: MarkedDates = {};
+    for (const [date, colors] of colorsByDate) {
+      marked[date] = { colors, starred: starredDates.has(date) };
+    }
     return marked;
-  }, [events]);
+  }, [events, starredIds]);
 }
 
 /**

@@ -93,6 +93,10 @@ jest.mock('@hooks/useCalendarEvents', () => ({
   useMarkedDates: () => ({}),
 }));
 
+jest.mock('@hooks/useEventStars', () => ({
+  useEventStars: () => new Set<string>(),
+}));
+
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: jest.fn() }),
 }));

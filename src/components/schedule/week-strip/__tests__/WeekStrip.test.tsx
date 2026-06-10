@@ -66,9 +66,9 @@ describe('WeekStrip', () => {
     expect(onDateSelected).not.toHaveBeenCalled();
   });
 
-  it('shows event dots for marked dates', () => {
+  it('shows event dots for marked dates (new colors shape)', () => {
     const markedDates = {
-      '2026-02-24': { marked: true as const, dotColor: '#00DB74' },
+      '2026-02-24': { colors: ['#00DB74'], starred: false },
     };
     const { getAllByTestId } = render(<WeekStrip markedDates={markedDates} />);
     expect(getAllByTestId('event-dot').length).toBeGreaterThanOrEqual(1);

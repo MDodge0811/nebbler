@@ -13,6 +13,7 @@ import {
 } from '@components/schedule/EventFeed';
 import { ScheduleHeader } from '@components/schedule/ScheduleHeader';
 import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
+import { useEventStars } from '@hooks/useEventStars';
 import { useScheduleFeed } from '@hooks/useScheduleFeed';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthBufferRange, monthKeyOf } from '@utils/dateRange';
@@ -63,7 +64,8 @@ export function ScheduleScreen() {
     startDate,
     endDate
   );
-  const markedDates = useMarkedDates(calendarEvents);
+  const starredIds = useEventStars();
+  const markedDates = useMarkedDates(calendarEvents, starredIds);
 
   useEffect(() => {
     if (feedError) console.error('[ScheduleScreen] Schedule feed query failed:', feedError);
