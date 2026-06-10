@@ -15,6 +15,7 @@ import { column, Schema, Table } from '@powersync/react-native';
  */
 
 const users = new Table({
+  username: column.text,
   first_name: column.text,
   last_name: column.text,
   email: column.text,

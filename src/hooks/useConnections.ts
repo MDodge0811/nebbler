@@ -5,6 +5,7 @@ export type HydratedConnection = {
   id: string;
   // Other party (resolved from the normalized pair) + their synced profile.
   other_user_id: string;
+  username: string | null;
   first_name: string | null;
   last_name: string | null;
   avatar_color: string | null;
@@ -26,7 +27,7 @@ export function useConnections(currentUserId: string | undefined) {
     currentUserId
       ? `SELECT c.id,
                 CASE WHEN c.user_a_id = ? THEN c.user_b_id ELSE c.user_a_id END AS other_user_id,
-                u.first_name, u.last_name, u.avatar_color
+                u.username, u.first_name, u.last_name, u.avatar_color
          FROM user_connections c
          JOIN users u ON u.id = (CASE WHEN c.user_a_id = ? THEN c.user_b_id ELSE c.user_a_id END)
          WHERE (c.user_a_id = ? OR c.user_b_id = ?)
@@ -124,12 +125,13 @@ export function useSharedCalendars(
 export function useUserProfile(userId: string | undefined) {
   const { data } = useQuery<{
     id: string;
+    username: string | null;
     first_name: string | null;
     last_name: string | null;
     avatar_color: string | null;
   }>(
     userId
-      ? `SELECT id, first_name, last_name, avatar_color FROM users WHERE id = ? AND deleted_at IS NULL`
+      ? `SELECT id, username, first_name, last_name, avatar_color FROM users WHERE id = ? AND deleted_at IS NULL`
       : `SELECT 1 WHERE 0`,
     userId ? [userId] : []
   );
