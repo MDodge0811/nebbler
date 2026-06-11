@@ -26,9 +26,13 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
   } as Event;
 }
 
+// Query range the hook clips marked days to (mirrors the screen's month buffer).
+const RANGE_START = '2026-01-01';
+const RANGE_END = '2026-12-31';
+
 describe('useMarkedDates', () => {
   it('returns a stable empty object reference when no events', () => {
-    const { result, rerender } = renderHook(() => useMarkedDates([]));
+    const { result, rerender } = renderHook(() => useMarkedDates([], RANGE_START, RANGE_END));
     const first = result.current;
     rerender(undefined);
     expect(result.current).toBe(first);
@@ -36,7 +40,7 @@ describe('useMarkedDates', () => {
 
   it('marks dates that have events with calendar color and not starred', () => {
     const events = [makeEvent({ start_time: '2026-02-15T10:00:00Z', calendar_id: 'cal-1' })];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
 
     expect(result.current['2026-02-15']).toBeDefined();
     expect(result.current['2026-02-15']?.colors).toHaveLength(1);
@@ -48,7 +52,7 @@ describe('useMarkedDates', () => {
       makeEvent({ id: 'evt-1', start_time: '2026-02-15T10:00:00Z', calendar_id: 'cal-1' }),
       makeEvent({ id: 'evt-2', start_time: '2026-02-15T14:00:00Z', calendar_id: 'cal-1' }),
     ];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
 
     expect(Object.keys(result.current)).toHaveLength(1);
     // Same calendar → same color → deduplicated to 1 color
@@ -57,7 +61,7 @@ describe('useMarkedDates', () => {
 
   it('prefers the synced calendar_color over the hash fallback', () => {
     const events = [makeEvent({ calendar_color: '#FF6B6B' } as Partial<Event>)];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
     expect(result.current['2026-02-15']?.colors).toEqual(['#FF6B6B']);
   });
 
@@ -68,7 +72,7 @@ describe('useMarkedDates', () => {
       makeEvent({ id: 'evt-3', start_time: '2026-02-15T14:00:00Z', calendar_id: 'cal-c' }),
       makeEvent({ id: 'evt-4', start_time: '2026-02-15T16:00:00Z', calendar_id: 'cal-d' }),
     ];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
 
     // Should cap at 3 distinct colors
     const colors = result.current['2026-02-15']?.colors ?? [];
@@ -81,7 +85,7 @@ describe('useMarkedDates', () => {
       makeEvent({ id: 'evt-1', start_time: '2026-02-10T09:00:00Z' }),
       makeEvent({ id: 'evt-2', start_time: '2026-02-20T15:00:00Z' }),
     ];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
 
     expect(Object.keys(result.current)).toHaveLength(2);
     expect(result.current['2026-02-10']).toBeDefined();
@@ -90,20 +94,20 @@ describe('useMarkedDates', () => {
 
   it('skips events with null start_time', () => {
     const events = [makeEvent({ start_time: null as unknown as string })];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
     expect(result.current).toEqual({});
   });
 
   it('skips events with invalid start_time', () => {
     const events = [makeEvent({ start_time: 'not-a-date' })];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
     expect(result.current).toEqual({});
   });
 
   it('marks date as starred when event id is in starredIds set', () => {
     const events = [makeEvent({ id: 'evt-1', start_time: '2026-02-15T10:00:00Z' })];
     const starredIds = new Set(['evt-1']);
-    const { result } = renderHook(() => useMarkedDates(events, starredIds));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END, starredIds));
 
     expect(result.current['2026-02-15']?.starred).toBe(true);
   });
@@ -111,7 +115,7 @@ describe('useMarkedDates', () => {
   it('does not mark date as starred when no event on it is in starredIds', () => {
     const events = [makeEvent({ id: 'evt-1', start_time: '2026-02-15T10:00:00Z' })];
     const starredIds = new Set(['evt-999']);
-    const { result } = renderHook(() => useMarkedDates(events, starredIds));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END, starredIds));
 
     expect(result.current['2026-02-15']?.starred).toBe(false);
   });
@@ -122,14 +126,14 @@ describe('useMarkedDates', () => {
       makeEvent({ id: 'evt-2', start_time: '2026-02-15T14:00:00Z', calendar_id: 'cal-2' }),
     ];
     const starredIds = new Set(['evt-2']); // only the second is starred
-    const { result } = renderHook(() => useMarkedDates(events, starredIds));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END, starredIds));
 
     expect(result.current['2026-02-15']?.starred).toBe(true);
   });
 
   it('returns not-starred when starredIds is undefined', () => {
     const events = [makeEvent({ id: 'evt-1', start_time: '2026-02-15T10:00:00Z' })];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
 
     expect(result.current['2026-02-15']?.starred).toBe(false);
   });
@@ -143,7 +147,7 @@ describe('useMarkedDates', () => {
     const expectedKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
     const events = [makeEvent({ id: 'evt-local', start_time: startTime, is_all_day: 0 })];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
 
     expect(result.current[expectedKey]).toBeDefined();
   });
@@ -158,7 +162,7 @@ describe('useMarkedDates', () => {
         is_all_day: 1,
       }),
     ];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
 
     // The UTC date is 2026-02-15 regardless of timezone
     expect(result.current['2026-02-15']).toBeDefined();
@@ -174,12 +178,30 @@ describe('useMarkedDates', () => {
         is_all_day: 1,
       }),
     ];
-    const { result } = renderHook(() => useMarkedDates(events));
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, RANGE_END));
 
     expect(result.current['2026-02-13']).toBeDefined();
     expect(result.current['2026-02-14']).toBeDefined();
     expect(result.current['2026-02-15']).toBeDefined();
     // End is exclusive — the trip does not cover Feb 16.
     expect(result.current['2026-02-16']).toBeUndefined();
+  });
+
+  it('clips all-day spans to the query range (a malformed far-future end_time stays bounded)', () => {
+    const events = [
+      makeEvent({
+        id: 'runaway',
+        start_time: '2026-02-13T00:00:00Z',
+        end_time: '9999-01-01T00:00:00Z', // corrupt row — must not expand day-by-day to year 9999
+        is_all_day: 1,
+      }),
+    ];
+    const { result } = renderHook(() => useMarkedDates(events, RANGE_START, '2026-02-14'));
+
+    expect(result.current['2026-02-13']).toBeDefined();
+    expect(result.current['2026-02-14']).toBeDefined();
+    // Clipped at the range end — nothing marked beyond it.
+    expect(result.current['2026-02-15']).toBeUndefined();
+    expect(Object.keys(result.current)).toHaveLength(2);
   });
 });

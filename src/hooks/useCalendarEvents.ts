@@ -77,17 +77,18 @@ function pushDistinctColor(colors: string[], color: string): void {
   if (colors.length < 3 && !colors.includes(color)) colors.push(color);
 }
 
-// Effectively-unbounded clip range so allDaySpannedDates returns every day an
-// all-day event covers (it clamps to the event's own span anyway).
-const WIDE_RANGE_START = '0000-01-01';
-const WIDE_RANGE_END = '9999-12-31';
-
 /**
- * Day keys this event marks on the calendar:
+ * Day keys this event marks on the calendar, clipped to [rangeStart, rangeEnd]:
  *  - all-day → every UTC day it spans (matches the feed's per-day AllDayCards),
  *  - timed   → its single local day.
+ * The clip bounds the day-by-day expansion — without it, one malformed
+ * far-future end_time would iterate millions of days on the JS thread.
  */
-function dayKeysFor(event: Event & { calendar_color?: string | null }): string[] {
+function dayKeysFor(
+  event: Event & { calendar_color?: string | null },
+  rangeStart: string,
+  rangeEnd: string
+): string[] {
   const isAllDay = 'is_all_day' in event && event.is_all_day === 1;
   if (isAllDay) {
     const startKey = utcDayKeyOf(event.start_time);
@@ -95,8 +96,8 @@ function dayKeysFor(event: Event & { calendar_color?: string | null }): string[]
     const spanned = allDaySpannedDates(
       event.start_time,
       event.end_time ?? event.start_time,
-      WIDE_RANGE_START,
-      WIDE_RANGE_END
+      rangeStart,
+      rangeEnd
     );
     return spanned.length > 0 ? spanned : [startKey];
   }
@@ -106,6 +107,8 @@ function dayKeysFor(event: Event & { calendar_color?: string | null }): string[]
 
 export function useMarkedDates(
   events: Array<Event & { calendar_color?: string | null }>,
+  rangeStart: string,
+  rangeEnd: string,
   starredIds?: Set<string>
 ): MarkedDates {
   return useMemo(() => {
@@ -119,7 +122,7 @@ export function useMarkedDates(
       // UTC date and span EVERY day they cover (matching the feed's per-spanned-day
       // AllDayCards). Timed events bucket by LOCAL date so a midnight-UTC event
       // shows on the right calendar day for the user's timezone.
-      const keys = dayKeysFor(event);
+      const keys = dayKeysFor(event, rangeStart, rangeEnd);
       if (keys.length === 0) continue;
 
       // Prefer the synced calendar color; fall back to the deterministic hash.
@@ -139,7 +142,7 @@ export function useMarkedDates(
       marked[date] = { colors, starred: starredDates.has(date) };
     }
     return marked;
-  }, [events, starredIds]);
+  }, [events, rangeStart, rangeEnd, starredIds]);
 }
 
 /**

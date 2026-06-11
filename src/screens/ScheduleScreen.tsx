@@ -74,7 +74,7 @@ export function ScheduleScreen() {
 
   // Calendar event dots — derived from the feed's single membership-scoped
   // subscription so dots and feed rows always agree on which events exist.
-  const markedDates = useMarkedDates(events, starredIds);
+  const markedDates = useMarkedDates(events, startDate, endDate, starredIds);
 
   useEffect(() => {
     if (feedError) console.error('[ScheduleScreen] Schedule feed query failed:', feedError);
@@ -106,8 +106,14 @@ export function ScheduleScreen() {
       // Suppress selection updates while a programmatic scroll is in flight.
       const target = useScheduleStore.getState().programmaticScrollTarget;
       if (target !== null) {
-        // Safety-clear: if the target date's header is now visible, we're done.
-        if (topHeader?.item.date === target) {
+        // Safety-clear: if the target date's header is visible ANYWHERE, we're
+        // done. Top-only would strand the flag when the target sits near the end
+        // of the range (scrollToIndex can't bring it to the top) and the platform
+        // never fires momentum-end for programmatic scrolls (Android).
+        const targetVisible = viewableItems.some(
+          (vt) => vt.item.kind === 'day-header' && vt.item.date === target
+        );
+        if (targetVisible) {
           setProgrammaticScrollTarget(null);
         }
         return;

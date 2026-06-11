@@ -227,6 +227,23 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
     expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
   });
 
+  it('safety-clears the target when its header is visible but NOT at the top', () => {
+    // End-of-range tap: scrollToIndex can't bring the target header to the top,
+    // and Android doesn't reliably fire momentum-end for programmatic scrolls —
+    // visibility anywhere in the viewport must clear the flag.
+    render(<ScheduleScreen />);
+
+    act(() => {
+      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
+    });
+
+    act(() => {
+      fireViewableItemsChanged(['2026-02-27', '2026-02-28']); // target is second, not top
+    });
+
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
+  });
+
   it('momentum scroll end clears programmaticScrollTarget', () => {
     render(<ScheduleScreen />);
 
