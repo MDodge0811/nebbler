@@ -8,7 +8,7 @@ import { Text } from '@/components/ui/text';
 import { ConnectionPicker } from '@components/people/ConnectionPicker';
 import { calendarsUIColors } from '@constants/calendarsUI';
 import { useCurrentUser } from '@hooks/useCurrentUser';
-import { useWritableCalendars } from '@hooks/useWritableCalendars';
+import { useWritableCalendars, type WritableCalendar } from '@hooks/useWritableCalendars';
 import { getCalendarColor } from '@utils/calendarColor';
 
 import { useCreateEventFormContext } from './CreateEventFormContext';
@@ -145,6 +145,12 @@ function findTimeSubtitle(isSocial: boolean, memberCount: number, peopleCount: n
   return `See when everyone's free · ${peopleCount} ${peopleCount === 1 ? 'person' : 'people'}`;
 }
 
+/** Prefer the synced calendar color; fall back to the deterministic hash, then the UI default. */
+function resolveCalendarColor(calendar: WritableCalendar | null): string {
+  if (!calendar) return calendarsUIColors.primary;
+  return calendar.color ?? getCalendarColor(calendar.id);
+}
+
 interface Screen1Props {
   onNext: () => void;
   onClose: () => void;
@@ -157,7 +163,7 @@ export function Screen1WhatWho({ onNext, onClose, onOpenCalendarPicker }: Screen
   const { data: writableCalendars = [] } = useWritableCalendars(authUser?.id);
 
   const selectedCalendar = writableCalendars.find((c) => c.id === form.calendarId) ?? null;
-  const calColor = form.calendarId ? getCalendarColor(form.calendarId) : calendarsUIColors.primary;
+  const calColor = resolveCalendarColor(selectedCalendar);
   const calendarName = selectedCalendar?.name ?? 'Select calendar';
 
   const peopleCount = form.peopleIds.length;

@@ -76,7 +76,7 @@ export function SelectCalendarScreen({ onClose }: SelectCalendarScreenProps) {
             >
               <DynamicColorView
                 className="h-3 w-3 rounded-[4px]"
-                backgroundColor={getCalendarColor(cal.id)}
+                backgroundColor={cal.color ?? getCalendarColor(cal.id)}
               />
               <Text className={nameStyle({})}>{cal.name}</Text>
               <Text className={typeStyle({})}>{calendarTypeLabel(cal.type)}</Text>

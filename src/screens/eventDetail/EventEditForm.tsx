@@ -31,7 +31,8 @@ interface EventEditFormProps {
 
 export function EventEditForm({ form, calendar, calendarColor }: EventEditFormProps) {
   const editCalendar = form.writableCalendars.find((c) => c.id === form.editCalendarId);
-  const dotColor = editCalendar ? getCalendarColor(editCalendar.id) : calendarColor;
+  const dotColor =
+    editCalendar?.color ?? (editCalendar ? getCalendarColor(editCalendar.id) : calendarColor);
   const calendarName = editCalendar?.name ?? calendar?.name ?? 'Calendar';
 
   const endTimeError =
