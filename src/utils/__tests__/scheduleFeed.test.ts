@@ -597,4 +597,10 @@ describe('calcStickyWindow', () => {
     const recentered = calcStickyWindow(nearStart, initial);
     expect(recentered.start !== initial.start || recentered.end !== initial.end).toBe(true);
   });
+
+  it('clamps month-end dates instead of rolling over (no Feb-31 → Mar-3)', () => {
+    // From the 31st, −1 month must land in February, not roll forward to March.
+    const { start } = calcStickyWindow('2026-03-31', null);
+    expect(start.startsWith('2026-02-')).toBe(true);
+  });
 });

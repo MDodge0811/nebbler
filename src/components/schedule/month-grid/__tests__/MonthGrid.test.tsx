@@ -50,4 +50,20 @@ describe('MonthGrid', () => {
     fireEvent.press(getByLabelText(testDate));
     expect(onDateSelected).not.toHaveBeenCalled();
   });
+
+  it('renders event dots for marked dates (new colors+starred shape)', () => {
+    const markedDates = {
+      [testDate]: { colors: ['#00DB74', '#FFB3B3'], starred: false },
+    };
+    const { getAllByTestId } = render(<MonthGrid markedDates={markedDates} />);
+    expect(getAllByTestId('event-dot').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('renders star marker for starred dates', () => {
+    const markedDates = {
+      [testDate]: { colors: ['#00DB74'], starred: true },
+    };
+    const { getAllByTestId } = render(<MonthGrid markedDates={markedDates} />);
+    expect(getAllByTestId('star-marker').length).toBeGreaterThanOrEqual(1);
+  });
 });

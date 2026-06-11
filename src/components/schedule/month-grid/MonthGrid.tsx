@@ -8,6 +8,7 @@ import {
 
 import { Box } from '@/components/ui/box';
 import { WeekStripDayCell } from '@components/schedule/week-strip/WeekStripDayCell';
+import type { MarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { isDateInMonth, getMonthStart } from '@utils/monthUtils';
 
@@ -17,7 +18,7 @@ export const ROW_HEIGHT = 40;
 
 interface MonthGridProps {
   onDateSelected?: (date: string) => void;
-  markedDates: Record<string, { marked: true; dotColor: string }>;
+  markedDates: MarkedDates;
 }
 
 export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
@@ -103,10 +104,11 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
                   dayNumber={day}
                   isSelected={dateStr === selectedDate}
                   isToday={dateStr === today}
-                  hasEvent={!!mark}
-                  dotColor={mark?.dotColor ?? ''}
+                  dotColors={mark?.colors ?? []}
+                  dotVariant="month"
                   onPress={handleDayPress}
                   isAdjacentMonth={adjacent}
+                  starred={mark?.starred ?? false}
                 />
               );
             })}

@@ -15,6 +15,16 @@ jest.mock('@hooks/useAuth', () => ({
   }),
 }));
 
+const mockStarredIds = new Set<string>();
+jest.mock('@hooks/useEventStars', () => ({
+  useEventStars: () => mockStarredIds,
+}));
+
+jest.mock('@stores/useScheduleStore', () => ({
+  useScheduleStore: (selector: (s: { starredOnly: boolean }) => unknown) =>
+    selector({ starredOnly: false }),
+}));
+
 function makeFeedEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
   return {
     id: 'evt-1',
