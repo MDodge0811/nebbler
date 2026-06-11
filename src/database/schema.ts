@@ -123,18 +123,6 @@ const userConnections = new Table({
 });
 
 /**
- * event_stars — user-starred events.
- * Soft-deleted via deleted_at. PowerSync scopes to current user via user_stars bucket.
- */
-const eventStars = new Table({
-  event_id: column.text,
-  user_id: column.text,
-  deleted_at: column.text,
-  inserted_at: column.text,
-  updated_at: column.text,
-});
-
-/**
  * AppSchema defines all synced tables
  * Table names must match the sync rules defined in PowerSync dashboard
  */
@@ -149,7 +137,6 @@ export const AppSchema = new Schema({
   events: events,
   event_responses: eventResponses,
   user_connections: userConnections,
-  event_stars: eventStars,
 });
 
 /**
@@ -166,7 +153,6 @@ export type CalendarGroupUser = Database['calendar_group_users'];
 export type CalendarGroupMembership = Database['calendar_group_memberships'];
 export type Event = Database['events'];
 export type EventResponse = Database['event_responses'];
-export type EventStar = Database['event_stars'];
 
 // UserConnection type is sourced from Zod schema (single source of truth)
 export type { UserConnection } from '@database/schemas/userConnectionSchemas';
