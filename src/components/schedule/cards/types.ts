@@ -1,4 +1,10 @@
-export type AttendeeChip = { initials: string; color: string; rsvp: 'going' | 'pending' };
+export type AttendeeChip = {
+  /** Optional — used as a stable list key when present (the S2 feed supplies it). */
+  userId?: string;
+  initials: string;
+  color: string;
+  rsvp: 'going' | 'pending';
+};
 
 export type EventCardProps = {
   title: string;

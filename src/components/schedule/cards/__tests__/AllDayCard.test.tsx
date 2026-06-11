@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 
 import { AllDayCard } from '../AllDayCard';
 
@@ -6,6 +6,13 @@ describe('AllDayCard', () => {
   it('renders the event title', () => {
     render(<AllDayCard title="Birthday" />);
     expect(screen.getByText('Birthday')).toBeTruthy();
+  });
+
+  it('calls onPress when tapped (all-day events open the event)', () => {
+    const onPress = jest.fn();
+    render(<AllDayCard title="Birthday" onPress={onPress} />);
+    fireEvent.press(screen.getByLabelText('Birthday'));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 
   it('renders comment chip when commentCount > 0', () => {
