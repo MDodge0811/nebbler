@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react-native';
 
 import type { Event } from '@database/schema';
 
-import { useCalendarEvents, useMarkedDates } from '../useCalendarEvents';
+import { useMarkedDates } from '../useCalendarEvents';
 
 const mockUseQuery = jest.fn().mockReturnValue({ data: [], isLoading: false, error: undefined });
 
@@ -25,28 +25,6 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
     ...overrides,
   } as Event;
 }
-
-describe('useCalendarEvents', () => {
-  beforeEach(() => {
-    mockUseQuery.mockClear();
-  });
-
-  it('calls useQuery with correct SQL and date-range parameters', () => {
-    renderHook(() => useCalendarEvents('2026-02-01', '2026-02-28'));
-
-    expect(mockUseQuery).toHaveBeenCalledWith(expect.stringContaining('FROM events e'), [
-      '2026-02-28T23:59:59Z',
-      '2026-02-01T00:00:00Z',
-    ]);
-  });
-
-  it('includes deleted_at IS NULL filter in the SQL', () => {
-    renderHook(() => useCalendarEvents('2026-02-01', '2026-02-28'));
-
-    const sql = (mockUseQuery.mock.calls[0] as [string])[0];
-    expect(sql).toContain('deleted_at IS NULL');
-  });
-});
 
 describe('useMarkedDates', () => {
   it('returns a stable empty object reference when no events', () => {
@@ -154,5 +132,35 @@ describe('useMarkedDates', () => {
     const { result } = renderHook(() => useMarkedDates(events));
 
     expect(result.current['2026-02-15']?.starred).toBe(false);
+  });
+
+  it('buckets timed events by LOCAL date (not UTC slice)', () => {
+    // A timed event at 10:00 UTC on Feb 15 — the local date depends on timezone,
+    // but we just verify the key equals new Date(startTime) local date components,
+    // not the literal UTC string slice.
+    const startTime = '2026-02-15T10:00:00Z';
+    const d = new Date(startTime);
+    const expectedKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    const events = [makeEvent({ id: 'evt-local', start_time: startTime, is_all_day: 0 })];
+    const { result } = renderHook(() => useMarkedDates(events));
+
+    expect(result.current[expectedKey]).toBeDefined();
+  });
+
+  it('buckets all-day events by UTC date', () => {
+    // All-day events use midnight-UTC start; UTC date slice must be used.
+    const events = [
+      makeEvent({
+        id: 'evt-allday',
+        start_time: '2026-02-15T00:00:00Z',
+        end_time: '2026-02-16T00:00:00Z',
+        is_all_day: 1,
+      }),
+    ];
+    const { result } = renderHook(() => useMarkedDates(events));
+
+    // The UTC date is 2026-02-15 regardless of timezone
+    expect(result.current['2026-02-15']).toBeDefined();
   });
 });

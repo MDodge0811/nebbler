@@ -91,7 +91,6 @@ jest.mock('@hooks/useScheduleFeed', () => ({
 }));
 
 jest.mock('@hooks/useCalendarEvents', () => ({
-  useCalendarEvents: () => ({ data: [], error: null }),
   useMarkedDates: () => ({}),
 }));
 
@@ -151,6 +150,7 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
       viewMode: 'week',
       displayMonth: '2026-02-01',
       programmaticScrollTarget: null,
+      starredOnly: false,
     });
     capturedScrollToIndex.mockClear();
   });

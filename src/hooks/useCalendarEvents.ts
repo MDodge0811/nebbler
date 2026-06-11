@@ -4,34 +4,6 @@ import { useMemo } from 'react';
 import type { Event } from '@database/schema';
 import { getCalendarColor } from '@utils/calendarColor';
 
-/** An event joined with its calendar's color (for density dots). */
-export type CalendarEvent = Event & { calendar_color: string | null };
-
-/**
- * Reactive query for events overlapping a date range, joined with the
- * owning calendar's color. Returns all non-deleted events whose time span
- * intersects [startDate 00:00 UTC, endDate 23:59:59 UTC].
- * Returns empty results until events are synced from the backend.
- *
- * @param startDate YYYY-MM-DD — start of the query window
- * @param endDate   YYYY-MM-DD — end of the query window
- */
-export function useCalendarEvents(startDate: string, endDate: string) {
-  const startDateTime = `${startDate}T00:00:00Z`;
-  const endDateTime = `${endDate}T23:59:59Z`;
-
-  return useQuery<CalendarEvent>(
-    `SELECT e.*, c.color AS calendar_color
-     FROM events e
-     JOIN calendars c ON e.calendar_id = c.id
-     WHERE e.deleted_at IS NULL
-       AND e.start_time <= ?
-       AND e.end_time >= ?
-     ORDER BY e.start_time ASC`,
-    [endDateTime, startDateTime]
-  );
-}
-
 /**
  * Reactive query for events scoped to a specific calendar within a date range.
  * Uses conditional query pattern when calendarId is undefined.
@@ -75,8 +47,25 @@ export type MarkedDates = Record<string, MarkedDate>;
  */
 const EMPTY_MARKED: MarkedDates = {};
 
-/** Returns the YYYY-MM-DD day key for an event, or null when invalid. */
-function dayKeyOf(startTime: string | null): string | null {
+const PAD2 = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * Returns the YYYY-MM-DD day key for a timed event start using LOCAL date.
+ * Timed events near UTC midnight can fall on a different local day than their
+ * UTC date — using local avoids the dot landing on the wrong calendar day.
+ */
+function localDayKeyOf(startTime: string | null): string | null {
+  if (!startTime) return null;
+  const d = new Date(startTime);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${PAD2(d.getMonth() + 1)}-${PAD2(d.getDate())}`;
+}
+
+/**
+ * Returns the YYYY-MM-DD day key for an all-day event using UTC date.
+ * All-day events store midnight-UTC boundaries, so UTC slicing is correct.
+ */
+function utcDayKeyOf(startTime: string | null): string | null {
   if (!startTime) return null;
   const key = startTime.slice(0, 10);
   return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : null;
@@ -98,7 +87,11 @@ export function useMarkedDates(
     const starredDates = new Set<string>();
 
     for (const event of events) {
-      const key = dayKeyOf(event.start_time);
+      // All-day events: bucket by UTC date (midnight-UTC boundaries are correct).
+      // Timed events: bucket by LOCAL date so a midnight-UTC event shows on the
+      // right calendar day for the user's timezone.
+      const isAllDay = 'is_all_day' in event && event.is_all_day === 1;
+      const key = isAllDay ? utcDayKeyOf(event.start_time) : localDayKeyOf(event.start_time);
       if (!key) continue;
 
       // Prefer the synced calendar color; fall back to the deterministic hash.

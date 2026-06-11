@@ -12,7 +12,7 @@ import {
   type FlashListViewToken,
 } from '@components/schedule/EventFeed';
 import { ScheduleHeader } from '@components/schedule/ScheduleHeader';
-import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
+import { useMarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleFeed } from '@hooks/useScheduleFeed';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthBufferRange, monthKeyOf } from '@utils/dateRange';
@@ -56,6 +56,7 @@ export function ScheduleScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memoize by month, not by day
   const { startDate, endDate } = useMemo(() => getMonthBufferRange(queryAnchor), [monthKey]);
   const {
+    events,
     rows,
     indexByDate,
     starredIds,
@@ -63,19 +64,13 @@ export function ScheduleScreen() {
     error: feedError,
   } = useScheduleFeed(startDate, endDate, today, starredOnly);
 
-  // Calendar event dots — shared date range with the feed query. Reuse the
-  // feed's starredIds subscription rather than calling useEventStars again.
-  const { data: calendarEvents = [], error: calendarEventsError } = useCalendarEvents(
-    startDate,
-    endDate
-  );
-  const markedDates = useMarkedDates(calendarEvents, starredIds);
+  // Calendar event dots — derived from the feed's single membership-scoped
+  // subscription so dots and feed rows always agree on which events exist.
+  const markedDates = useMarkedDates(events, starredIds);
 
   useEffect(() => {
     if (feedError) console.error('[ScheduleScreen] Schedule feed query failed:', feedError);
-    if (calendarEventsError)
-      console.error('[ScheduleScreen] Calendar events query failed:', calendarEventsError);
-  }, [feedError, calendarEventsError]);
+  }, [feedError]);
 
   const handleEventPress = useCallback(
     (event: FeedEvent) => {
@@ -183,7 +178,7 @@ export function ScheduleScreen() {
     // by the safety-clear in handleViewableItemsChanged.
   }, [programmaticScrollTarget, indexByDate]);
 
-  const error = feedError ?? calendarEventsError;
+  const error = feedError;
 
   let feedBody: ReactNode;
   if (isLoading && rows.length === 0) {
