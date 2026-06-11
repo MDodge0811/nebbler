@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
 import { StyleSheet } from 'react-native';
 
+import { Box } from '@/components/ui/box';
 import { DynamicColorView } from '@/components/ui/dynamic';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
@@ -44,12 +45,15 @@ export const EventCardCompact = memo(function EventCardCompact({
       accessibilityLabel={title}
     >
       <DynamicColorView className={cardStyle({})} borderColor={borderColor}>
-        <LinearGradient
-          colors={[gradientStart, gradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={gradientFill}
-        />
+        {/* Tint gradient clipped to the rounded corners; star stays outside the clip. */}
+        <Box className="absolute inset-0 overflow-hidden rounded-xl">
+          <LinearGradient
+            colors={[gradientStart, gradientEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={gradientFill}
+          />
+        </Box>
         {/* Star overflows top-right — a starred event keeps its star even when compact */}
         {starred === true && <StarIndicator />}
         <HStack className={bodyStyle({})}>

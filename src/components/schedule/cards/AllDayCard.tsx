@@ -1,8 +1,8 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { memo } from 'react';
 
-import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
+import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { CommentChip } from '@components/schedule/cards/CommentChip';
 
@@ -27,10 +27,15 @@ export const AllDayCard = memo(function AllDayCard({
   title,
   commentCount,
   hasUnreadComments,
-  onPress: _onPress,
+  onPress,
 }: AllDayCardProps) {
   return (
-    <Box className={cardStyle({})}>
+    <Pressable
+      className={cardStyle({})}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    >
       <HStack className={bodyStyle({})}>
         <Text className={titleStyle({})} numberOfLines={1}>
           {title}
@@ -39,6 +44,6 @@ export const AllDayCard = memo(function AllDayCard({
           <CommentChip count={commentCount} {...(hasUnreadComments ? { hasUnread: true } : {})} />
         ) : null}
       </HStack>
-    </Box>
+    </Pressable>
   );
 });

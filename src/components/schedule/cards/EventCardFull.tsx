@@ -73,13 +73,16 @@ export const EventCardFull = memo(function EventCardFull({
       accessibilityLabel={title}
     >
       <DynamicColorView className={cardStyle({})} borderColor={borderColor}>
-        {/* Tint gradient — absoluteFill via StyleSheet.absoluteFill (same as existing EventCardFull) */}
-        <LinearGradient
-          colors={[gradientStart, gradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={gradientFill}
-        />
+        {/* Tint gradient clipped to the card's rounded corners. The clip lives on
+            this wrapper (not the card) so StarIndicator can still overflow. */}
+        <Box className="absolute inset-0 overflow-hidden rounded-xl">
+          <LinearGradient
+            colors={[gradientStart, gradientEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={gradientFill}
+          />
+        </Box>
 
         {/* Star overflows top-right corner — card has no overflow-hidden so it shows */}
         {starred === true && <StarIndicator />}
