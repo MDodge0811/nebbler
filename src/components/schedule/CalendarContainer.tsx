@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -39,7 +39,7 @@ interface CalendarContainerProps {
   markedDates: MarkedDates;
 }
 
-export function CalendarContainer({
+export const CalendarContainer = memo(function CalendarContainer({
   onDateSelected,
   onMonthChanged,
   markedDates,
@@ -180,4 +180,4 @@ export function CalendarContainer({
       </GestureDetector>
     </Box>
   );
-}
+});

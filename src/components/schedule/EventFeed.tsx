@@ -1,7 +1,7 @@
 import { type BottomSheetModal } from '@gorhom/bottom-sheet';
 import { FlashList } from '@shopify/flash-list';
 import type { FlashListRef } from '@shopify/flash-list';
-import React, { useCallback, useRef, forwardRef, useImperativeHandle, useState } from 'react';
+import React, { memo, useCallback, useRef, forwardRef, useImperativeHandle, useState } from 'react';
 import { RefreshControl } from 'react-native';
 
 import { Box } from '@/components/ui/box';
@@ -122,162 +122,164 @@ function renderBusyCard(event: FeedEvent): React.ReactElement {
 // EventFeed
 // -----------------------------------------------------------------------
 
-export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function EventFeed(
-  {
-    rows,
-    refreshing,
-    onRefresh,
-    onEventPress,
-    onViewableItemsChanged,
-    onMomentumScrollBegin,
-    onMomentumScrollEnd,
-    onScrollBeginDrag,
-    onScrollEndDrag,
-  },
-  ref
-) {
-  const today = useScheduleStore((s) => s.today);
-
-  const flashListRef = useRef<FlashListRef<FeedRow>>(null);
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const [meatballEvent, setMeatballEvent] = useState<FeedEvent | null>(null);
-
-  useImperativeHandle(ref, () => ({
-    scrollToIndex: (index: number, opts?: { animated?: boolean }) => {
-      if (index < 0 || index >= rows.length) return;
-      void flashListRef.current?.scrollToIndex({ index, animated: opts?.animated ?? true });
+export const EventFeed = memo(
+  forwardRef<EventFeedRef, EventFeedProps>(function EventFeed(
+    {
+      rows,
+      refreshing,
+      onRefresh,
+      onEventPress,
+      onViewableItemsChanged,
+      onMomentumScrollBegin,
+      onMomentumScrollEnd,
+      onScrollBeginDrag,
+      onScrollEndDrag,
     },
-  }));
+    ref
+  ) {
+    const today = useScheduleStore((s) => s.today);
 
-  // Keep callback refs stable so FlashList doesn't re-subscribe on every render
-  const onViewableItemsChangedRef = useRef(onViewableItemsChanged);
-  onViewableItemsChangedRef.current = onViewableItemsChanged;
+    const flashListRef = useRef<FlashListRef<FeedRow>>(null);
+    const bottomSheetRef = useRef<BottomSheetModal>(null);
+    const [meatballEvent, setMeatballEvent] = useState<FeedEvent | null>(null);
 
-  const onMomentumScrollEndRef = useRef(onMomentumScrollEnd);
-  onMomentumScrollEndRef.current = onMomentumScrollEnd;
+    useImperativeHandle(ref, () => ({
+      scrollToIndex: (index: number, opts?: { animated?: boolean }) => {
+        if (index < 0 || index >= rows.length) return;
+        void flashListRef.current?.scrollToIndex({ index, animated: opts?.animated ?? true });
+      },
+    }));
 
-  const onScrollBeginDragRef = useRef(onScrollBeginDrag);
-  onScrollBeginDragRef.current = onScrollBeginDrag;
+    // Keep callback refs stable so FlashList doesn't re-subscribe on every render
+    const onViewableItemsChangedRef = useRef(onViewableItemsChanged);
+    onViewableItemsChangedRef.current = onViewableItemsChanged;
 
-  const onMomentumScrollBeginRef = useRef(onMomentumScrollBegin);
-  onMomentumScrollBeginRef.current = onMomentumScrollBegin;
+    const onMomentumScrollEndRef = useRef(onMomentumScrollEnd);
+    onMomentumScrollEndRef.current = onMomentumScrollEnd;
 
-  const onScrollEndDragRef = useRef(onScrollEndDrag);
-  onScrollEndDragRef.current = onScrollEndDrag;
+    const onScrollBeginDragRef = useRef(onScrollBeginDrag);
+    onScrollBeginDragRef.current = onScrollBeginDrag;
 
-  const handleViewableItemsChanged = useCallback(
-    (info: { viewableItems: FlashListViewToken[]; changed: FlashListViewToken[] }) => {
-      onViewableItemsChangedRef.current?.(info);
-    },
-    []
-  );
+    const onMomentumScrollBeginRef = useRef(onMomentumScrollBegin);
+    onMomentumScrollBeginRef.current = onMomentumScrollBegin;
 
-  const handleMomentumScrollEnd = useCallback(() => {
-    onMomentumScrollEndRef.current?.();
-  }, []);
+    const onScrollEndDragRef = useRef(onScrollEndDrag);
+    onScrollEndDragRef.current = onScrollEndDrag;
 
-  // Forwarded so the screen can track user-scroll state.
-  const handleScrollBeginDrag = useCallback(() => {
-    onScrollBeginDragRef.current?.();
-  }, []);
+    const handleViewableItemsChanged = useCallback(
+      (info: { viewableItems: FlashListViewToken[]; changed: FlashListViewToken[] }) => {
+        onViewableItemsChangedRef.current?.(info);
+      },
+      []
+    );
 
-  const handleMomentumScrollBegin = useCallback(() => {
-    onMomentumScrollBeginRef.current?.();
-  }, []);
+    const handleMomentumScrollEnd = useCallback(() => {
+      onMomentumScrollEndRef.current?.();
+    }, []);
 
-  const handleScrollEndDrag = useCallback(() => {
-    onScrollEndDragRef.current?.();
-  }, []);
+    // Forwarded so the screen can track user-scroll state.
+    const handleScrollBeginDrag = useCallback(() => {
+      onScrollBeginDragRef.current?.();
+    }, []);
 
-  const handleMeatballPress = useCallback((event: FeedEvent) => {
-    setMeatballEvent(event);
-    bottomSheetRef.current?.present();
-  }, []);
+    const handleMomentumScrollBegin = useCallback(() => {
+      onMomentumScrollBeginRef.current?.();
+    }, []);
 
-  const handleDismissSheet = useCallback(() => {
-    bottomSheetRef.current?.dismiss();
-    setMeatballEvent(null);
-  }, []);
+    const handleScrollEndDrag = useCallback(() => {
+      onScrollEndDragRef.current?.();
+    }, []);
 
-  // 'event' rows render two structurally different trees (full vs compact);
-  // give them separate recycling pools so FlashList doesn't swap layouts.
-  const getItemType = useCallback(
-    (row: FeedRow) => (row.kind === 'event' ? `event-${row.mode}` : row.kind),
-    []
-  );
+    const handleMeatballPress = useCallback((event: FeedEvent) => {
+      setMeatballEvent(event);
+      bottomSheetRef.current?.present();
+    }, []);
 
-  const keyExtractor = useCallback(
-    (row: FeedRow) => `${row.kind}:${row.date}:${'event' in row ? row.event.id : ''}`,
-    []
-  );
+    const handleDismissSheet = useCallback(() => {
+      bottomSheetRef.current?.dismiss();
+      setMeatballEvent(null);
+    }, []);
 
-  const renderItem = useCallback(
-    ({ item: row }: { item: FeedRow }) => {
-      switch (row.kind) {
-        case 'day-header':
-          return <DayHeaderRow date={row.date} today={today} summary={row.summary} />;
+    // 'event' rows render two structurally different trees (full vs compact);
+    // give them separate recycling pools so FlashList doesn't swap layouts.
+    const getItemType = useCallback(
+      (row: FeedRow) => (row.kind === 'event' ? `event-${row.mode}` : row.kind),
+      []
+    );
 
-        case 'event': {
-          const props = feedEventToCardProps(
-            row.event,
-            () => onEventPress?.(row.event),
-            () => handleMeatballPress(row.event)
-          );
-          return row.mode === 'compact' ? (
-            <EventCardCompact {...props} />
-          ) : (
-            <EventCardFull {...props} />
-          );
+    const keyExtractor = useCallback(
+      (row: FeedRow) => `${row.kind}:${row.date}:${'event' in row ? row.event.id : ''}`,
+      []
+    );
+
+    const renderItem = useCallback(
+      ({ item: row }: { item: FeedRow }) => {
+        switch (row.kind) {
+          case 'day-header':
+            return <DayHeaderRow date={row.date} today={today} summary={row.summary} />;
+
+          case 'event': {
+            const props = feedEventToCardProps(
+              row.event,
+              () => onEventPress?.(row.event),
+              () => handleMeatballPress(row.event)
+            );
+            return row.mode === 'compact' ? (
+              <EventCardCompact {...props} />
+            ) : (
+              <EventCardFull {...props} />
+            );
+          }
+
+          case 'all-day':
+            return renderAllDayCard(
+              row.event,
+              () => onEventPress?.(row.event),
+              () => handleMeatballPress(row.event)
+            );
+
+          case 'busy':
+            return renderBusyCard(row.event);
+
+          case 'quiet-day':
+            return <QuietDayCard />;
+
+          case 'now-line':
+            return <NowLineRow label={row.label} />;
+
+          default:
+            return null;
         }
+      },
+      [today, onEventPress, handleMeatballPress]
+    );
 
-        case 'all-day':
-          return renderAllDayCard(
-            row.event,
-            () => onEventPress?.(row.event),
-            () => handleMeatballPress(row.event)
-          );
-
-        case 'busy':
-          return renderBusyCard(row.event);
-
-        case 'quiet-day':
-          return <QuietDayCard />;
-
-        case 'now-line':
-          return <NowLineRow label={row.label} />;
-
-        default:
-          return null;
-      }
-    },
-    [today, onEventPress, handleMeatballPress]
-  );
-
-  return (
-    <>
-      <Box className="flex-1">
-        <FlashList
-          ref={flashListRef}
-          data={rows}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          getItemType={getItemType}
-          onViewableItemsChanged={handleViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          onMomentumScrollBegin={handleMomentumScrollBegin}
-          onMomentumScrollEnd={handleMomentumScrollEnd}
-          onScrollBeginDrag={handleScrollBeginDrag}
-          onScrollEndDrag={handleScrollEndDrag}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    return (
+      <>
+        <Box className="flex-1">
+          <FlashList
+            ref={flashListRef}
+            data={rows}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            getItemType={getItemType}
+            onViewableItemsChanged={handleViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
+            onMomentumScrollBegin={handleMomentumScrollBegin}
+            onMomentumScrollEnd={handleMomentumScrollEnd}
+            onScrollBeginDrag={handleScrollBeginDrag}
+            onScrollEndDrag={handleScrollEndDrag}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          />
+        </Box>
+        <EventMeatballSheet
+          ref={bottomSheetRef}
+          event={meatballEvent}
+          onEdit={handleDismissSheet}
+          onDelete={handleDismissSheet}
+          onShare={handleDismissSheet}
         />
-      </Box>
-      <EventMeatballSheet
-        ref={bottomSheetRef}
-        event={meatballEvent}
-        onEdit={handleDismissSheet}
-        onDelete={handleDismissSheet}
-        onShare={handleDismissSheet}
-      />
-    </>
-  );
-});
+      </>
+    );
+  })
+);

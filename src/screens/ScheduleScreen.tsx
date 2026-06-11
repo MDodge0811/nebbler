@@ -174,10 +174,16 @@ export function ScheduleScreen() {
   // ---------------------------------------------------------------------
   // Calendar tap → scroll feed
   // ---------------------------------------------------------------------
+
+  // Mirror indexByDate into a ref so handleDateSelected stays referentially
+  // stable across feed rebuilds (its identity feeds every day cell's onPress).
+  const indexByDateRef = useRef(indexByDate);
+  indexByDateRef.current = indexByDate;
+
   const handleDateSelected = useCallback(
     (date: string) => {
       selectDate(date);
-      const index = indexByDate.get(date);
+      const index = indexByDateRef.current.get(date);
       if (index !== undefined) {
         setPendingScrollDate(null);
         scrollFeedToIndex(index);
@@ -188,7 +194,7 @@ export function ScheduleScreen() {
       // Out-of-window: scroll once the new window's rows include the date.
       setPendingScrollDate(date);
     },
-    [indexByDate, selectDate, scrollFeedToIndex]
+    [selectDate, scrollFeedToIndex]
   );
 
   // Month swipe lands deterministically: select the 1st of the new month and

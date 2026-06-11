@@ -36,6 +36,9 @@ export function useEvents(calendarId: string | undefined, startDate: string, end
 export type MarkedDate = { colors: string[]; starred: boolean };
 export type MarkedDates = Record<string, MarkedDate>;
 
+/** Shared empty-dots constant — referential stability keeps day-cell memo() effective. */
+export const NO_DOTS: string[] = [];
+
 /**
  * Compute marked-dates object from an event list and a set of starred event ids.
  *

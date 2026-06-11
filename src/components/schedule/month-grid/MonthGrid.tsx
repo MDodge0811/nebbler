@@ -8,6 +8,7 @@ import {
 
 import { Box } from '@/components/ui/box';
 import { WeekStripDayCell } from '@components/schedule/week-strip/WeekStripDayCell';
+import { NO_DOTS } from '@hooks/useCalendarEvents';
 import type { MarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { isDateInMonth, getMonthStart } from '@utils/monthUtils';
@@ -106,7 +107,7 @@ export function MonthGrid({ onDateSelected, onMonthChanged, markedDates }: Month
                   dayNumber={day}
                   isSelected={dateStr === selectedDate}
                   isToday={dateStr === today}
-                  dotColors={mark?.colors ?? []}
+                  dotColors={mark?.colors ?? NO_DOTS}
                   dotVariant="month"
                   onPress={handleDayPress}
                   isAdjacentMonth={adjacent}
