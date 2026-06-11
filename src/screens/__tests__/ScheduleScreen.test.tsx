@@ -20,6 +20,7 @@ let capturedOnViewableItemsChanged:
   | undefined;
 let capturedScrollToIndex: jest.Mock;
 let capturedOnDateSelected: ((date: string) => void) | undefined;
+let capturedOnMonthChanged: ((monthStart: string) => void) | undefined;
 let capturedOnMomentumScrollEnd: (() => void) | undefined;
 let capturedOnScrollBeginDrag: (() => void) | undefined;
 let capturedOnScrollEndDrag: (() => void) | undefined;
@@ -65,8 +66,12 @@ jest.mock('@components/schedule/CalendarContainer', () => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- require() needed inside hoisted jest.mock factory
   const { View } = require('react-native') as typeof import('react-native');
   return {
-    CalendarContainer: (props: { onDateSelected?: (date: string) => void }) => {
+    CalendarContainer: (props: {
+      onDateSelected?: (date: string) => void;
+      onMonthChanged?: (monthStart: string) => void;
+    }) => {
       capturedOnDateSelected = props.onDateSelected;
+      capturedOnMonthChanged = props.onMonthChanged;
       return <View testID="calendar-container" />;
     },
   };
@@ -321,5 +326,15 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
     });
 
     expect(useScheduleStore.getState().displayMonth).toBe('2026-03-01');
+  });
+
+  it('month swipe selects the 1st of the new month and requests a feed scroll', () => {
+    // '2026-03-01' is in mockIndexByDate at index 2 — direct-scroll path fires.
+    render(<ScheduleScreen />);
+    act(() => {
+      capturedOnMonthChanged?.('2026-03-01');
+    });
+    expect(useScheduleStore.getState().selectedDate).toBe('2026-03-01');
+    expect(capturedScrollToIndex).toHaveBeenCalledWith(2, { animated: true });
   });
 });

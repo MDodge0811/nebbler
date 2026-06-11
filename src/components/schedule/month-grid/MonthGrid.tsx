@@ -18,16 +18,17 @@ export const ROW_HEIGHT = 40;
 
 interface MonthGridProps {
   onDateSelected?: (date: string) => void;
+  /** Fired when a horizontal swipe settles on a different month (YYYY-MM-01). */
+  onMonthChanged?: (monthStart: string) => void;
   markedDates: MarkedDates;
 }
 
-export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
+export function MonthGrid({ onDateSelected, onMonthChanged, markedDates }: MonthGridProps) {
   const { width: screenWidth } = useWindowDimensions();
   const selectedDate = useScheduleStore((s) => s.selectedDate);
   const today = useScheduleStore((s) => s.today);
   const displayMonth = useScheduleStore((s) => s.displayMonth);
   const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
-  const setVisibleDate = useScheduleStore((s) => s.setVisibleDate);
 
   const { months, centerIndex, getPageIndexForMonth } = useMonthPages(displayMonth);
   const flatListRef = useRef<FlatList<MonthPage>>(null);
@@ -69,9 +70,12 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
       if (!monthKey) return;
 
       setDisplayMonth(monthKey);
-      setVisibleDate(monthKey);
+      // Deterministic landing: the screen selects the 1st and scrolls the
+      // feed through the same path as a day tap. (visibleDate is set by
+      // selectDate inside that path — no separate write here.)
+      onMonthChanged?.(monthKey);
     },
-    [screenWidth, months, setDisplayMonth, setVisibleDate]
+    [screenWidth, months, setDisplayMonth, onMonthChanged]
   );
 
   const getItemLayout = useCallback(

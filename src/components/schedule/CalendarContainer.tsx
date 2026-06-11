@@ -35,10 +35,15 @@ function getExpandedHeight(monthKey: string): number {
 
 interface CalendarContainerProps {
   onDateSelected?: (date: string) => void;
+  onMonthChanged?: (monthStart: string) => void;
   markedDates: MarkedDates;
 }
 
-export function CalendarContainer({ onDateSelected, markedDates }: CalendarContainerProps) {
+export function CalendarContainer({
+  onDateSelected,
+  onMonthChanged,
+  markedDates,
+}: CalendarContainerProps) {
   const viewMode = useScheduleStore((s) => s.viewMode);
   const setViewMode = useScheduleStore((s) => s.setViewMode);
   const displayMonth = useScheduleStore((s) => s.displayMonth);
@@ -160,7 +165,11 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
             pointerEvents={isWeekMode ? 'none' : 'box-none'}
             testID="month-grid-wrapper"
           >
-            <MonthGrid {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
+            <MonthGrid
+              {...(onDateSelected ? { onDateSelected } : {})}
+              {...(onMonthChanged ? { onMonthChanged } : {})}
+              markedDates={markedDates}
+            />
           </Animated.View>
         </Box>
       </Animated.View>

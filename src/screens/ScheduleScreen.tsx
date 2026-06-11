@@ -191,6 +191,15 @@ export function ScheduleScreen() {
     [indexByDate, selectDate, scrollFeedToIndex]
   );
 
+  // Month swipe lands deterministically: select the 1st of the new month and
+  // scroll the feed there via the exact same path as a calendar day tap.
+  const handleMonthChanged = useCallback(
+    (monthStart: string) => {
+      handleDateSelected(monthStart);
+    },
+    [handleDateSelected]
+  );
+
   // Deferred scroll for out-of-window taps.
   useEffect(() => {
     if (!pendingScrollDate) return;
@@ -243,7 +252,11 @@ export function ScheduleScreen() {
   return (
     <Box className={containerStyle({})}>
       <ScheduleHeader />
-      <CalendarContainer onDateSelected={handleDateSelected} markedDates={markedDates} />
+      <CalendarContainer
+        onDateSelected={handleDateSelected}
+        onMonthChanged={handleMonthChanged}
+        markedDates={markedDates}
+      />
       {error && (
         <Box className={errorBannerStyle({})}>
           <Text className={errorTextStyle({})}>
