@@ -131,15 +131,15 @@ describe('EventFeed', () => {
     expect(new Set(keys).size).toBe(rows.length);
   });
 
-  it('getItemType returns the row kind (recycling pool per kind)', () => {
+  it('getItemType returns the row kind, with separate pools for full vs compact events', () => {
     renderFeed();
     expect(mockGetItemType).toBeDefined();
     expect(rows.map((row) => mockGetItemType?.(row))).toEqual([
       'day-header',
       'all-day',
       'now-line',
-      'event',
-      'event',
+      'event-full',
+      'event-compact',
       'busy',
       'quiet-day',
     ]);

@@ -182,7 +182,12 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
     setMeatballEvent(null);
   }, []);
 
-  const getItemType = useCallback((row: FeedRow) => row.kind, []);
+  // 'event' rows render two structurally different trees (full vs compact);
+  // give them separate recycling pools so FlashList doesn't swap layouts.
+  const getItemType = useCallback(
+    (row: FeedRow) => (row.kind === 'event' ? `event-${row.mode}` : row.kind),
+    []
+  );
 
   const keyExtractor = useCallback(
     (row: FeedRow) => `${row.kind}:${row.date}:${'event' in row ? row.event.id : ''}`,
