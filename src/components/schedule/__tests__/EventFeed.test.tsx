@@ -6,12 +6,13 @@ import type { FeedEvent, FeedRow } from '@utils/scheduleFeed';
 
 import { EventFeed } from '../EventFeed';
 
-// Captured FlashList props so we can assert keyExtractor/getItemType directly.
+// Captured FlashList props so we can assert keyExtractor/getItemType/scroll callbacks directly.
 // (Typed on these module-level decls so the jest.mock factory needs no inline
 // function-type casts — babel's hoist plugin rejects those.)
 let mockRenderItem: ((arg: { item: FeedRow; index: number }) => ReactNode) | undefined;
 let mockKeyExtractor: ((row: FeedRow, index: number) => string) | undefined;
 let mockGetItemType: ((row: FeedRow) => string) | undefined;
+let capturedListProps: Record<string, unknown> = {};
 
 // Override the global (null-rendering) FlashList mock so renderItem actually runs
 // for each row — this is what exercises EventFeed's render switch + card mapping.
@@ -26,6 +27,7 @@ jest.mock('@shopify/flash-list', () => {
     mockRenderItem = props.renderItem as typeof mockRenderItem;
     mockKeyExtractor = props.keyExtractor as typeof mockKeyExtractor;
     mockGetItemType = props.getItemType as typeof mockGetItemType;
+    capturedListProps = props;
 
     return (
       <View testID="flash-list">
@@ -91,6 +93,7 @@ describe('EventFeed', () => {
   beforeEach(() => {
     mockKeyExtractor = undefined;
     mockGetItemType = undefined;
+    capturedListProps = {};
     useScheduleStore.setState({ today: '2026-03-03' });
   });
 
@@ -143,5 +146,33 @@ describe('EventFeed', () => {
       'busy',
       'quiet-day',
     ]);
+  });
+
+  it('forwards onScrollEndDrag to the list', () => {
+    const onScrollEndDrag = jest.fn();
+    render(
+      <EventFeed
+        rows={rows}
+        refreshing={false}
+        onRefresh={jest.fn()}
+        onScrollEndDrag={onScrollEndDrag}
+      />
+    );
+    (capturedListProps.onScrollEndDrag as (() => void) | undefined)?.();
+    expect(onScrollEndDrag).toHaveBeenCalledTimes(1);
+  });
+
+  it('forwards onMomentumScrollBegin to the list', () => {
+    const onMomentumScrollBegin = jest.fn();
+    render(
+      <EventFeed
+        rows={rows}
+        refreshing={false}
+        onRefresh={jest.fn()}
+        onMomentumScrollBegin={onMomentumScrollBegin}
+      />
+    );
+    (capturedListProps.onMomentumScrollBegin as (() => void) | undefined)?.();
+    expect(onMomentumScrollBegin).toHaveBeenCalledTimes(1);
   });
 });
