@@ -30,7 +30,6 @@ export function ScheduleScreen() {
   const selectedDate = useScheduleStore((s) => s.selectedDate);
   const today = useScheduleStore((s) => s.today);
   const selectDate = useScheduleStore((s) => s.selectDate);
-  const setVisibleDate = useScheduleStore((s) => s.setVisibleDate);
   const programmaticScrollTarget = useScheduleStore((s) => s.programmaticScrollTarget);
   const setProgrammaticScrollTarget = useScheduleStore((s) => s.setProgrammaticScrollTarget);
   const [refreshing, setRefreshing] = useState(false);
@@ -38,12 +37,15 @@ export function ScheduleScreen() {
   const feedRef = useRef<EventFeedRef>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Clear timers on unmount
+  // Clear timers and global store state on unmount
   useEffect(() => {
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      // programmaticScrollTarget lives in the global store; clear it on unmount
+      // so we don't strand it across navigation cycles.
+      setProgrammaticScrollTarget(null);
     };
-  }, []);
+  }, [setProgrammaticScrollTarget]);
 
   // In month mode, drive query range from displayMonth so far-off months load events.
   // In week mode, drive from selectedDate as before.
@@ -111,7 +113,7 @@ export function ScheduleScreen() {
       const topDate = topHeader.item.date;
       if (!topDate || topDate === useScheduleStore.getState().selectedDate) return;
 
-      setVisibleDate(topDate);
+      // selectDate already sets both selectedDate and visibleDate — no setVisibleDate needed.
       selectDate(topDate);
 
       // In month mode, auto-advance the month grid if we scrolled into a new month
@@ -123,7 +125,7 @@ export function ScheduleScreen() {
         }
       }
     },
-    [selectDate, setVisibleDate, setDisplayMonth, setProgrammaticScrollTarget]
+    [selectDate, setDisplayMonth, setProgrammaticScrollTarget]
   );
 
   // -----------------------------------------------------------------------
@@ -149,34 +151,56 @@ export function ScheduleScreen() {
   // -----------------------------------------------------------------------
   const handleDateSelected = useCallback(
     (date: string) => {
+      // (a) Zero-distance tap: feed is already showing this day — just update
+      // the selection highlight and return without setting the scroll target.
+      if (date === useScheduleStore.getState().visibleDate) {
+        selectDate(date);
+        return;
+      }
+
       selectDate(date);
       const index = indexByDate.get(date);
+
       if (index === undefined) {
-        // Out-of-window: set target; effect below will scroll once rows load
+        // (c) Filtered: if starredOnly is on, the day may not appear in the feed
+        // at all — don't set the flag (it would stick forever).
+        if (useScheduleStore.getState().starredOnly) {
+          return;
+        }
+        // Out-of-window: set target; effect below scrolls once rows load.
         setProgrammaticScrollTarget(date);
         return;
       }
 
+      // (b) Single scroll owner: set target here; the effect fires and scrolls.
       setProgrammaticScrollTarget(date);
-      feedRef.current?.scrollToIndex(index, { animated: true });
     },
     [indexByDate, selectDate, setProgrammaticScrollTarget]
   );
 
   // -----------------------------------------------------------------------
-  // Out-of-window scroll-after-load effect
-  // Fires whenever programmaticScrollTarget or indexByDate changes.
-  // If we have a pending target AND the index is now available, scroll.
+  // Out-of-window scroll-after-load effect (sole scroll owner)
+  // Fires when programmaticScrollTarget, indexByDate, or isLoading changes.
   // -----------------------------------------------------------------------
   useEffect(() => {
     if (!programmaticScrollTarget) return;
     const index = indexByDate.get(programmaticScrollTarget);
-    if (index === undefined) return;
-    // The row is now in the loaded window — scroll to it
-    feedRef.current?.scrollToIndex(index, { animated: true });
-    // Note: programmaticScrollTarget is cleared by onMomentumScrollEnd or
-    // by the safety-clear in handleViewableItemsChanged.
-  }, [programmaticScrollTarget, indexByDate]);
+
+    if (index !== undefined) {
+      // Row is now in the window — scroll to it.
+      feedRef.current?.scrollToIndex(index, { animated: true });
+      // programmaticScrollTarget is cleared by onMomentumScrollEnd or by the
+      // safety-clear in handleViewableItemsChanged once the header becomes visible.
+      return;
+    }
+
+    // (c) Index is still undefined after loading finished → the day will never
+    // appear (e.g. no starred events on that date, or out-of-range entirely).
+    // Clear the target so it can't stick.
+    if (!isLoading) {
+      setProgrammaticScrollTarget(null);
+    }
+  }, [programmaticScrollTarget, indexByDate, isLoading, setProgrammaticScrollTarget]);
 
   const error = feedError;
 

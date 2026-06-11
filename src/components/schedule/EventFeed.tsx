@@ -1,7 +1,7 @@
 import { type BottomSheetModal } from '@gorhom/bottom-sheet';
 import { FlashList } from '@shopify/flash-list';
 import type { FlashListRef } from '@shopify/flash-list';
-import { useCallback, useRef, forwardRef, useImperativeHandle, useState } from 'react';
+import React, { useCallback, useRef, forwardRef, useImperativeHandle, useState } from 'react';
 import { RefreshControl } from 'react-native';
 
 import { Box } from '@/components/ui/box';
@@ -83,6 +83,36 @@ function feedEventToCardProps(
   if (onPress) props.onPress = onPress;
   if (onLongPress) props.onLongPress = onLongPress;
   return props;
+}
+
+// -----------------------------------------------------------------------
+// Explicit-props helpers — avoids spread-swallowing narrower card types
+// -----------------------------------------------------------------------
+
+function renderAllDayCard(
+  event: FeedEvent,
+  onPress: () => void,
+  onLongPress: () => void
+): React.ReactElement {
+  const tintColor = event.calendar_color ?? getCalendarColor(event.calendar_id ?? '');
+  const timeRange =
+    event.start_time && event.end_time ? formatTimeRange(event.start_time, event.end_time) : '';
+  return (
+    <AllDayCard
+      title={event.title ?? ''}
+      timeRange={timeRange}
+      tintColor={tintColor}
+      starred={event.starred}
+      onPress={onPress}
+      onLongPress={onLongPress}
+    />
+  );
+}
+
+function renderBusyCard(event: FeedEvent): React.ReactElement {
+  const timeRange =
+    event.start_time && event.end_time ? formatTimeRange(event.start_time, event.end_time) : '';
+  return <BusyCard timeRange={timeRange} />;
 }
 
 // -----------------------------------------------------------------------
@@ -169,7 +199,7 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
           const props = feedEventToCardProps(
             row.event,
             () => onEventPress?.(row.event),
-            row.mode === 'full' ? () => handleMeatballPress(row.event) : undefined
+            () => handleMeatballPress(row.event)
           );
           return row.mode === 'compact' ? (
             <EventCardCompact {...props} />
@@ -178,15 +208,15 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
           );
         }
 
-        case 'all-day': {
-          const props = feedEventToCardProps(row.event, () => onEventPress?.(row.event));
-          return <AllDayCard {...props} />;
-        }
+        case 'all-day':
+          return renderAllDayCard(
+            row.event,
+            () => onEventPress?.(row.event),
+            () => handleMeatballPress(row.event)
+          );
 
-        case 'busy': {
-          const props = feedEventToCardProps(row.event);
-          return <BusyCard {...props} />;
-        }
+        case 'busy':
+          return renderBusyCard(row.event);
 
         case 'quiet-day':
           return <QuietDayCard />;

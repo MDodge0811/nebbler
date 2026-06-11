@@ -237,17 +237,62 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
     expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
   });
 
-  it('out-of-window tap sets programmaticScrollTarget without immediate scroll', () => {
+  it('out-of-window tap sets target, effect immediately clears it when not loading', () => {
     render(<ScheduleScreen />);
 
-    // '2026-04-01' is not in the mock indexByDate — simulates out-of-window
+    // '2026-04-01' is not in the mock indexByDate — simulates out-of-window.
+    // The feed mock returns isLoading: false, so the effect's stuck-target safety-clear
+    // runs immediately and clears the target since the date never appears.
     act(() => {
       capturedOnDateSelected?.('2026-04-01');
     });
 
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-04-01');
-    // scrollToIndex should NOT have been called for this date (not in window)
+    // Target was set and then immediately cleared by the effect (index undefined + !isLoading)
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
+    // scrollToIndex must NOT have been called (no matching row)
     expect(capturedScrollToIndex).not.toHaveBeenCalled();
+  });
+
+  it('zero-distance tap does not set programmaticScrollTarget', () => {
+    render(<ScheduleScreen />);
+
+    // visibleDate is storeToday; tapping the same date is a zero-distance tap
+    act(() => {
+      capturedOnDateSelected?.(storeToday);
+    });
+
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
+    expect(capturedScrollToIndex).not.toHaveBeenCalled();
+  });
+
+  it('tap with starredOnly on and no matching row does not set programmaticScrollTarget', () => {
+    render(<ScheduleScreen />);
+
+    act(() => {
+      useScheduleStore.getState().toggleStarredOnly(); // starredOnly → true
+    });
+
+    // '2026-04-01' is out-of-window; with starredOnly the day may never appear
+    act(() => {
+      capturedOnDateSelected?.('2026-04-01');
+    });
+
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
+    expect(capturedScrollToIndex).not.toHaveBeenCalled();
+  });
+
+  it('unmount clears programmaticScrollTarget in the global store', () => {
+    const { unmount } = render(<ScheduleScreen />);
+
+    act(() => {
+      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
+    });
+
+    act(() => {
+      unmount();
+    });
+
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
   });
 
   it('scrolls feed when date is tapped in month mode', () => {

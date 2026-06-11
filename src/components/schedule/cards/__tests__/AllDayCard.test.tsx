@@ -15,6 +15,28 @@ describe('AllDayCard', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('calls onLongPress when long-pressed (meatball menu)', () => {
+    const onLongPress = jest.fn();
+    render(<AllDayCard title="Birthday" onLongPress={onLongPress} />);
+    fireEvent(screen.getByLabelText('Birthday'), 'longPress');
+    expect(onLongPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders star indicator when starred is true', () => {
+    render(<AllDayCard title="Birthday" starred />);
+    expect(screen.getByLabelText('Starred')).toBeTruthy();
+  });
+
+  it('does not render star indicator when starred is false', () => {
+    render(<AllDayCard title="Birthday" starred={false} />);
+    expect(screen.queryByLabelText('Starred')).toBeNull();
+  });
+
+  it('does not render star indicator when starred is absent', () => {
+    render(<AllDayCard title="Birthday" />);
+    expect(screen.queryByLabelText('Starred')).toBeNull();
+  });
+
   it('renders comment chip when commentCount > 0', () => {
     render(<AllDayCard title="Birthday" commentCount={4} />);
     expect(screen.getByLabelText('4 comments')).toBeTruthy();
