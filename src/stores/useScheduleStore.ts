@@ -1,6 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 
 function todayString(): string {
   const d = new Date();
@@ -13,7 +11,6 @@ function toMonthStart(dateString: string): string {
 }
 
 export type ViewMode = 'week' | 'month';
-type CardMode = 'full' | 'compact';
 
 interface ScheduleState {
   // Date state
@@ -37,10 +34,6 @@ interface ScheduleState {
   // viewable-items callbacks are suppressed until this is cleared.
   programmaticScrollTarget: string | null;
 
-  // Display preferences (persisted)
-  cardDisplayMode: Record<string, CardMode>;
-  defaultCardMode: CardMode;
-
   // Actions — selectDate sets both selectedDate and visibleDate so the header
   // month stays in sync. setVisibleDate moves only the viewport (month swipe).
   selectDate: (date: string) => void;
@@ -48,47 +41,26 @@ interface ScheduleState {
   setToday: (date: string) => void;
   setViewMode: (mode: ViewMode) => void;
   setDisplayMonth: (month: string) => void;
-  setCardMode: (date: string, mode: CardMode) => void;
-  setDefaultCardMode: (mode: CardMode) => void;
   setProgrammaticScrollTarget: (date: string | null) => void;
   toggleStarredOnly: () => void;
-  setStarredOnly: (value: boolean) => void;
 }
 
 const initialToday = todayString();
 
-export const useScheduleStore = create<ScheduleState>()(
-  persist(
-    (set) => ({
-      selectedDate: initialToday,
-      visibleDate: initialToday,
-      today: initialToday,
-      viewMode: 'week',
-      displayMonth: toMonthStart(initialToday),
-      starredOnly: false,
-      programmaticScrollTarget: null,
-      cardDisplayMode: {},
-      defaultCardMode: 'full',
+export const useScheduleStore = create<ScheduleState>()((set) => ({
+  selectedDate: initialToday,
+  visibleDate: initialToday,
+  today: initialToday,
+  viewMode: 'week',
+  displayMonth: toMonthStart(initialToday),
+  starredOnly: false,
+  programmaticScrollTarget: null,
 
-      selectDate: (date) => set({ selectedDate: date, visibleDate: date }),
-      setVisibleDate: (date) => set({ visibleDate: date }),
-      setToday: (date) => set({ today: date }),
-      setViewMode: (mode) => set({ viewMode: mode }),
-      setDisplayMonth: (month) => set({ displayMonth: month }),
-      setCardMode: (date, mode) =>
-        set((s) => ({ cardDisplayMode: { ...s.cardDisplayMode, [date]: mode } })),
-      setDefaultCardMode: (mode) => set({ defaultCardMode: mode }),
-      setProgrammaticScrollTarget: (date) => set({ programmaticScrollTarget: date }),
-      toggleStarredOnly: () => set((s) => ({ starredOnly: !s.starredOnly })),
-      setStarredOnly: (value) => set({ starredOnly: value }),
-    }),
-    {
-      name: 'schedule-store',
-      storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({
-        cardDisplayMode: state.cardDisplayMode,
-        defaultCardMode: state.defaultCardMode,
-      }),
-    }
-  )
-);
+  selectDate: (date) => set({ selectedDate: date, visibleDate: date }),
+  setVisibleDate: (date) => set({ visibleDate: date }),
+  setToday: (date) => set({ today: date }),
+  setViewMode: (mode) => set({ viewMode: mode }),
+  setDisplayMonth: (month) => set({ displayMonth: month }),
+  setProgrammaticScrollTarget: (date) => set({ programmaticScrollTarget: date }),
+  toggleStarredOnly: () => set((s) => ({ starredOnly: !s.starredOnly })),
+}));

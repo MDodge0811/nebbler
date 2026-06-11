@@ -1,8 +1,8 @@
 import { type BottomSheetModal } from '@gorhom/bottom-sheet';
 import { FlashList } from '@shopify/flash-list';
 import type { FlashListRef } from '@shopify/flash-list';
-import { useCallback, useRef, forwardRef, useImperativeHandle, useState, useEffect } from 'react';
-import { AppState, RefreshControl } from 'react-native';
+import { useCallback, useRef, forwardRef, useImperativeHandle, useState } from 'react';
+import { RefreshControl } from 'react-native';
 
 import { Box } from '@/components/ui/box';
 import {
@@ -86,39 +86,6 @@ function feedEventToCardProps(
 }
 
 // -----------------------------------------------------------------------
-// Now-line label — updated every 60 s, refreshed on foreground resume
-// -----------------------------------------------------------------------
-
-function formatNowLabel(date: Date): string {
-  const h = date.getHours();
-  const m = date.getMinutes();
-  const label = m === 0 ? String(h % 12 || 12) : `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
-  return `NOW · ${label}`;
-}
-
-function useNowLabel(): string {
-  const [nowLabel, setNowLabel] = useState(() => formatNowLabel(new Date()));
-
-  useEffect(() => {
-    const tick = () => setNowLabel(formatNowLabel(new Date()));
-
-    const intervalId = setInterval(tick, 60_000);
-
-    // Also refresh on foreground resume so the label is immediately correct
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') tick();
-    });
-
-    return () => {
-      clearInterval(intervalId);
-      subscription.remove();
-    };
-  }, []);
-
-  return nowLabel;
-}
-
-// -----------------------------------------------------------------------
 // EventFeed
 // -----------------------------------------------------------------------
 
@@ -135,7 +102,6 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
   ref
 ) {
   const today = useScheduleStore((s) => s.today);
-  const nowLabel = useNowLabel();
 
   const flashListRef = useRef<FlashListRef<FeedRow>>(null);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
@@ -226,13 +192,13 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
           return <QuietDayCard />;
 
         case 'now-line':
-          return <NowLineRow label={nowLabel} />;
+          return <NowLineRow label={row.label} />;
 
         default:
           return null;
       }
     },
-    [today, nowLabel, onEventPress, handleMeatballPress]
+    [today, onEventPress, handleMeatballPress]
   );
 
   return (

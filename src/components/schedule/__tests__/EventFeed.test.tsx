@@ -70,7 +70,7 @@ const rows: FeedRow[] = [
     date: '2026-03-03',
     event: makeEvent({ id: 'ad-1', title: 'Grandma visiting' }),
   },
-  { kind: 'now-line', date: '2026-03-03' },
+  { kind: 'now-line', date: '2026-03-03', label: 'NOW · 10:00' },
   {
     kind: 'event',
     date: '2026-03-03',
@@ -114,7 +114,7 @@ describe('EventFeed', () => {
     expect(screen.getByText('Busy')).toBeTruthy();
     // quiet-day
     expect(screen.getByText('Open day')).toBeTruthy();
-    // now-line label (supplied by useNowLabel — format "NOW · h:mm")
+    // now-line renders its label from the row data (format "NOW · h:mm")
     expect(screen.getByText(/NOW/)).toBeTruthy();
   });
 

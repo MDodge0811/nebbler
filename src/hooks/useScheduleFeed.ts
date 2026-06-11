@@ -1,17 +1,13 @@
 import { useQuery } from '@powersync/react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { useCalendarGroupMemberships } from '@hooks/useCalendarGroups';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useEventStars } from '@hooks/useEventStars';
 import { reactiveQuery } from '@utils/reactiveQuery';
-import type {
-  BuildFeedRowsOutput,
-  QueryWindow,
-  RawFeedEvent,
-  ResponseRow,
-} from '@utils/scheduleFeed';
-import { buildFeedRows, calcStickyWindow } from '@utils/scheduleFeed';
+import type { BuildFeedRowsOutput, RawFeedEvent, ResponseRow } from '@utils/scheduleFeed';
+import { buildFeedRows } from '@utils/scheduleFeed';
 
 // Re-export types so consumers don't need to import from utils directly
 export type { FeedEvent } from '@utils/scheduleFeed';
@@ -167,8 +163,7 @@ function useEventResponsesByEvent(rawEvents: RawFeedEvent[]): Record<string, Res
  * Stage 3: calendar_members for current user (view_mode resolution)
  * Stage 4: event_responses JOIN users (attendee chips)
  *
- * Sticky window: re-centers only when selectedDate comes within 7 days of
- * either window edge. Previous rows are retained while a new window loads.
+ * Previous rows are retained while a new window loads.
  *
  * Returns flat FeedRow[] and indexByDate Map for FlashList consumption.
  */
@@ -189,21 +184,27 @@ export function useScheduleFeed(
     [memberships]
   );
 
-  // Sticky window — computed from the last *committed* window. The ref is
-  // written in a commit-phase effect (never mutated during render), so the
-  // StrictMode double-invoke of this memo stays deterministic.
-  const windowRef = useRef<QueryWindow | null>(null);
-  const window = useMemo(() => calcStickyWindow(startDate, windowRef.current), [startDate]);
+  // Minute tick — drives the now-line label and position. Updated every 60s
+  // and also refreshed on foreground resume so the label is immediately correct.
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    windowRef.current = window;
-  }, [window]);
+    const tick = () => setNow(new Date());
+    const intervalId = setInterval(tick, 60_000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') tick();
+    });
+    return () => {
+      clearInterval(intervalId);
+      subscription.remove();
+    };
+  }, []);
 
   const {
     rawEvents,
     viewModeByCalendar,
     isLoading: eventsLoading,
     error: eventsError,
-  } = useCalendarEventsQuery(calendarIds, user?.id, window.start, window.end);
+  } = useCalendarEventsQuery(calendarIds, user?.id, startDate, endDate);
 
   const responsesByEvent = useEventResponsesByEvent(rawEvents);
 
@@ -221,7 +222,7 @@ export function useScheduleFeed(
       viewModeByCalendar,
       dateRange: { start: startDate, end: endDate },
       today: today ?? startDate,
-      now: new Date(),
+      now,
       starredOnly,
     });
   }, [
@@ -234,6 +235,7 @@ export function useScheduleFeed(
     today,
     eventsLoading,
     starredOnly,
+    now,
   ]);
 
   useEffect(() => {

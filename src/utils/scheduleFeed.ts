@@ -5,14 +5,13 @@
  *  - FeedRow / FeedEvent / AttendeeChip / DayShape types
  *  - buildFeedRows — converts raw query results into a flat FeedRow[]
  *  - summarizeDay  — produces DayShape from a day's events
- *  - calcStickyWindow — sticky ±1-month query window with 7-day edge re-center
  *
  * IMPORTANT: No React, no PowerSync, no imports from hook/component layers.
  * The hook (useScheduleFeed) is the only caller of these functions.
  */
 
 import type { Event } from '@database/schema';
-import { DEFAULT_AVATAR_COLOR, getInitials } from '@utils/avatarColor';
+import { getAvatarColor, getInitials } from '@utils/avatarColor';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,7 +65,7 @@ export interface DayShape {
 export type FeedRow =
   | { kind: 'day-header'; date: string; summary: DayShape }
   | { kind: 'all-day'; date: string; event: FeedEvent }
-  | { kind: 'now-line'; date: string }
+  | { kind: 'now-line'; date: string; label: string }
   | { kind: 'event'; date: string; event: FeedEvent; mode: 'full' | 'compact' }
   | { kind: 'busy'; date: string; event: FeedEvent }
   | { kind: 'quiet-day'; date: string };
@@ -204,7 +203,7 @@ function buildAttendeeChips(responses: ResponseRow[]): AttendeeChip[] {
     chips.push({
       userId: r.user_id,
       initials: getInitials(r.first_name, r.last_name, r.user_id),
-      color: r.avatar_color ?? DEFAULT_AVATAR_COLOR,
+      color: r.avatar_color ?? getAvatarColor(r.user_id),
       rsvp,
     });
   }
@@ -280,7 +279,7 @@ function emitTimedRows(
     if (isToday && !nowLineEmitted && e.start_time) {
       const eventStart = new Date(e.start_time);
       if (eventStart > now) {
-        rows.push({ kind: 'now-line', date });
+        rows.push({ kind: 'now-line', date, label: formatNowLabel(now) });
         nowLineEmitted = true;
       }
     }
@@ -293,7 +292,7 @@ function emitTimedRows(
   }
 
   if (isToday && !nowLineEmitted) {
-    rows.push({ kind: 'now-line', date });
+    rows.push({ kind: 'now-line', date, label: formatNowLabel(now) });
   }
 }
 
@@ -426,6 +425,11 @@ function fmtLocalTime(d: Date): string {
   return `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
 }
 
+/** Formats a Date as the now-line label: "NOW · h:mm". */
+export function formatNowLabel(date: Date): string {
+  return `NOW · ${fmtLocalTime(date)}`;
+}
+
 /** Returns the last event starting at or after 17:00 local, or undefined. */
 function findCloserEvent(timedEvents: FeedEvent[]): FeedEvent | undefined {
   const late = timedEvents.filter((e) => e.start_time && new Date(e.start_time).getHours() >= 17);
@@ -478,66 +482,4 @@ export function summarizeDay(events: FeedEvent[]): DayShape {
     ...(busyLabel !== undefined && { busyLabel }),
     ...(closerLabel !== undefined && { closerLabel }),
   };
-}
-
-// ---------------------------------------------------------------------------
-// calcStickyWindow
-// ---------------------------------------------------------------------------
-
-export interface QueryWindow {
-  start: string; // YYYY-MM-DD
-  end: string; // YYYY-MM-DD
-}
-
-const WINDOW_MONTHS = 1; // ±1 month
-const EDGE_THRESHOLD_DAYS = 7;
-
-/**
- * Adds `months` months to a YYYY-MM-DD date, returning YYYY-MM-DD. Clamps to the
- * target month's last day so e.g. Mar 31 − 1mo → Feb 28/29 (not a Mar 3 rollover).
- */
-function addMonths(dateStr: string, months: number): string {
-  const d = parseDateLocal(dateStr);
-  const day = d.getDate();
-  d.setDate(1);
-  d.setMonth(d.getMonth() + months);
-  const lastDayOfTargetMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  d.setDate(Math.min(day, lastDayOfTargetMonth));
-  return toDateString(d);
-}
-
-/** Returns the difference in days between two YYYY-MM-DD strings (b - a). */
-function daysDiff(a: string, b: string): number {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.round((parseDateLocal(b).getTime() - parseDateLocal(a).getTime()) / msPerDay);
-}
-
-/** Computes a fresh window centered on `date`. */
-function freshWindow(date: string): QueryWindow {
-  return { start: addMonths(date, -WINDOW_MONTHS), end: addMonths(date, WINDOW_MONTHS) };
-}
-
-/**
- * Sticky ±1-month query window.
- *
- * Rules:
- *   - If `current` is null, compute a fresh window centered on `date`.
- *   - If `date` is more than EDGE_THRESHOLD_DAYS inside both edges, reuse
- *     the existing window (no SQL refire).
- *   - If `date` is within EDGE_THRESHOLD_DAYS of either edge, re-center.
- *
- * The hook stores the returned window in a ref and passes it back on the
- * next call — this keeps SQL params stable until a re-center is needed.
- */
-export function calcStickyWindow(date: string, current: QueryWindow | null): QueryWindow {
-  if (current === null) return freshWindow(date);
-
-  const daysFromStart = daysDiff(current.start, date);
-  const daysToEnd = daysDiff(date, current.end);
-
-  if (daysFromStart < EDGE_THRESHOLD_DAYS || daysToEnd < EDGE_THRESHOLD_DAYS) {
-    return freshWindow(date);
-  }
-
-  return current;
 }
