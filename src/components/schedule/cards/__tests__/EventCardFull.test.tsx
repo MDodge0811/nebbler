@@ -98,7 +98,12 @@ describe('EventCardFull', () => {
     expect(screen.getByLabelText('2 comments, unread')).toBeTruthy();
   });
 
-  it('renders photo slot when photoUri is provided', () => {
+  it('always renders the photo tile (solid calendar color when no photoUri)', () => {
+    render(<EventCardFull title="No Photo" timeRange="5 PM" tintColor={TINT} />);
+    expect(screen.getByLabelText('Event photo')).toBeTruthy();
+  });
+
+  it('renders the photo tile when photoUri is provided', () => {
     render(
       <EventCardFull
         title="Photo"
@@ -108,11 +113,6 @@ describe('EventCardFull', () => {
       />
     );
     expect(screen.getByLabelText('Event photo')).toBeTruthy();
-  });
-
-  it('does not render photo slot when photoUri is absent', () => {
-    render(<EventCardFull title="No Photo" timeRange="5 PM" tintColor={TINT} />);
-    expect(screen.queryByLabelText('Event photo')).toBeNull();
   });
 
   it('calls onPress when card is tapped', () => {

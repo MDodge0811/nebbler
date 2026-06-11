@@ -14,7 +14,7 @@ import type { EventCardProps } from '@components/schedule/cards/types';
 import { hexWithAlpha } from '@components/schedule/cards/utils';
 
 const cardStyle = tva({
-  base: 'mx-4 mb-2 rounded-xl border shadow-sm',
+  base: 'mx-4 mb-2 rounded-xl border',
 });
 const bodyStyle = tva({ base: 'px-3 py-2' });
 const titleStyle = tva({ base: 'text-[13.5px] font-semibold text-typography-900' });
@@ -33,9 +33,9 @@ export const EventCardCompact = memo(function EventCardCompact({
   EventCardProps,
   'title' | 'timeRange' | 'tintColor' | 'starred' | 'onPress' | 'onLongPress'
 >) {
-  const gradientStart = hexWithAlpha(tintColor, 0.1);
-  const gradientEnd = hexWithAlpha(tintColor, 0.03);
-  const borderColor = hexWithAlpha(tintColor, 0.3);
+  const gradientStart = hexWithAlpha(tintColor, 0.14);
+  const gradientEnd = hexWithAlpha(tintColor, 0.07);
+  const borderColor = hexWithAlpha(tintColor, 0.35);
 
   return (
     <Pressable

@@ -17,6 +17,7 @@ function makeEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
     created_by_user_id: 'user-creator',
     title: 'Test Event',
     description: null,
+    location: null,
     start_time: '2026-06-10T14:00:00Z',
     end_time: '2026-06-10T15:00:00Z',
     show_as: 'busy',

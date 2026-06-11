@@ -70,9 +70,9 @@ function feedEventToCardProps(
   const timeRange =
     event.start_time && event.end_time ? formatTimeRange(event.start_time, event.end_time) : '';
 
-  // Note: location, commentCount, hasUnreadComments, photoUri are omitted
-  // (placeholders — data doesn't exist yet; cards render nothing for absent props).
-  // Omitting rather than setting undefined is required by exactOptionalPropertyTypes.
+  // Note: commentCount, hasUnreadComments, photoUri are omitted (placeholders —
+  // data doesn't exist yet; cards render nothing for absent props). Omitting
+  // rather than setting undefined is required by exactOptionalPropertyTypes.
   const props: EventCardProps = {
     title: event.title ?? '',
     timeRange,
@@ -80,6 +80,7 @@ function feedEventToCardProps(
     starred: event.starred,
     attendees: event.attendees,
   };
+  if (event.location) props.location = event.location;
   if (onPress) props.onPress = onPress;
   if (onLongPress) props.onLongPress = onLongPress;
   return props;

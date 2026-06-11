@@ -10,6 +10,7 @@ const ev: Event = {
   created_by_user_id: 'user-1',
   title: 'Game Night',
   description: null,
+  location: null,
   start_time: '2026-06-01T19:00:00Z',
   end_time: '2026-06-01T22:00:00Z',
   show_as: 'busy',

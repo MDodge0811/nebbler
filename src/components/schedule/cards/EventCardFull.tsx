@@ -13,19 +13,18 @@ import { VStack } from '@/components/ui/vstack';
 import { AttendeeStack } from '@components/schedule/cards/AttendeeStack';
 import { CommentChip } from '@components/schedule/cards/CommentChip';
 import { StarIndicator } from '@components/schedule/cards/StarIndicator';
-import type { EventCardProps } from '@components/schedule/cards/types';
+import type { AttendeeChip, EventCardProps } from '@components/schedule/cards/types';
 import { hexWithAlpha } from '@components/schedule/cards/utils';
 
-const cardStyle = tva({
-  base: 'mx-4 mb-3 rounded-xl border shadow-sm',
-});
-const bodyStyle = tva({ base: 'px-4 py-3' });
-const titleStyle = tva({ base: 'text-[15px] font-semibold text-typography-900' });
-const timeStyle = tva({ base: 'mt-0.5 text-[13px] font-medium text-typography-500' });
-const locationStyle = tva({ base: 'ml-0.5 flex-1 text-[12px] text-typography-400' });
+// No shadow — the card reads as a flat, calendar-tinted tile (per design feedback).
+const cardStyle = tva({ base: 'mx-4 mb-3 rounded-xl border' });
+const bodyStyle = tva({ base: 'flex-row items-center gap-3 px-4 py-3' });
+const titleStyle = tva({ base: 'flex-1 text-[15px] font-semibold text-typography-900' });
+const timeStyle = tva({ base: 'ml-2 text-[13px] font-medium text-typography-500' });
+const locationStyle = tva({ base: 'ml-0.5 flex-1 text-[12px] text-typography-500' });
 const metaRowStyle = tva({ base: 'mt-2 flex-row items-center justify-between' });
 
-// StyleSheet.absoluteFill (not .create) is used for LinearGradient — same pattern as existing EventCardFull/Busy
+// StyleSheet.absoluteFill (not .create) is used for LinearGradient — same pattern as existing cards
 const gradientFill = StyleSheet.absoluteFill;
 
 function PinIcon() {
@@ -43,9 +42,62 @@ function PinIcon() {
   );
 }
 
-function PhotoSlot() {
-  // Placeholder — renders a neutral 32×32 tile; real image rendering deferred to a future story.
-  return <Box className="h-8 w-8 rounded-lg bg-background-100" accessibilityLabel="Event photo" />;
+/**
+ * Always-present 44×44 image tile on the card's right edge. When no photo is
+ * attached (the current state — photo support is deferred), it shows a solid
+ * fill of the event's calendar color so every card carries an unambiguous
+ * color anchor.
+ */
+function PhotoSquare({ tintColor }: { tintColor: string }) {
+  return (
+    <DynamicColorView
+      className="h-11 w-11 self-center rounded-lg"
+      backgroundColor={tintColor}
+      accessibilityLabel="Event photo"
+    />
+  );
+}
+
+// Explicit `| undefined` so callers can forward `string | undefined` values
+// directly under exactOptionalPropertyTypes.
+type CardMetaRowProps = {
+  location?: string | undefined;
+  attendees?: AttendeeChip[] | undefined;
+  commentCount?: number | undefined;
+  hasUnreadComments?: boolean | undefined;
+};
+
+/** Location (left) + attendees and comment chip (right). Renders nothing when empty. */
+function CardMetaRow({
+  location,
+  attendees = [],
+  commentCount,
+  hasUnreadComments,
+}: CardMetaRowProps) {
+  const hasMeta = location !== undefined || attendees.length > 0 || (commentCount ?? 0) > 0;
+  if (!hasMeta) return null;
+
+  return (
+    <HStack className={metaRowStyle({})}>
+      {location !== undefined ? (
+        <HStack className="flex-1 items-center">
+          <PinIcon />
+          <Text className={locationStyle({})} numberOfLines={1}>
+            {location}
+          </Text>
+        </HStack>
+      ) : (
+        <Box className="flex-1" />
+      )}
+
+      <HStack className="items-center gap-2">
+        {attendees.length > 0 && <AttendeeStack attendees={attendees} />}
+        {commentCount !== undefined && commentCount > 0 ? (
+          <CommentChip count={commentCount} {...(hasUnreadComments ? { hasUnread: true } : {})} />
+        ) : null}
+      </HStack>
+    </HStack>
+  );
 }
 
 export const EventCardFull = memo(function EventCardFull({
@@ -54,16 +106,17 @@ export const EventCardFull = memo(function EventCardFull({
   tintColor,
   starred,
   location,
-  attendees = [],
+  attendees,
   commentCount,
   hasUnreadComments,
-  photoUri,
   onPress,
   onLongPress,
 }: EventCardProps) {
-  const gradientStart = hexWithAlpha(tintColor, 0.1);
-  const gradientEnd = hexWithAlpha(tintColor, 0.03);
-  const borderColor = hexWithAlpha(tintColor, 0.3);
+  // Soft calendar-color wash — visible but not heavy; the solid PhotoSquare
+  // carries the strong color anchor so the background can stay light.
+  const gradientStart = hexWithAlpha(tintColor, 0.14);
+  const gradientEnd = hexWithAlpha(tintColor, 0.07);
+  const borderColor = hexWithAlpha(tintColor, 0.35);
 
   return (
     <Pressable
@@ -87,43 +140,28 @@ export const EventCardFull = memo(function EventCardFull({
         {/* Star overflows top-right corner — card has no overflow-hidden so it shows */}
         {starred === true && <StarIndicator />}
 
-        {/* Card body */}
-        <VStack className={bodyStyle({})}>
-          {/* Title + photo row */}
-          <HStack className="items-start justify-between">
-            <VStack className="flex-1 pr-2">
+        {/* Body: text column on the left, solid color tile pinned right */}
+        <HStack className={bodyStyle({})}>
+          <VStack className="flex-1">
+            {/* Title left, time top-right */}
+            <HStack className="items-start justify-between">
               <Text className={titleStyle({})} numberOfLines={2}>
                 {title}
               </Text>
               {timeRange ? <Text className={timeStyle({})}>{timeRange}</Text> : null}
-            </VStack>
-            {photoUri !== undefined ? <PhotoSlot /> : null}
-          </HStack>
-
-          {/* Meta row: location left, attendees + comment chip right */}
-          <HStack className={metaRowStyle({})}>
-            {location !== undefined ? (
-              <HStack className="flex-1 items-center">
-                <PinIcon />
-                <Text className={locationStyle({})} numberOfLines={1}>
-                  {location}
-                </Text>
-              </HStack>
-            ) : (
-              <Box className="flex-1" />
-            )}
-
-            <HStack className="items-center gap-2">
-              {attendees.length > 0 && <AttendeeStack attendees={attendees} />}
-              {commentCount !== undefined && commentCount > 0 ? (
-                <CommentChip
-                  count={commentCount}
-                  {...(hasUnreadComments ? { hasUnread: true } : {})}
-                />
-              ) : null}
             </HStack>
-          </HStack>
-        </VStack>
+
+            {/* Meta row: location left, attendees + comment chip right */}
+            <CardMetaRow
+              location={location}
+              attendees={attendees}
+              commentCount={commentCount}
+              hasUnreadComments={hasUnreadComments}
+            />
+          </VStack>
+
+          <PhotoSquare tintColor={tintColor} />
+        </HStack>
       </DynamicColorView>
     </Pressable>
   );
