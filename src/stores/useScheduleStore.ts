@@ -30,10 +30,6 @@ interface ScheduleState {
   /** When true, the feed shows only starred events. */
   starredOnly: boolean;
 
-  // Lock-free scroll sync — when non-null, a programmatic scroll is in flight.
-  // viewable-items callbacks are suppressed until this is cleared.
-  programmaticScrollTarget: string | null;
-
   // Actions — selectDate sets both selectedDate and visibleDate so the header
   // month stays in sync. setVisibleDate moves only the viewport (month swipe).
   selectDate: (date: string) => void;
@@ -41,7 +37,6 @@ interface ScheduleState {
   setToday: (date: string) => void;
   setViewMode: (mode: ViewMode) => void;
   setDisplayMonth: (month: string) => void;
-  setProgrammaticScrollTarget: (date: string | null) => void;
   toggleStarredOnly: () => void;
 }
 
@@ -54,13 +49,11 @@ export const useScheduleStore = create<ScheduleState>()((set) => ({
   viewMode: 'week',
   displayMonth: toMonthStart(initialToday),
   starredOnly: false,
-  programmaticScrollTarget: null,
 
   selectDate: (date) => set({ selectedDate: date, visibleDate: date }),
   setVisibleDate: (date) => set({ visibleDate: date }),
   setToday: (date) => set({ today: date }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setDisplayMonth: (month) => set({ displayMonth: month }),
-  setProgrammaticScrollTarget: (date) => set({ programmaticScrollTarget: date }),
   toggleStarredOnly: () => set((s) => ({ starredOnly: !s.starredOnly })),
 }));

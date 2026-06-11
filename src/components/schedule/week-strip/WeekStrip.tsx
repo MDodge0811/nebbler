@@ -42,7 +42,6 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
 
   const handleDayPress = useCallback(
     (date: string) => {
-      if (useScheduleStore.getState().programmaticScrollTarget !== null) return;
       useScheduleStore.getState().selectDate(date);
       onDateSelected?.(date);
     },

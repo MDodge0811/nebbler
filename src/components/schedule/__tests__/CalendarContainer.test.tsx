@@ -14,7 +14,6 @@ describe('CalendarContainer', () => {
       today: storeToday,
       viewMode: 'week',
       displayMonth: storeToday.slice(0, 7) + '-01',
-      programmaticScrollTarget: null,
     });
   });
 

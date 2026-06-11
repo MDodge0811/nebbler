@@ -22,6 +22,8 @@ let capturedScrollToIndex: jest.Mock;
 let capturedOnDateSelected: ((date: string) => void) | undefined;
 let capturedOnMomentumScrollEnd: (() => void) | undefined;
 let capturedOnScrollBeginDrag: (() => void) | undefined;
+let capturedOnScrollEndDrag: (() => void) | undefined;
+let capturedOnMomentumScrollBegin: (() => void) | undefined;
 
 // ---- Mocks ----
 
@@ -44,6 +46,8 @@ jest.mock('@components/schedule/EventFeed', () => {
       props.onViewableItemsChanged as typeof capturedOnViewableItemsChanged;
     capturedOnMomentumScrollEnd = props.onMomentumScrollEnd as (() => void) | undefined;
     capturedOnScrollBeginDrag = props.onScrollBeginDrag as (() => void) | undefined;
+    capturedOnScrollEndDrag = props.onScrollEndDrag as (() => void) | undefined;
+    capturedOnMomentumScrollBegin = props.onMomentumScrollBegin as (() => void) | undefined;
     useImperativeHandle(ref, () => ({ scrollToIndex }));
     return <View testID="event-feed" />;
   });
@@ -68,7 +72,9 @@ jest.mock('@components/schedule/CalendarContainer', () => {
   };
 });
 
-// Three dates in the mock feed; indexByDate maps each date's day-header
+// Three dates in the mock feed; mockIndexByDate maps each date's day-header.
+// The mock returns `new Map(mockIndexByDate)` each call so identity changes
+// when the backing map mutates — required for the deferred-scroll effect.
 const mockRows: FeedRow[] = [
   { kind: 'day-header', date: '2026-02-27', summary: { countLabel: 'Nothing scheduled yet' } },
   { kind: 'day-header', date: '2026-02-28', summary: { countLabel: '1 event' } },
@@ -80,14 +86,19 @@ const mockIndexByDate = new Map<string, number>([
   ['2026-03-01', 2],
 ]);
 
+// Mutable mock state — tests can flip isFetching to simulate loading transitions.
+const mockFeedState = {
+  isFetching: false,
+};
+
 jest.mock('@hooks/useScheduleFeed', () => ({
   useScheduleFeed: () => ({
     rows: mockRows,
-    indexByDate: mockIndexByDate,
+    indexByDate: new Map(mockIndexByDate),
     events: [],
     starredIds: new Set<string>(),
     isLoading: false,
-    isFetching: false,
+    isFetching: mockFeedState.isFetching,
     error: null,
   }),
 }));
@@ -144,6 +155,8 @@ const { ScheduleScreen } = require('../ScheduleScreen') as {
 };
 
 describe('ScheduleScreen scroll-date sync (lock-free)', () => {
+  let rerenderScreen: () => void;
+
   beforeEach(() => {
     useScheduleStore.setState({
       selectedDate: storeToday,
@@ -151,190 +164,117 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
       today: storeToday,
       viewMode: 'week',
       displayMonth: '2026-02-01',
-      programmaticScrollTarget: null,
       starredOnly: false,
     });
     capturedScrollToIndex.mockClear();
+    // Reset mockIndexByDate to initial values
+    mockIndexByDate.clear();
+    mockIndexByDate.set('2026-02-27', 0);
+    mockIndexByDate.set('2026-02-28', 1);
+    mockIndexByDate.set('2026-03-01', 2);
+    mockFeedState.isFetching = false;
+    rerenderScreen = () => {}; // will be overwritten by individual tests that need it
   });
 
-  it('updates selectedDate when feed scrolls to a new day-header row', () => {
+  it('does NOT update selectedDate from viewability when the user is not scrolling', () => {
     render(<ScheduleScreen />);
-
     act(() => {
-      fireViewableItemsChanged(['2026-02-28']);
-    });
-
-    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
-  });
-
-  it('suppresses viewable-items updates while programmaticScrollTarget is set', () => {
-    render(<ScheduleScreen />);
-
-    // Set a programmatic target
-    act(() => {
-      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
-    });
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-02-28');
-
-    // Scroll callback fires — should be suppressed (selectedDate stays as storeToday)
-    act(() => {
-      fireViewableItemsChanged(['2026-03-01']);
+      fireViewableItemsChanged(['2026-02-28']); // no drag in progress
     });
     expect(useScheduleStore.getState().selectedDate).toBe(storeToday);
   });
 
-  it('safety-clears programmaticScrollTarget when target header becomes visible', () => {
+  it('updates selectedDate from viewability during a user drag', () => {
     render(<ScheduleScreen />);
-
-    act(() => {
-      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
-    });
-
-    // Target header becomes visible — should clear the target
-    act(() => {
-      fireViewableItemsChanged(['2026-02-28']);
-    });
-
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
-  });
-
-  it('calendar tap sets programmaticScrollTarget and calls scrollToIndex', () => {
-    render(<ScheduleScreen />);
-
-    act(() => {
-      capturedOnDateSelected?.('2026-02-28');
-    });
-
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-02-28');
-    expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
-  });
-
-  it('real tap path (selectDate before onDateSelected) still arms the scroll', () => {
-    // Regression guard: WeekStrip/MonthGrid call selectDate(date) *before*
-    // onDateSelected(date), so visibleDate already equals the tapped date by the
-    // time the handler runs. The zero-distance guard must key off the feed's
-    // actual top (viewability ref), not visibleDate, or tap-to-scroll dies.
-    render(<ScheduleScreen />);
-    // Feed is currently topped at 2026-02-27 (≠ the tapped day).
-    act(() => {
-      fireViewableItemsChanged(['2026-02-27', '2026-02-28']);
-    });
-    act(() => {
-      useScheduleStore.getState().selectDate('2026-02-28'); // sets visibleDate = 2026-02-28
-      capturedOnDateSelected?.('2026-02-28');
-    });
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-02-28');
-    expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
-  });
-
-  it('safety-clears the target when its header is visible but NOT at the top', () => {
-    // End-of-range tap: scrollToIndex can't bring the target header to the top,
-    // and Android doesn't reliably fire momentum-end for programmatic scrolls —
-    // visibility anywhere in the viewport must clear the flag.
-    render(<ScheduleScreen />);
-
-    act(() => {
-      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
-    });
-
-    act(() => {
-      fireViewableItemsChanged(['2026-02-27', '2026-02-28']); // target is second, not top
-    });
-
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
-  });
-
-  it('momentum scroll end clears programmaticScrollTarget', () => {
-    render(<ScheduleScreen />);
-
-    act(() => {
-      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
-    });
-
-    act(() => {
-      capturedOnMomentumScrollEnd?.();
-    });
-
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
-  });
-
-  it('user drag (onScrollBeginDrag) clears a stuck programmaticScrollTarget', () => {
-    render(<ScheduleScreen />);
-
-    // Simulate the deadlock: target set, but momentum/safety-clear never fired.
-    act(() => {
-      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
-    });
-
-    // A user-initiated drag must always cancel the in-flight programmatic scroll.
     act(() => {
       capturedOnScrollBeginDrag?.();
+      fireViewableItemsChanged(['2026-02-28']);
     });
-
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
+    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
   });
 
-  it('out-of-window tap sets target, effect immediately clears it when not loading', () => {
+  it('keeps syncing through the momentum phase of a fling and stops after momentum ends', () => {
     render(<ScheduleScreen />);
-
-    // '2026-04-01' is not in the mock indexByDate — simulates out-of-window.
-    // The feed mock returns isLoading: false, so the effect's stuck-target safety-clear
-    // runs immediately and clears the target since the date never appears.
     act(() => {
-      capturedOnDateSelected?.('2026-04-01');
+      capturedOnScrollBeginDrag?.();
+      capturedOnScrollEndDrag?.();
+      capturedOnMomentumScrollBegin?.();
+      fireViewableItemsChanged(['2026-02-28']);
     });
+    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
+    act(() => {
+      capturedOnMomentumScrollEnd?.();
+      fireViewableItemsChanged(['2026-03-01']); // scroll settled — must be ignored
+    });
+    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
+  });
 
-    // Target was set and then immediately cleared by the effect (index undefined + !isLoading)
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
-    // scrollToIndex must NOT have been called (no matching row)
+  it('slow drag without fling: syncs the final top on scrollEndDrag', () => {
+    render(<ScheduleScreen />);
+    act(() => {
+      capturedOnScrollBeginDrag?.();
+      fireViewableItemsChanged(['2026-02-28']);
+      capturedOnScrollEndDrag?.(); // no momentum follows
+    });
+    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
+  });
+
+  it('in-window tap selects and scrolls directly, and ignores in-flight viewability', () => {
+    render(<ScheduleScreen />);
+    act(() => {
+      useScheduleStore.getState().selectDate('2026-02-28'); // real tap order (WeekStrip)
+      capturedOnDateSelected?.('2026-02-28');
+    });
+    expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
+    act(() => {
+      fireViewableItemsChanged([storeToday]); // intermediate frame of the animated scroll
+      capturedOnMomentumScrollEnd?.(); // iOS fires this for programmatic scrolls
+    });
+    // Selection must NOT meander back to the intermediate top.
+    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
+  });
+
+  it('out-of-window tap defers the scroll until the date appears in indexByDate', () => {
+    // isFetching=true simulates the window loading; prevents the "settled+not found" clear.
+    mockFeedState.isFetching = true;
+    const { rerender } = render(<ScheduleScreen />);
+    rerenderScreen = () => rerender(<ScheduleScreen />);
+
+    act(() => {
+      capturedOnDateSelected?.('2026-03-05');
+    });
+    expect(capturedScrollToIndex).not.toHaveBeenCalled();
+    act(() => {
+      mockFeedState.isFetching = false;
+      mockIndexByDate.set('2026-03-05', 7);
+      rerenderScreen(); // trigger the effect with the updated map (new Map identity)
+    });
+    expect(capturedScrollToIndex).toHaveBeenCalledWith(7, { animated: true });
+  });
+
+  it('a user drag cancels a pending deferred scroll', () => {
+    // isFetching=true keeps the deferred pending until we trigger the drag.
+    mockFeedState.isFetching = true;
+    const { rerender } = render(<ScheduleScreen />);
+    rerenderScreen = () => rerender(<ScheduleScreen />);
+
+    act(() => {
+      capturedOnDateSelected?.('2026-03-05'); // not in indexByDate → deferred
+      capturedOnScrollBeginDrag?.();
+      mockFeedState.isFetching = false;
+      mockIndexByDate.set('2026-03-05', 7);
+      rerenderScreen();
+    });
     expect(capturedScrollToIndex).not.toHaveBeenCalled();
   });
 
-  it('zero-distance tap does not set programmaticScrollTarget', () => {
+  it('tap with starredOnly on and no matching row neither scrolls nor defers', () => {
     render(<ScheduleScreen />);
-
-    // The feed's actual top (tracked via viewability) is storeToday; tapping that
-    // same day is a zero-distance tap and must not arm a no-op scroll.
     act(() => {
-      fireViewableItemsChanged([storeToday, '2026-02-28']);
+      useScheduleStore.setState({ starredOnly: true });
+      capturedOnDateSelected?.('2026-03-05');
     });
-    act(() => {
-      useScheduleStore.getState().selectDate(storeToday);
-      capturedOnDateSelected?.(storeToday);
-    });
-
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
     expect(capturedScrollToIndex).not.toHaveBeenCalled();
-  });
-
-  it('tap with starredOnly on and no matching row does not set programmaticScrollTarget', () => {
-    render(<ScheduleScreen />);
-
-    act(() => {
-      useScheduleStore.getState().toggleStarredOnly(); // starredOnly → true
-    });
-
-    // '2026-04-01' is out-of-window; with starredOnly the day may never appear
-    act(() => {
-      capturedOnDateSelected?.('2026-04-01');
-    });
-
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
-    expect(capturedScrollToIndex).not.toHaveBeenCalled();
-  });
-
-  it('unmount clears programmaticScrollTarget in the global store', () => {
-    const { unmount } = render(<ScheduleScreen />);
-
-    act(() => {
-      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
-    });
-
-    act(() => {
-      unmount();
-    });
-
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
   });
 
   it('scrolls feed when date is tapped in month mode', () => {
@@ -351,7 +291,7 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
     expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
   });
 
-  it('updates selectedDate on feed scroll in month mode', () => {
+  it('updates selectedDate on feed scroll in month mode (during drag)', () => {
     render(<ScheduleScreen />);
 
     act(() => {
@@ -359,6 +299,7 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
     });
 
     act(() => {
+      capturedOnScrollBeginDrag?.();
       fireViewableItemsChanged(['2026-02-28']);
     });
 
@@ -375,6 +316,7 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
     expect(useScheduleStore.getState().displayMonth).toBe('2026-02-01');
 
     act(() => {
+      capturedOnScrollBeginDrag?.();
       fireViewableItemsChanged(['2026-03-01']);
     });
 

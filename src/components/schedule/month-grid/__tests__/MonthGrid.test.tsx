@@ -18,7 +18,6 @@ describe('MonthGrid', () => {
       today: storeToday,
       viewMode: 'month',
       displayMonth: storeMonth + '-01',
-      programmaticScrollTarget: null,
     });
   });
 
@@ -39,16 +38,6 @@ describe('MonthGrid', () => {
     );
     fireEvent.press(getByLabelText(testDate));
     expect(onDateSelected).toHaveBeenCalled();
-  });
-
-  it('does not respond to day press while programmatic scroll is in flight', () => {
-    useScheduleStore.setState({ programmaticScrollTarget: '2026-03-15' });
-    const onDateSelected = jest.fn();
-    const { getByLabelText } = render(
-      <MonthGrid onDateSelected={onDateSelected} markedDates={{}} />
-    );
-    fireEvent.press(getByLabelText(testDate));
-    expect(onDateSelected).not.toHaveBeenCalled();
   });
 
   it('renders event dots for marked dates (new colors+starred shape)', () => {

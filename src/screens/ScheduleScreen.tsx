@@ -30,27 +30,17 @@ export function ScheduleScreen() {
   const selectedDate = useScheduleStore((s) => s.selectedDate);
   const today = useScheduleStore((s) => s.today);
   const selectDate = useScheduleStore((s) => s.selectDate);
-  const programmaticScrollTarget = useScheduleStore((s) => s.programmaticScrollTarget);
-  const setProgrammaticScrollTarget = useScheduleStore((s) => s.setProgrammaticScrollTarget);
   const [refreshing, setRefreshing] = useState(false);
 
   const feedRef = useRef<EventFeedRef>(null);
-  // The feed's actual top day-header date, updated by viewability. This — NOT the
-  // store's visibleDate (which selectDate sets synchronously before the tap handler
-  // runs, and which swipes set to a synthetic YYYY-MM-01) — is the real "is the
-  // feed already on this day?" signal for the zero-distance guard.
-  const topVisibleDateRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Clear timers and global store state on unmount
+  // Clear timers on unmount
   useEffect(() => {
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-      // programmaticScrollTarget lives in the global store; clear it on unmount
-      // so we don't strand it across navigation cycles.
-      setProgrammaticScrollTarget(null);
     };
-  }, [setProgrammaticScrollTarget]);
+  }, []);
 
   // In month mode, drive query range from displayMonth so far-off months load events.
   // In week mode, drive from selectedDate as before.
@@ -94,40 +84,37 @@ export function ScheduleScreen() {
     refreshTimerRef.current = setTimeout(() => setRefreshing(false), 800);
   }, []);
 
-  // -----------------------------------------------------------------------
-  // User scrolls → update calendar (lock-free)
-  // -----------------------------------------------------------------------
-  const handleViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: FlashListViewToken[] }) => {
-      // Always track the feed's real top day-header (used by the zero-distance guard).
-      const topHeader = viewableItems.find((vt) => vt.item.kind === 'day-header');
-      if (topHeader) topVisibleDateRef.current = topHeader.item.date;
+  // ---------------------------------------------------------------------
+  // Scroll-sync state — all screen-local. Feed→calendar sync runs ONLY
+  // while the user is actively scrolling (drag → momentum settle), so
+  // programmatic scrolls and data-window rebuilds can never write
+  // selection. No global flag, no clearing heuristics, no deadlocks: these
+  // refs gate only whether a sync happens, never whether taps work.
+  // ---------------------------------------------------------------------
+  const isDraggingRef = useRef(false);
+  const isMomentumRef = useRef(false);
+  // True from a programmatic scrollToIndex until it is cleared by either the next
+  // onScrollBeginDrag (user drag) or, on iOS, the onMomentumScrollEnd that the
+  // programmatic scroll itself fires. On Android a programmatic scroll may never
+  // fire momentum events, so this stays true until the next drag start — the only
+  // consequence is that feed→calendar sync is suppressed in that gap (the calendar
+  // highlight was already set by selectDate in handleDateSelected).
+  const suppressSyncRef = useRef(false);
+  // The feed's actual top day-header, tracked from viewability.
+  const topVisibleDateRef = useRef<string | null>(null);
+  // Out-of-window tap target — scrolled to once indexByDate contains it.
+  const [pendingScrollDate, setPendingScrollDate] = useState<string | null>(null);
 
-      // Suppress selection updates while a programmatic scroll is in flight.
-      const target = useScheduleStore.getState().programmaticScrollTarget;
-      if (target !== null) {
-        // Safety-clear: if the target date's header is visible ANYWHERE, we're
-        // done. Top-only would strand the flag when the target sits near the end
-        // of the range (scrollToIndex can't bring it to the top) and the platform
-        // never fires momentum-end for programmatic scrolls (Android).
-        const targetVisible = viewableItems.some(
-          (vt) => vt.item.kind === 'day-header' && vt.item.date === target
-        );
-        if (targetVisible) {
-          setProgrammaticScrollTarget(null);
-        }
-        return;
-      }
+  const scrollFeedToIndex = useCallback((index: number) => {
+    suppressSyncRef.current = true;
+    feedRef.current?.scrollToIndex(index, { animated: true });
+  }, []);
 
-      if (!topHeader) return;
-
-      const topDate = topHeader.item.date;
-      if (!topDate || topDate === useScheduleStore.getState().selectedDate) return;
-
-      // selectDate already sets both selectedDate and visibleDate — no setVisibleDate needed.
+  const syncCalendarToDate = useCallback(
+    (topDate: string) => {
+      if (topDate === useScheduleStore.getState().selectedDate) return;
       selectDate(topDate);
-
-      // In month mode, auto-advance the month grid if we scrolled into a new month
+      // In month mode, auto-advance the grid when the feed crosses a month.
       const state = useScheduleStore.getState();
       if (state.viewMode === 'month') {
         const topMonthStart = topDate.slice(0, 7) + '-01';
@@ -136,86 +123,88 @@ export function ScheduleScreen() {
         }
       }
     },
-    [selectDate, setDisplayMonth, setProgrammaticScrollTarget]
+    [selectDate, setDisplayMonth]
   );
 
-  // -----------------------------------------------------------------------
-  // Momentum scroll ends → clear programmaticScrollTarget
-  // -----------------------------------------------------------------------
-  const handleMomentumScrollEnd = useCallback(() => {
-    setProgrammaticScrollTarget(null);
-  }, [setProgrammaticScrollTarget]);
+  const handleViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: FlashListViewToken[] }) => {
+      const topHeader = viewableItems.find((vt) => vt.item.kind === 'day-header');
+      if (!topHeader) return;
+      topVisibleDateRef.current = topHeader.item.date;
+      if (!suppressSyncRef.current && (isDraggingRef.current || isMomentumRef.current)) {
+        syncCalendarToDate(topHeader.item.date);
+      }
+    },
+    [syncCalendarToDate]
+  );
 
-  // A user drag cancels any in-flight programmatic scroll. This is the deadlock
-  // escape hatch: a programmatic scrollToIndex may never fire onMomentumScrollEnd
-  // (it's not a fling) and the target header may never cross the viewability bar
-  // (e.g. last few days), which would otherwise leave the flag stuck and freeze
-  // feed→calendar sync until remount.
   const handleScrollBeginDrag = useCallback(() => {
-    if (useScheduleStore.getState().programmaticScrollTarget !== null) {
-      setProgrammaticScrollTarget(null);
-    }
-  }, [setProgrammaticScrollTarget]);
+    isDraggingRef.current = true;
+    suppressSyncRef.current = false; // the user took over
+    setPendingScrollDate(null); // and superseded any deferred tap-scroll
+  }, []);
 
-  // -----------------------------------------------------------------------
-  // Calendar tap → scroll feed (lock-free, no setTimeout)
-  // -----------------------------------------------------------------------
+  const handleScrollEndDrag = useCallback(() => {
+    isDraggingRef.current = false;
+    // onScrollEndDrag fires BEFORE onMomentumScrollBegin, so isMomentumRef is still
+    // false here for both a fling and a slow drag. For a fling this yields an
+    // intermediate read at lift-off; the momentum phase (viewability) and
+    // onMomentumScrollEnd then emit the authoritative settled position. For a slow
+    // drag with no fling, this is the only sync point. (The isMomentumRef guard is
+    // kept as a defensive no-op against platforms that reorder these events.)
+    if (!isMomentumRef.current && topVisibleDateRef.current) {
+      syncCalendarToDate(topVisibleDateRef.current);
+    }
+  }, [syncCalendarToDate]);
+
+  const handleMomentumScrollBegin = useCallback(() => {
+    isMomentumRef.current = true;
+  }, []);
+
+  const handleMomentumScrollEnd = useCallback(() => {
+    isMomentumRef.current = false;
+    if (!suppressSyncRef.current && topVisibleDateRef.current) {
+      // Final settle of a user fling.
+      syncCalendarToDate(topVisibleDateRef.current);
+    }
+    // A programmatic scroll's own momentum-end (iOS) consumes the suppression.
+    suppressSyncRef.current = false;
+  }, [syncCalendarToDate]);
+
+  // ---------------------------------------------------------------------
+  // Calendar tap → scroll feed
+  // ---------------------------------------------------------------------
   const handleDateSelected = useCallback(
     (date: string) => {
-      // (a) Zero-distance tap: the feed's actual top is already this day — just
-      // update the selection highlight and return without arming a no-op scroll.
-      // (Uses the viewability-tracked ref, not visibleDate, which selectDate has
-      // already set to `date` by the time this runs — see WeekStrip/MonthGrid.)
-      if (date === topVisibleDateRef.current) {
-        selectDate(date);
-        return;
-      }
-
       selectDate(date);
       const index = indexByDate.get(date);
-
-      if (index === undefined) {
-        // (c) Filtered: if starredOnly is on, the day may not appear in the feed
-        // at all — don't set the flag (it would stick forever).
-        if (useScheduleStore.getState().starredOnly) {
-          return;
-        }
-        // Out-of-window: set target; effect below scrolls once rows load.
-        setProgrammaticScrollTarget(date);
+      if (index !== undefined) {
+        setPendingScrollDate(null);
+        scrollFeedToIndex(index);
         return;
       }
-
-      // (b) Single scroll owner: set target here; the effect fires and scrolls.
-      setProgrammaticScrollTarget(date);
+      // Filtered day under starredOnly never appears — don't defer.
+      if (useScheduleStore.getState().starredOnly) return;
+      // Out-of-window: scroll once the new window's rows include the date.
+      setPendingScrollDate(date);
     },
-    [indexByDate, selectDate, setProgrammaticScrollTarget]
+    [indexByDate, selectDate, scrollFeedToIndex]
   );
 
-  // -----------------------------------------------------------------------
-  // Out-of-window scroll-after-load effect (sole scroll owner)
-  // Fires when programmaticScrollTarget, indexByDate, or isLoading changes.
-  // -----------------------------------------------------------------------
+  // Deferred scroll for out-of-window taps.
   useEffect(() => {
-    if (!programmaticScrollTarget) return;
-    const index = indexByDate.get(programmaticScrollTarget);
-
+    if (!pendingScrollDate) return;
+    const index = indexByDate.get(pendingScrollDate);
     if (index !== undefined) {
-      // Row is now in the window — scroll to it.
-      feedRef.current?.scrollToIndex(index, { animated: true });
-      // programmaticScrollTarget is cleared by onMomentumScrollEnd or by the
-      // safety-clear in handleViewableItemsChanged once the header becomes visible.
+      scrollFeedToIndex(index);
+      setPendingScrollDate(null);
       return;
     }
-
-    // (c) Index is still undefined after fetching settled → the day will never
-    // appear (e.g. no starred events on that date, or out-of-range entirely).
-    // Clear the target so it can't stick. Gate on isFetching (not isLoading,
-    // which is first-load-only) so we don't clear mid month-window reload while
-    // the row is still on its way in.
+    // Fetching settled and the date never appeared (out of range) — drop it.
     if (!isFetching) {
-      setProgrammaticScrollTarget(null);
+      setPendingScrollDate(null);
     }
-  }, [programmaticScrollTarget, indexByDate, isFetching, setProgrammaticScrollTarget]);
+  }, [pendingScrollDate, indexByDate, isFetching, scrollFeedToIndex]);
 
   const error = feedError;
 
@@ -243,8 +232,10 @@ export function ScheduleScreen() {
         onRefresh={handleRefresh}
         onEventPress={handleEventPress}
         onViewableItemsChanged={handleViewableItemsChanged}
+        onMomentumScrollBegin={handleMomentumScrollBegin}
         onMomentumScrollEnd={handleMomentumScrollEnd}
         onScrollBeginDrag={handleScrollBeginDrag}
+        onScrollEndDrag={handleScrollEndDrag}
       />
     );
   }

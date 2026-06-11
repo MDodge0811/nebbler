@@ -13,7 +13,6 @@ describe('useScheduleStore', () => {
       viewMode: 'week',
       displayMonth: storeDisplayMonth,
       starredOnly: false,
-      programmaticScrollTarget: null,
     });
   });
 
@@ -63,14 +62,6 @@ describe('useScheduleStore', () => {
   it('setDisplayMonth updates displayMonth', () => {
     useScheduleStore.getState().setDisplayMonth('2026-04-01');
     expect(useScheduleStore.getState().displayMonth).toBe('2026-04-01');
-  });
-
-  it('setProgrammaticScrollTarget sets and clears the target', () => {
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
-    useScheduleStore.getState().setProgrammaticScrollTarget('2026-03-15');
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-03-15');
-    useScheduleStore.getState().setProgrammaticScrollTarget(null);
-    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
   });
 
   // starredOnly — NOT persisted; resets to false on app launch

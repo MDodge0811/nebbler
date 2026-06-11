@@ -11,7 +11,6 @@ describe('WeekStrip', () => {
       selectedDate: '2026-02-24',
       visibleDate: '2026-02-24',
       today: '2026-02-24',
-      programmaticScrollTarget: null,
     });
   });
 
@@ -43,27 +42,6 @@ describe('WeekStrip', () => {
       fireEvent.press(getByLabelText('2026-02-25'));
     });
     expect(onDateSelected).toHaveBeenCalledWith('2026-02-25');
-  });
-
-  it('does not call selectDate while programmatic scroll is in flight', () => {
-    useScheduleStore.setState({ programmaticScrollTarget: '2026-02-28' });
-    const { getByLabelText } = render(<WeekStrip markedDates={{}} />);
-    act(() => {
-      fireEvent.press(getByLabelText('2026-02-25'));
-    });
-    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-24');
-  });
-
-  it('does not call onDateSelected while programmatic scroll is in flight', () => {
-    useScheduleStore.setState({ programmaticScrollTarget: '2026-02-28' });
-    const onDateSelected = jest.fn();
-    const { getByLabelText } = render(
-      <WeekStrip markedDates={{}} onDateSelected={onDateSelected} />
-    );
-    act(() => {
-      fireEvent.press(getByLabelText('2026-02-25'));
-    });
-    expect(onDateSelected).not.toHaveBeenCalled();
   });
 
   it('shows event dots for marked dates (new colors shape)', () => {
