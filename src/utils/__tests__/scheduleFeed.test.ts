@@ -1,5 +1,5 @@
 /**
- * Tests for buildFeedRows, summarizeDay, and calcStickyWindow — all pure utilities.
+ * Tests for buildFeedRows and summarizeDay — all pure utilities.
  * No PowerSync/React needed here.
  */
 
