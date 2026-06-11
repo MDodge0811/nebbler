@@ -163,4 +163,23 @@ describe('useMarkedDates', () => {
     // The UTC date is 2026-02-15 regardless of timezone
     expect(result.current['2026-02-15']).toBeDefined();
   });
+
+  it('marks EVERY spanned day of a multi-day all-day event (matches the feed)', () => {
+    // Fri–Sun trip: end is exclusive midnight, so it spans Feb 13, 14, 15.
+    const events = [
+      makeEvent({
+        id: 'trip',
+        start_time: '2026-02-13T00:00:00Z',
+        end_time: '2026-02-16T00:00:00Z',
+        is_all_day: 1,
+      }),
+    ];
+    const { result } = renderHook(() => useMarkedDates(events));
+
+    expect(result.current['2026-02-13']).toBeDefined();
+    expect(result.current['2026-02-14']).toBeDefined();
+    expect(result.current['2026-02-15']).toBeDefined();
+    // End is exclusive — the trip does not cover Feb 16.
+    expect(result.current['2026-02-16']).toBeUndefined();
+  });
 });

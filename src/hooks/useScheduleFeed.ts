@@ -68,7 +68,10 @@ interface ResponseJoinRow {
 interface CalendarEventsResult {
   rawEvents: RawFeedEvent[];
   viewModeByCalendar: Record<string, string | null>;
+  /** First (hard) load only. */
   isLoading: boolean;
+  /** Initial load AND any re-evaluation (e.g. month-window change). */
+  isFetching: boolean;
   error: Error | undefined;
 }
 
@@ -91,6 +94,7 @@ function useCalendarEventsQuery(
   const {
     data: rawEvents = [],
     isLoading,
+    isFetching,
     error: eventsError,
   } = useQuery<RawFeedEvent>(eventSql, eventParams);
 
@@ -113,7 +117,7 @@ function useCalendarEventsQuery(
   }, [memberRows]);
 
   const error = eventsError ?? memberError ?? undefined;
-  return { rawEvents, viewModeByCalendar, isLoading, error };
+  return { rawEvents, viewModeByCalendar, isLoading, isFetching, error };
 }
 
 // ---------------------------------------------------------------------------
@@ -203,16 +207,19 @@ export function useScheduleFeed(
     rawEvents,
     viewModeByCalendar,
     isLoading: eventsLoading,
+    isFetching: eventsFetching,
     error: eventsError,
   } = useCalendarEventsQuery(calendarIds, user?.id, startDate, endDate);
 
   const responsesByEvent = useEventResponsesByEvent(rawEvents);
 
-  // Sticky rows — keep the previous output while a new window loads. The ref is
-  // committed in an effect (not written during render) for the same reason.
+  // Sticky rows — keep the previous output while a new window RE-EVALUATES. Keyed
+  // on isFetching, not isLoading: PowerSync's isLoading is first-load-only, so a
+  // month-window change (which re-subscribes the query) keeps isLoading false —
+  // isFetching is what flips, so this is the flag that actually engages on reload.
   const previousRowsRef = useRef<BuildFeedRowsOutput | null>(null);
   const feedOutput = useMemo<BuildFeedRowsOutput>(() => {
-    if (eventsLoading && previousRowsRef.current) {
+    if (eventsFetching && previousRowsRef.current) {
       return previousRowsRef.current;
     }
     return buildFeedRows({
@@ -233,16 +240,16 @@ export function useScheduleFeed(
     startDate,
     endDate,
     today,
-    eventsLoading,
+    eventsFetching,
     starredOnly,
     now,
   ]);
 
   useEffect(() => {
-    if (!eventsLoading) {
+    if (!eventsFetching) {
       previousRowsRef.current = feedOutput;
     }
-  }, [feedOutput, eventsLoading]);
+  }, [feedOutput, eventsFetching]);
 
   const error = userError ?? membershipsError ?? eventsError ?? undefined;
 
@@ -256,6 +263,9 @@ export function useScheduleFeed(
     // calling useEventStars() a second time.
     starredIds,
     isLoading: eventsLoading,
+    // True during initial load AND any re-evaluation; the screen uses this for
+    // its deferred-scroll clear so it doesn't fire mid-reload.
+    isFetching: eventsFetching,
     error,
   };
 }

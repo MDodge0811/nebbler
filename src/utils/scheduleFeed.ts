@@ -158,7 +158,7 @@ function localDateKey(isoUtc: string): string {
  * Returns all YYYY-MM-DD strings that an all-day event spans, clipped to [rangeStart, rangeEnd].
  * Uses UTC date math because all-day events store midnight-UTC boundaries.
  */
-function allDaySpannedDates(
+export function allDaySpannedDates(
   startUtc: string,
   endUtc: string,
   rangeStart: string,

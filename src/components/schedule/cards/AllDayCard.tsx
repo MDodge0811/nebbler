@@ -1,7 +1,6 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { memo } from 'react';
 
-import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -40,25 +39,25 @@ export const AllDayCard = memo(function AllDayCard({
   onLongPress,
 }: AllDayCardProps) {
   return (
-    <Box>
-      {/* Star overflows top-right; Box wrapper prevents card from clipping it */}
+    <Pressable
+      className={cardStyle({})}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    >
+      {/* Star overflows the card's top-right corner. Rendered INSIDE the Pressable
+          (which carries the mx-4 margins and has no overflow-hidden) so it hugs the
+          card corner, not the screen edge — matching EventCardFull/Compact. */}
       {starred === true && <StarIndicator />}
-      <Pressable
-        className={cardStyle({})}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        accessibilityRole="button"
-        accessibilityLabel={title}
-      >
-        <HStack className={bodyStyle({})}>
-          <Text className={titleStyle({})} numberOfLines={1}>
-            {title}
-          </Text>
-          {commentCount !== undefined && commentCount > 0 ? (
-            <CommentChip count={commentCount} {...(hasUnreadComments ? { hasUnread: true } : {})} />
-          ) : null}
-        </HStack>
-      </Pressable>
-    </Box>
+      <HStack className={bodyStyle({})}>
+        <Text className={titleStyle({})} numberOfLines={1}>
+          {title}
+        </Text>
+        {commentCount !== undefined && commentCount > 0 ? (
+          <CommentChip count={commentCount} {...(hasUnreadComments ? { hasUnread: true } : {})} />
+        ) : null}
+      </HStack>
+    </Pressable>
   );
 });

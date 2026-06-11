@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 
 import type { Event } from '@database/schema';
 import { getCalendarColor } from '@utils/calendarColor';
+import { allDaySpannedDates } from '@utils/scheduleFeed';
 
 /**
  * Reactive query for events scoped to a specific calendar within a date range.
@@ -76,6 +77,33 @@ function pushDistinctColor(colors: string[], color: string): void {
   if (colors.length < 3 && !colors.includes(color)) colors.push(color);
 }
 
+// Effectively-unbounded clip range so allDaySpannedDates returns every day an
+// all-day event covers (it clamps to the event's own span anyway).
+const WIDE_RANGE_START = '0000-01-01';
+const WIDE_RANGE_END = '9999-12-31';
+
+/**
+ * Day keys this event marks on the calendar:
+ *  - all-day → every UTC day it spans (matches the feed's per-day AllDayCards),
+ *  - timed   → its single local day.
+ */
+function dayKeysFor(event: Event & { calendar_color?: string | null }): string[] {
+  const isAllDay = 'is_all_day' in event && event.is_all_day === 1;
+  if (isAllDay) {
+    const startKey = utcDayKeyOf(event.start_time);
+    if (!startKey || !event.start_time) return [];
+    const spanned = allDaySpannedDates(
+      event.start_time,
+      event.end_time ?? event.start_time,
+      WIDE_RANGE_START,
+      WIDE_RANGE_END
+    );
+    return spanned.length > 0 ? spanned : [startKey];
+  }
+  const key = localDayKeyOf(event.start_time);
+  return key ? [key] : [];
+}
+
 export function useMarkedDates(
   events: Array<Event & { calendar_color?: string | null }>,
   starredIds?: Set<string>
@@ -87,20 +115,23 @@ export function useMarkedDates(
     const starredDates = new Set<string>();
 
     for (const event of events) {
-      // All-day events: bucket by UTC date (midnight-UTC boundaries are correct).
-      // Timed events: bucket by LOCAL date so a midnight-UTC event shows on the
-      // right calendar day for the user's timezone.
-      const isAllDay = 'is_all_day' in event && event.is_all_day === 1;
-      const key = isAllDay ? utcDayKeyOf(event.start_time) : localDayKeyOf(event.start_time);
-      if (!key) continue;
+      // Compute the day key(s) this event marks. All-day events are bucketed by
+      // UTC date and span EVERY day they cover (matching the feed's per-spanned-day
+      // AllDayCards). Timed events bucket by LOCAL date so a midnight-UTC event
+      // shows on the right calendar day for the user's timezone.
+      const keys = dayKeysFor(event);
+      if (keys.length === 0) continue;
 
       // Prefer the synced calendar color; fall back to the deterministic hash.
       const color = event.calendar_color ?? getCalendarColor(event.calendar_id ?? '');
-      const existing = colorsByDate.get(key);
-      if (existing) pushDistinctColor(existing, color);
-      else colorsByDate.set(key, [color]);
+      const isStarred = starredIds?.has(event.id) ?? false;
 
-      if (starredIds?.has(event.id)) starredDates.add(key);
+      for (const key of keys) {
+        const existing = colorsByDate.get(key);
+        if (existing) pushDistinctColor(existing, color);
+        else colorsByDate.set(key, [color]);
+        if (isStarred) starredDates.add(key);
+      }
     }
 
     const marked: MarkedDates = {};

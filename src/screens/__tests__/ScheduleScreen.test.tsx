@@ -85,7 +85,9 @@ jest.mock('@hooks/useScheduleFeed', () => ({
     rows: mockRows,
     indexByDate: mockIndexByDate,
     events: [],
+    starredIds: new Set<string>(),
     isLoading: false,
+    isFetching: false,
     error: null,
   }),
 }));
@@ -207,6 +209,24 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
     expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
   });
 
+  it('real tap path (selectDate before onDateSelected) still arms the scroll', () => {
+    // Regression guard: WeekStrip/MonthGrid call selectDate(date) *before*
+    // onDateSelected(date), so visibleDate already equals the tapped date by the
+    // time the handler runs. The zero-distance guard must key off the feed's
+    // actual top (viewability ref), not visibleDate, or tap-to-scroll dies.
+    render(<ScheduleScreen />);
+    // Feed is currently topped at 2026-02-27 (≠ the tapped day).
+    act(() => {
+      fireViewableItemsChanged(['2026-02-27', '2026-02-28']);
+    });
+    act(() => {
+      useScheduleStore.getState().selectDate('2026-02-28'); // sets visibleDate = 2026-02-28
+      capturedOnDateSelected?.('2026-02-28');
+    });
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-02-28');
+    expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
+  });
+
   it('momentum scroll end clears programmaticScrollTarget', () => {
     render(<ScheduleScreen />);
 
@@ -256,8 +276,13 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
   it('zero-distance tap does not set programmaticScrollTarget', () => {
     render(<ScheduleScreen />);
 
-    // visibleDate is storeToday; tapping the same date is a zero-distance tap
+    // The feed's actual top (tracked via viewability) is storeToday; tapping that
+    // same day is a zero-distance tap and must not arm a no-op scroll.
     act(() => {
+      fireViewableItemsChanged([storeToday, '2026-02-28']);
+    });
+    act(() => {
+      useScheduleStore.getState().selectDate(storeToday);
       capturedOnDateSelected?.(storeToday);
     });
 

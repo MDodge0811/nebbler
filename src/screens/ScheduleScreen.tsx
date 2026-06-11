@@ -35,6 +35,11 @@ export function ScheduleScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const feedRef = useRef<EventFeedRef>(null);
+  // The feed's actual top day-header date, updated by viewability. This — NOT the
+  // store's visibleDate (which selectDate sets synchronously before the tap handler
+  // runs, and which swipes set to a synthetic YYYY-MM-01) — is the real "is the
+  // feed already on this day?" signal for the zero-distance guard.
+  const topVisibleDateRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Clear timers and global store state on unmount
@@ -63,6 +68,7 @@ export function ScheduleScreen() {
     indexByDate,
     starredIds,
     isLoading,
+    isFetching,
     error: feedError,
   } = useScheduleFeed(startDate, endDate, today, starredOnly);
 
@@ -93,21 +99,20 @@ export function ScheduleScreen() {
   // -----------------------------------------------------------------------
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: FlashListViewToken[] }) => {
-      // Suppress while a programmatic scroll is in flight
+      // Always track the feed's real top day-header (used by the zero-distance guard).
+      const topHeader = viewableItems.find((vt) => vt.item.kind === 'day-header');
+      if (topHeader) topVisibleDateRef.current = topHeader.item.date;
+
+      // Suppress selection updates while a programmatic scroll is in flight.
       const target = useScheduleStore.getState().programmaticScrollTarget;
       if (target !== null) {
-        // Safety-clear: if the target date's header is now visible, we're done
-        const targetVisible = viewableItems.some(
-          (vt) => vt.item.kind === 'day-header' && vt.item.date === target
-        );
-        if (targetVisible) {
+        // Safety-clear: if the target date's header is now visible, we're done.
+        if (topHeader?.item.date === target) {
           setProgrammaticScrollTarget(null);
         }
         return;
       }
 
-      // Find the topmost visible day-header row
-      const topHeader = viewableItems.find((vt) => vt.item.kind === 'day-header');
       if (!topHeader) return;
 
       const topDate = topHeader.item.date;
@@ -151,9 +156,11 @@ export function ScheduleScreen() {
   // -----------------------------------------------------------------------
   const handleDateSelected = useCallback(
     (date: string) => {
-      // (a) Zero-distance tap: feed is already showing this day — just update
-      // the selection highlight and return without setting the scroll target.
-      if (date === useScheduleStore.getState().visibleDate) {
+      // (a) Zero-distance tap: the feed's actual top is already this day — just
+      // update the selection highlight and return without arming a no-op scroll.
+      // (Uses the viewability-tracked ref, not visibleDate, which selectDate has
+      // already set to `date` by the time this runs — see WeekStrip/MonthGrid.)
+      if (date === topVisibleDateRef.current) {
         selectDate(date);
         return;
       }
@@ -194,13 +201,15 @@ export function ScheduleScreen() {
       return;
     }
 
-    // (c) Index is still undefined after loading finished → the day will never
+    // (c) Index is still undefined after fetching settled → the day will never
     // appear (e.g. no starred events on that date, or out-of-range entirely).
-    // Clear the target so it can't stick.
-    if (!isLoading) {
+    // Clear the target so it can't stick. Gate on isFetching (not isLoading,
+    // which is first-load-only) so we don't clear mid month-window reload while
+    // the row is still on its way in.
+    if (!isFetching) {
       setProgrammaticScrollTarget(null);
     }
-  }, [programmaticScrollTarget, indexByDate, isLoading, setProgrammaticScrollTarget]);
+  }, [programmaticScrollTarget, indexByDate, isFetching, setProgrammaticScrollTarget]);
 
   const error = feedError;
 
