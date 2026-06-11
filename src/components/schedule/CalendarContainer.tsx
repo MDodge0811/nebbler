@@ -1,13 +1,17 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useDerivedValue,
   withSpring,
   runOnJS,
+  interpolate,
+  Extrapolation,
 } from 'react-native-reanimated';
 
 import { Box } from '@/components/ui/box';
+import type { MarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthRowCount } from '@utils/monthUtils';
 
@@ -22,6 +26,8 @@ const COLLAPSED_HEIGHT = DAY_HEADERS_HEIGHT + WEEK_ROW_HEIGHT + GRAB_HANDLE_HEIG
 const SPRING_CONFIG = { damping: 28, stiffness: 400, mass: 0.8 };
 const SNAP_VELOCITY_THRESHOLD = 500;
 const SNAP_POSITION_THRESHOLD = 0.4;
+// Cross-fade happens over the first 80px of expansion travel
+const CROSSFADE_TRAVEL = 80;
 
 function getExpandedHeight(monthKey: string): number {
   return DAY_HEADERS_HEIGHT + getMonthRowCount(monthKey) * MONTH_ROW_HEIGHT + GRAB_HANDLE_HEIGHT;
@@ -29,7 +35,7 @@ function getExpandedHeight(monthKey: string): number {
 
 interface CalendarContainerProps {
   onDateSelected?: (date: string) => void;
-  markedDates: Record<string, { marked: true; dotColor: string }>;
+  markedDates: MarkedDates;
 }
 
 export function CalendarContainer({ onDateSelected, markedDates }: CalendarContainerProps) {
@@ -37,13 +43,6 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
   const setViewMode = useScheduleStore((s) => s.setViewMode);
   const displayMonth = useScheduleStore((s) => s.displayMonth);
   const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
-
-  // Once MonthGrid has been shown, keep it mounted to avoid remount costs
-  const hasExpandedRef = useRef(false);
-  useEffect(() => {
-    if (viewMode === 'month') hasExpandedRef.current = true;
-  }, [viewMode]);
-  const showMonthGrid = viewMode === 'month' || hasExpandedRef.current;
 
   const heightSV = useSharedValue(COLLAPSED_HEIGHT);
   const startHeight = useSharedValue(COLLAPSED_HEIGHT);
@@ -103,6 +102,43 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
     overflow: 'hidden' as const,
   }));
 
+  // Cross-fade: strip fades out, grid fades in over the first CROSSFADE_TRAVEL px of expansion
+  const stripOpacity = useDerivedValue(() =>
+    interpolate(
+      heightSV.value,
+      [COLLAPSED_HEIGHT, COLLAPSED_HEIGHT + CROSSFADE_TRAVEL],
+      [1, 0],
+      Extrapolation.CLAMP
+    )
+  );
+  const gridOpacity = useDerivedValue(() =>
+    interpolate(
+      heightSV.value,
+      [COLLAPSED_HEIGHT, COLLAPSED_HEIGHT + CROSSFADE_TRAVEL],
+      [0, 1],
+      Extrapolation.CLAMP
+    )
+  );
+
+  const stripStyle = useAnimatedStyle(() => ({
+    opacity: stripOpacity.value,
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  }));
+
+  const gridStyle = useAnimatedStyle(() => ({
+    opacity: gridOpacity.value,
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  }));
+
+  // At-rest pointer routing: only the visible view receives touches
   const isWeekMode = viewMode === 'week';
 
   return (
@@ -110,12 +146,22 @@ export function CalendarContainer({ onDateSelected, markedDates }: CalendarConta
       <Animated.View style={animatedContainerStyle}>
         <WeekStripDayHeaders />
         <Box className="relative flex-1">
-          {isWeekMode && (
+          {/* WeekStrip — always mounted, fades out as calendar expands */}
+          <Animated.View
+            style={stripStyle}
+            pointerEvents={isWeekMode ? 'box-none' : 'none'}
+            testID="week-strip-wrapper"
+          >
             <WeekStrip {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
-          )}
-          {showMonthGrid && !isWeekMode && (
+          </Animated.View>
+          {/* MonthGrid — always mounted, fades in as calendar expands */}
+          <Animated.View
+            style={gridStyle}
+            pointerEvents={isWeekMode ? 'none' : 'box-none'}
+            testID="month-grid-wrapper"
+          >
             <MonthGrid {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
-          )}
+          </Animated.View>
         </Box>
       </Animated.View>
       <GestureDetector gesture={panGesture}>

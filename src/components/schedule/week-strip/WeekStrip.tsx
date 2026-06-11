@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import { Box } from '@/components/ui/box';
+import type { MarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getWeekMonth } from '@utils/weekUtils';
 
@@ -18,7 +19,7 @@ const containerStyle = tva({ base: 'bg-background-0' });
 
 interface WeekStripProps {
   onDateSelected?: (date: string) => void;
-  markedDates: Record<string, { marked: true; dotColor: string }>;
+  markedDates: MarkedDates;
 }
 
 export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
@@ -41,7 +42,7 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
 
   const handleDayPress = useCallback(
     (date: string) => {
-      if (useScheduleStore.getState().isSyncLocked) return;
+      if (useScheduleStore.getState().programmaticScrollTarget !== null) return;
       useScheduleStore.getState().selectDate(date);
       onDateSelected?.(date);
     },
@@ -88,8 +89,8 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
               dayNumber={day}
               isSelected={dateStr === selectedDate}
               isToday={dateStr === today}
-              hasEvent={!!mark}
-              dotColor={mark?.dotColor ?? ''}
+              dotColors={mark?.colors ?? []}
+              dotVariant="week"
               onPress={handleDayPress}
             />
           );

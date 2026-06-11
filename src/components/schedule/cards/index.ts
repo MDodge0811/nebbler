@@ -1,4 +1,5 @@
 export { AllDayCard } from '@components/schedule/cards/AllDayCard';
+export { DayHeaderRow } from '@components/schedule/cards/DayHeaderRow';
 export { AttendeeStack } from '@components/schedule/cards/AttendeeStack';
 export { BusyCard } from '@components/schedule/cards/BusyCard';
 export { CommentChip } from '@components/schedule/cards/CommentChip';

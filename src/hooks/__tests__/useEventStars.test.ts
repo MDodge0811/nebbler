@@ -21,21 +21,34 @@ describe('useEventStars', () => {
   });
 
   it('returns an empty Set when there are no starred events', () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: false, error: undefined });
+    // First call resolves useCurrentUser's row; second is useEventStars' query.
+    mockUseQuery
+      .mockReturnValueOnce({
+        data: [{ id: 'user-123', primary_calendar_group_id: null }],
+        isLoading: false,
+        error: undefined,
+      })
+      .mockReturnValue({ data: [], isLoading: false, error: undefined });
     const { result } = renderHook(() => useEventStars());
     expect(result.current).toBeInstanceOf(Set);
     expect(result.current.size).toBe(0);
   });
 
   it('returns a Set of event_ids from non-deleted stars', () => {
-    mockUseQuery.mockReturnValue({
-      data: [
-        { event_id: 'evt-1', user_id: 'user-123' },
-        { event_id: 'evt-2', user_id: 'user-123' },
-      ],
-      isLoading: false,
-      error: undefined,
-    });
+    mockUseQuery
+      .mockReturnValueOnce({
+        data: [{ id: 'user-123', primary_calendar_group_id: null }],
+        isLoading: false,
+        error: undefined,
+      })
+      .mockReturnValue({
+        data: [
+          { event_id: 'evt-1', user_id: 'user-123' },
+          { event_id: 'evt-2', user_id: 'user-123' },
+        ],
+        isLoading: false,
+        error: undefined,
+      });
     const { result } = renderHook(() => useEventStars());
     expect(result.current.has('evt-1')).toBe(true);
     expect(result.current.has('evt-2')).toBe(true);

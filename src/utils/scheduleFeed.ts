@@ -12,20 +12,28 @@
  */
 
 import type { Event } from '@database/schema';
-import { getInitials } from '@utils/avatarColor';
+import { DEFAULT_AVATAR_COLOR, getInitials } from '@utils/avatarColor';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-/** An event row enriched with calendar metadata and computed fields. */
-export interface FeedEvent extends Event {
+/**
+ * An event row joined with calendar metadata — the raw query result, before
+ * enrichment. `useQuery` returns these; `starred`/`attendees` are NOT selected
+ * by the SQL and only exist on the enriched `FeedEvent`.
+ */
+export interface RawFeedEvent extends Event {
   calendar_name: string;
   calendar_type: string;
   /** Hex color from calendars.color */
   calendar_color: string | null;
   /** Effective default view mode from calendars.default_view_mode */
   calendar_default_view_mode: string | null;
+}
+
+/** A RawFeedEvent enriched with the current user's star + attendee chips. */
+export interface FeedEvent extends RawFeedEvent {
   /** True when the current user has starred this event */
   starred: boolean;
   /** Attendee chips derived from event_responses + users */
@@ -87,7 +95,7 @@ export interface DateRange {
 }
 
 export interface BuildFeedRowsInput {
-  events: FeedEvent[];
+  events: RawFeedEvent[];
   /** Keyed by event_id; value is array of response rows for that event */
   responsesByEvent: Record<string, ResponseRow[]>;
   /** Set of event_ids the current user has starred */
@@ -115,7 +123,6 @@ export interface BuildFeedRowsOutput {
 // Internal helpers — date math
 // ---------------------------------------------------------------------------
 
-const DEFAULT_AVATAR_COLOR = '#FF6B6B';
 const COMPACT_THRESHOLD = 5;
 
 const PAD2 = (n: number) => String(n).padStart(2, '0');
@@ -206,7 +213,7 @@ function buildAttendeeChips(responses: ResponseRow[]): AttendeeChip[] {
 
 /** Enrich an event with attendees and starred flag. */
 function enrichEvent(
-  e: FeedEvent,
+  e: RawFeedEvent,
   responsesByEvent: Record<string, ResponseRow[]>,
   starredIds: Set<string>
 ): FeedEvent {
@@ -262,7 +269,7 @@ function emitTimedRows(
   isToday: boolean,
   now: Date,
   mode: 'full' | 'compact',
-  viewModeByCalendar: Record<string, string | null>,
+  busyById: Map<string, boolean>,
   starredOnly: boolean
 ): void {
   let nowLineEmitted = false;
@@ -278,7 +285,7 @@ function emitTimedRows(
       }
     }
 
-    if (isBusyEvent(e, viewModeByCalendar)) {
+    if (busyById.get(e.id)) {
       rows.push({ kind: 'busy', date, event: e });
     } else {
       rows.push({ kind: 'event', date, event: e, mode });
@@ -330,8 +337,11 @@ export function buildFeedRows({
 
     if (starredOnly && !dayHasStarred(timedEvents, allDayEvents)) continue;
 
-    const nonBusyTimed = timedEvents.filter((e) => !isBusyEvent(e, viewModeByCalendar));
-    const mode: 'full' | 'compact' = nonBusyTimed.length >= COMPACT_THRESHOLD ? 'compact' : 'full';
+    // Compute busy once per timed event and reuse for both the compact-mode
+    // count and the row emission below.
+    const busyById = new Map(timedEvents.map((e) => [e.id, isBusyEvent(e, viewModeByCalendar)]));
+    const nonBusyCount = timedEvents.reduce((n, e) => (busyById.get(e.id) ? n : n + 1), 0);
+    const mode: 'full' | 'compact' = nonBusyCount >= COMPACT_THRESHOLD ? 'compact' : 'full';
 
     const summary = summarizeDay([...allDayEvents, ...timedEvents]);
     indexByDate.set(date, rows.length);
@@ -342,16 +352,7 @@ export function buildFeedRows({
       rows.push({ kind: 'all-day', date, event: e });
     }
 
-    emitTimedRows(
-      rows,
-      timedEvents,
-      date,
-      date === today,
-      now,
-      mode,
-      viewModeByCalendar,
-      starredOnly
-    );
+    emitTimedRows(rows, timedEvents, date, date === today, now, mode, busyById, starredOnly);
 
     if (timedEvents.length + allDayEvents.length === 0) {
       rows.push({ kind: 'quiet-day', date });
@@ -491,10 +492,17 @@ export interface QueryWindow {
 const WINDOW_MONTHS = 1; // ±1 month
 const EDGE_THRESHOLD_DAYS = 7;
 
-/** Adds `months` months to a YYYY-MM-DD date, returning YYYY-MM-DD. */
+/**
+ * Adds `months` months to a YYYY-MM-DD date, returning YYYY-MM-DD. Clamps to the
+ * target month's last day so e.g. Mar 31 − 1mo → Feb 28/29 (not a Mar 3 rollover).
+ */
 function addMonths(dateStr: string, months: number): string {
   const d = parseDateLocal(dateStr);
+  const day = d.getDate();
+  d.setDate(1);
   d.setMonth(d.getMonth() + months);
+  const lastDayOfTargetMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, lastDayOfTargetMonth));
   return toDateString(d);
 }
 

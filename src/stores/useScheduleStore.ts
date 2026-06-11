@@ -29,9 +29,13 @@ interface ScheduleState {
   /** The month currently shown in MonthGrid (YYYY-MM-01). */
   displayMonth: string;
 
-  // Sync coordination
-  /** Prevents scroll↔date feedback loops during programmatic calendar updates. */
-  isSyncLocked: boolean;
+  // Star filter — NOT persisted; resets to false on app launch.
+  /** When true, the feed shows only starred events. */
+  starredOnly: boolean;
+
+  // Lock-free scroll sync — when non-null, a programmatic scroll is in flight.
+  // viewable-items callbacks are suppressed until this is cleared.
+  programmaticScrollTarget: string | null;
 
   // Display preferences (persisted)
   cardDisplayMode: Record<string, CardMode>;
@@ -46,8 +50,9 @@ interface ScheduleState {
   setDisplayMonth: (month: string) => void;
   setCardMode: (date: string, mode: CardMode) => void;
   setDefaultCardMode: (mode: CardMode) => void;
-  lockSync: () => void;
-  unlockSync: () => void;
+  setProgrammaticScrollTarget: (date: string | null) => void;
+  toggleStarredOnly: () => void;
+  setStarredOnly: (value: boolean) => void;
 }
 
 const initialToday = todayString();
@@ -60,7 +65,8 @@ export const useScheduleStore = create<ScheduleState>()(
       today: initialToday,
       viewMode: 'week',
       displayMonth: toMonthStart(initialToday),
-      isSyncLocked: false,
+      starredOnly: false,
+      programmaticScrollTarget: null,
       cardDisplayMode: {},
       defaultCardMode: 'full',
 
@@ -72,8 +78,9 @@ export const useScheduleStore = create<ScheduleState>()(
       setCardMode: (date, mode) =>
         set((s) => ({ cardDisplayMode: { ...s.cardDisplayMode, [date]: mode } })),
       setDefaultCardMode: (mode) => set({ defaultCardMode: mode }),
-      lockSync: () => set({ isSyncLocked: true }),
-      unlockSync: () => set({ isSyncLocked: false }),
+      setProgrammaticScrollTarget: (date) => set({ programmaticScrollTarget: date }),
+      toggleStarredOnly: () => set((s) => ({ starredOnly: !s.starredOnly })),
+      setStarredOnly: (value) => set({ starredOnly: value }),
     }),
     {
       name: 'schedule-store',

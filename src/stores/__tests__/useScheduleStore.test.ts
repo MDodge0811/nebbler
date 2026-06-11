@@ -12,7 +12,8 @@ describe('useScheduleStore', () => {
       today: storeToday,
       viewMode: 'week',
       displayMonth: storeDisplayMonth,
-      isSyncLocked: false,
+      starredOnly: false,
+      programmaticScrollTarget: null,
       cardDisplayMode: {},
       defaultCardMode: 'full',
     });
@@ -66,12 +67,12 @@ describe('useScheduleStore', () => {
     expect(useScheduleStore.getState().displayMonth).toBe('2026-04-01');
   });
 
-  it('lockSync and unlockSync toggle isSyncLocked', () => {
-    expect(useScheduleStore.getState().isSyncLocked).toBe(false);
-    useScheduleStore.getState().lockSync();
-    expect(useScheduleStore.getState().isSyncLocked).toBe(true);
-    useScheduleStore.getState().unlockSync();
-    expect(useScheduleStore.getState().isSyncLocked).toBe(false);
+  it('setProgrammaticScrollTarget sets and clears the target', () => {
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
+    useScheduleStore.getState().setProgrammaticScrollTarget('2026-03-15');
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBe('2026-03-15');
+    useScheduleStore.getState().setProgrammaticScrollTarget(null);
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
   });
 
   it('setCardMode stores per-date preferences', () => {
@@ -95,5 +96,42 @@ describe('useScheduleStore', () => {
     expect(useScheduleStore.getState().defaultCardMode).toBe('full');
     useScheduleStore.getState().setDefaultCardMode('compact');
     expect(useScheduleStore.getState().defaultCardMode).toBe('compact');
+  });
+
+  // starredOnly — NOT persisted (not in partialize); resets to false on app launch
+  it('starredOnly defaults to false', () => {
+    expect(useScheduleStore.getState().starredOnly).toBe(false);
+  });
+
+  it('toggleStarredOnly flips starredOnly', () => {
+    useScheduleStore.getState().toggleStarredOnly();
+    expect(useScheduleStore.getState().starredOnly).toBe(true);
+    useScheduleStore.getState().toggleStarredOnly();
+    expect(useScheduleStore.getState().starredOnly).toBe(false);
+  });
+
+  it('setStarredOnly sets an explicit value', () => {
+    useScheduleStore.getState().setStarredOnly(true);
+    expect(useScheduleStore.getState().starredOnly).toBe(true);
+    useScheduleStore.getState().setStarredOnly(false);
+    expect(useScheduleStore.getState().starredOnly).toBe(false);
+  });
+
+  it('starredOnly is NOT in partialize (not persisted)', () => {
+    // Access the partialize function via Zustand's persist.getOptions() API.
+    // This directly tests that the persisted subset excludes starredOnly.
+    type PersistApi = {
+      persist: {
+        getOptions: () => {
+          partialize?: (s: ReturnType<typeof useScheduleStore.getState>) => Record<string, unknown>;
+        };
+      };
+    };
+    const { partialize } = (useScheduleStore as unknown as PersistApi).persist.getOptions();
+    if (!partialize) throw new Error('partialize must be defined in the persist config');
+    const result = partialize(useScheduleStore.getState());
+    expect(Object.keys(result)).not.toContain('starredOnly');
+    expect(Object.keys(result)).toContain('cardDisplayMode');
+    expect(Object.keys(result)).toContain('defaultCardMode');
   });
 });

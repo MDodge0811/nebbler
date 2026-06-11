@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { Box } from '@/components/ui/box';
 import { Button, ButtonText, ButtonSpinner } from '@/components/ui/button';
+import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { SyncStatusIndicator } from '@components/SyncStatusIndicator';
@@ -16,8 +17,10 @@ const labelStyle = tva({ base: 'text-sm text-typography-500' });
 const valueStyle = tva({ base: 'text-base font-medium text-typography-900' });
 const logoutContainerStyle = tva({ base: 'mt-8' });
 const syncContainerStyle = tva({ base: 'mt-6' });
+const profileRowStyle = tva({ base: 'mt-6 py-3 border-b border-outline-200' });
+const profileRowTextStyle = tva({ base: 'text-base font-medium text-typography-900' });
 
-export function SettingsScreen(_props: MainTabScreenProps<'Settings'>) {
+export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
   const { user, clerkUser, signOut } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -37,6 +40,15 @@ export function SettingsScreen(_props: MainTabScreenProps<'Settings'>) {
   return (
     <Box className={containerStyle({})}>
       <Text className={titleStyle({})}>Settings</Text>
+
+      <Pressable
+        className={profileRowStyle({})}
+        onPress={() => navigation.navigate('Profile')}
+        accessibilityRole="button"
+        accessibilityLabel="Profile"
+      >
+        <Text className={profileRowTextStyle({})}>Profile</Text>
+      </Pressable>
 
       {displayEmail !== '' && (
         <VStack className={sectionStyle({})}>

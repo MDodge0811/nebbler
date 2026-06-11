@@ -8,6 +8,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { StarIndicator } from '@components/schedule/cards/StarIndicator';
 import type { EventCardProps } from '@components/schedule/cards/types';
 import { hexWithAlpha } from '@components/schedule/cards/utils';
 
@@ -24,9 +25,13 @@ export const EventCardCompact = memo(function EventCardCompact({
   title,
   timeRange,
   tintColor,
+  starred,
   onPress,
   onLongPress,
-}: Pick<EventCardProps, 'title' | 'timeRange' | 'tintColor' | 'onPress' | 'onLongPress'>) {
+}: Pick<
+  EventCardProps,
+  'title' | 'timeRange' | 'tintColor' | 'starred' | 'onPress' | 'onLongPress'
+>) {
   const gradientStart = hexWithAlpha(tintColor, 0.1);
   const gradientEnd = hexWithAlpha(tintColor, 0.03);
   const borderColor = hexWithAlpha(tintColor, 0.3);
@@ -45,6 +50,8 @@ export const EventCardCompact = memo(function EventCardCompact({
           end={{ x: 1, y: 1 }}
           style={gradientFill}
         />
+        {/* Star overflows top-right — a starred event keeps its star even when compact */}
+        {starred === true && <StarIndicator />}
         <HStack className={bodyStyle({})}>
           <VStack className="flex-1">
             <Text className={titleStyle({})} numberOfLines={1}>

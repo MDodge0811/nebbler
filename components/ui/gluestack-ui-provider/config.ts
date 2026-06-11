@@ -188,6 +188,8 @@ export const config = {
     '--color-brand-rsvp-maybe-bg': '255 248 235' /* #FFF8EB */,
     '--color-brand-rsvp-maybe-text': '184 134 11' /* #B8860B */,
     '--color-brand-rsvp-maybe-border': '255 228 160' /* #FFE4A0 */,
+    '--color-brand-star-active-bg': '255 247 224' /* #FFF7E0 */,
+    '--color-brand-star-active-border': '251 191 36' /* #FBBF24 */,
     '--color-brand-scrim': '0 0 0' /* #000000 */,
   }),
   dark: vars({
@@ -377,6 +379,8 @@ export const config = {
     '--color-brand-rsvp-maybe-bg': '255 248 235' /* #FFF8EB */,
     '--color-brand-rsvp-maybe-text': '184 134 11' /* #B8860B */,
     '--color-brand-rsvp-maybe-border': '255 228 160' /* #FFE4A0 */,
+    '--color-brand-star-active-bg': '255 247 224' /* #FFF7E0 */,
+    '--color-brand-star-active-border': '251 191 36' /* #FBBF24 */,
     '--color-brand-scrim': '0 0 0' /* #000000 */,
   }),
 };

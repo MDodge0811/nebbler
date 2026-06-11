@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react-native';
 
-import { buildSections, isEmptySentinel, useScheduleFeed } from '../useScheduleFeed';
-import type { FeedEvent, EmptySentinel } from '../useScheduleFeed';
+import { useScheduleFeed } from '../useScheduleFeed';
+import type { FeedEvent } from '../useScheduleFeed';
 
 const mockUseQuery = jest.fn().mockReturnValue({ data: [], isLoading: false, error: undefined });
 
@@ -13,6 +13,16 @@ jest.mock('@hooks/useAuth', () => ({
   useAuth: () => ({
     user: { id: 'user-123', email: 'test@example.com' },
   }),
+}));
+
+const mockStarredIds = new Set<string>();
+jest.mock('@hooks/useEventStars', () => ({
+  useEventStars: () => mockStarredIds,
+}));
+
+jest.mock('@stores/useScheduleStore', () => ({
+  useScheduleStore: (selector: (s: { starredOnly: boolean }) => unknown) =>
+    selector({ starredOnly: false }),
 }));
 
 function makeFeedEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
@@ -34,103 +44,14 @@ function makeFeedEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
   } as FeedEvent;
 }
 
-describe('isEmptySentinel', () => {
-  it('returns true for empty sentinel objects', () => {
-    const sentinel: EmptySentinel = { _empty: true, id: 'empty-2026-02-24' };
-    expect(isEmptySentinel(sentinel)).toBe(true);
-  });
-
-  it('returns false for FeedEvent objects', () => {
-    expect(isEmptySentinel(makeFeedEvent())).toBe(false);
-  });
-});
-
-describe('buildSections', () => {
-  it('creates a section for each date in the range', () => {
-    const sections = buildSections([], '2026-02-24', '2026-02-26');
-    expect(sections).toHaveLength(3);
-    expect(sections[0]?.title).toBe('2026-02-24');
-    expect(sections[1]?.title).toBe('2026-02-25');
-    expect(sections[2]?.title).toBe('2026-02-26');
-  });
-
-  it('fills empty days with a sentinel item', () => {
-    const sections = buildSections([], '2026-02-24', '2026-02-24');
-    expect(sections[0]?.data).toHaveLength(1);
-    const firstItem = sections[0]?.data[0];
-    expect(firstItem && isEmptySentinel(firstItem)).toBe(true);
-    expect(sections[0]?.eventCount).toBe(0);
-  });
-
-  it('groups events into their respective date sections', () => {
-    const events = [
-      makeFeedEvent({ id: 'evt-1', start_time: '2026-02-24T10:00:00Z' }),
-      makeFeedEvent({ id: 'evt-2', start_time: '2026-02-24T14:00:00Z' }),
-      makeFeedEvent({ id: 'evt-3', start_time: '2026-02-25T09:00:00Z' }),
-    ];
-    const sections = buildSections(events, '2026-02-24', '2026-02-25');
-
-    expect(sections[0]?.data).toHaveLength(2);
-    expect(sections[0]?.eventCount).toBe(2);
-    expect(sections[1]?.data).toHaveLength(1);
-    expect(sections[1]?.eventCount).toBe(1);
-    const firstItem = sections[0]?.data[0];
-    expect(firstItem && isEmptySentinel(firstItem)).toBe(false);
-  });
-
-  it('skips events with null start_time', () => {
-    const events = [makeFeedEvent({ start_time: null as unknown as string })];
-    const sections = buildSections(events, '2026-02-24', '2026-02-24');
-    const firstItem = sections[0]?.data[0];
-    expect(firstItem && isEmptySentinel(firstItem)).toBe(true);
-  });
-
-  it('preserves insertion order of events within a day section', () => {
-    const events = [
-      makeFeedEvent({ id: 'evt-early', start_time: '2026-02-24T08:00:00Z' }),
-      makeFeedEvent({ id: 'evt-late', start_time: '2026-02-24T18:00:00Z' }),
-      makeFeedEvent({ id: 'evt-mid', start_time: '2026-02-24T12:00:00Z' }),
-    ];
-    const sections = buildSections(events, '2026-02-24', '2026-02-24');
-    const ids = sections[0]?.data.map((item) => item.id);
-    // buildSections preserves input order — callers (the SQL query) are
-    // responsible for sorting by start_time ASC
-    expect(ids).toEqual(['evt-early', 'evt-late', 'evt-mid']);
-  });
-
-  it('narrows sections to displayStartDate when provided', () => {
-    const sections = buildSections([], '2026-02-20', '2026-02-26', '2026-02-24');
-    expect(sections).toHaveLength(3);
-    expect(sections[0]?.title).toBe('2026-02-24');
-    expect(sections[2]?.title).toBe('2026-02-26');
-  });
-
-  it('ignores displayStartDate when it precedes startDate', () => {
-    const sections = buildSections([], '2026-02-24', '2026-02-26', '2026-02-22');
-    expect(sections).toHaveLength(3);
-    expect(sections[0]?.title).toBe('2026-02-24');
-  });
-
-  it('ignores events outside the date range', () => {
-    const events = [
-      makeFeedEvent({ id: 'evt-in', start_time: '2026-02-24T10:00:00Z' }),
-      makeFeedEvent({ id: 'evt-out', start_time: '2026-02-26T10:00:00Z' }),
-    ];
-    const sections = buildSections(events, '2026-02-24', '2026-02-25');
-    // evt-out's date (02-26) is outside the range, so it won't appear
-    const allIds = sections.flatMap((s) =>
-      s.data.filter((d) => !isEmptySentinel(d)).map((d) => d.id)
-    );
-    expect(allIds).toEqual(['evt-in']);
-  });
-});
-
 describe('useScheduleFeed', () => {
   beforeEach(() => {
     mockUseQuery.mockClear();
     // First call: useCurrentUser's useQuery
     // Second call: useCalendarGroupMemberships's useQuery
     // Third call: the feed events query
+    // Fourth call: member view modes query
+    // Fifth call: event responses query
     mockUseQuery
       .mockReturnValueOnce({
         data: [{ id: 'user-123', primary_calendar_group_id: 'group-1' }],
@@ -142,12 +63,29 @@ describe('useScheduleFeed', () => {
         isLoading: false,
         error: undefined,
       })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: undefined })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: undefined })
       .mockReturnValueOnce({ data: [], isLoading: false, error: undefined });
   });
 
-  it('returns sections for the date range', () => {
+  it('returns rows for the date range', () => {
     const { result } = renderHook(() => useScheduleFeed('2026-02-24', '2026-02-25'));
-    expect(result.current.sections).toHaveLength(2);
+    // 2 days → 2 day-header rows + quiet-day rows for each
+    expect(result.current.rows.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('returns indexByDate mapping each date to its day-header row index', () => {
+    const { result } = renderHook(() => useScheduleFeed('2026-02-24', '2026-02-25'));
+    expect(result.current.indexByDate.has('2026-02-24')).toBe(true);
+    expect(result.current.indexByDate.has('2026-02-25')).toBe(true);
+  });
+
+  it('day-header row is at the index given by indexByDate', () => {
+    const { result } = renderHook(() => useScheduleFeed('2026-02-24', '2026-02-25'));
+    const { rows, indexByDate } = result.current;
+    const idx = indexByDate.get('2026-02-24');
+    if (idx === undefined) throw new Error('indexByDate should contain 2026-02-24');
+    expect(rows[idx]?.kind).toBe('day-header');
   });
 
   it('builds SQL with calendar IDs from memberships', () => {
@@ -157,5 +95,55 @@ describe('useScheduleFeed', () => {
     const thirdCall = mockUseQuery.mock.calls[2] as [string, string[]];
     expect(thirdCall[0]).toContain('calendar_id IN');
     expect(thirdCall[1]).toContain('cal-1');
+  });
+
+  it('returns isLoading from the events query', () => {
+    mockUseQuery.mockReset();
+    mockUseQuery
+      .mockReturnValueOnce({
+        data: [{ id: 'user-123', primary_calendar_group_id: 'group-1' }],
+        isLoading: false,
+        error: undefined,
+      })
+      .mockReturnValueOnce({
+        data: [{ calendar_group_id: 'group-1', calendar_id: 'cal-1' }],
+        isLoading: false,
+        error: undefined,
+      })
+      .mockReturnValueOnce({ data: [], isLoading: true, error: undefined })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: undefined })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: undefined });
+
+    const { result } = renderHook(() => useScheduleFeed('2026-02-24', '2026-02-25'));
+    expect(result.current.isLoading).toBe(true);
+  });
+
+  it('includes event rows when events are present', () => {
+    mockUseQuery.mockReset();
+    const events = [
+      makeFeedEvent({
+        id: 'evt-1',
+        start_time: '2026-02-24T10:00:00Z',
+        end_time: '2026-02-24T11:00:00Z',
+      }),
+    ];
+    mockUseQuery
+      .mockReturnValueOnce({
+        data: [{ id: 'user-123', primary_calendar_group_id: 'group-1' }],
+        isLoading: false,
+        error: undefined,
+      })
+      .mockReturnValueOnce({
+        data: [{ calendar_group_id: 'group-1', calendar_id: 'cal-1' }],
+        isLoading: false,
+        error: undefined,
+      })
+      .mockReturnValueOnce({ data: events, isLoading: false, error: undefined })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: undefined })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: undefined });
+
+    const { result } = renderHook(() => useScheduleFeed('2026-02-24', '2026-02-24'));
+    const eventRows = result.current.rows.filter((r) => r.kind === 'event');
+    expect(eventRows.length).toBe(1);
   });
 });
