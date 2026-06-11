@@ -45,6 +45,7 @@ interface EventFeedProps {
   onEventPress?: (event: FeedEvent) => void;
   onViewableItemsChanged?: (info: { viewableItems: FlashListViewToken[] }) => void;
   onMomentumScrollEnd?: () => void;
+  onScrollBeginDrag?: () => void;
 }
 
 // -----------------------------------------------------------------------
@@ -122,7 +123,15 @@ function useNowLabel(): string {
 // -----------------------------------------------------------------------
 
 export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function EventFeed(
-  { rows, refreshing, onRefresh, onEventPress, onViewableItemsChanged, onMomentumScrollEnd },
+  {
+    rows,
+    refreshing,
+    onRefresh,
+    onEventPress,
+    onViewableItemsChanged,
+    onMomentumScrollEnd,
+    onScrollBeginDrag,
+  },
   ref
 ) {
   const today = useScheduleStore((s) => s.today);
@@ -146,6 +155,9 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
   const onMomentumScrollEndRef = useRef(onMomentumScrollEnd);
   onMomentumScrollEndRef.current = onMomentumScrollEnd;
 
+  const onScrollBeginDragRef = useRef(onScrollBeginDrag);
+  onScrollBeginDragRef.current = onScrollBeginDrag;
+
   const handleViewableItemsChanged = useCallback(
     (info: { viewableItems: FlashListViewToken[]; changed: FlashListViewToken[] }) => {
       onViewableItemsChangedRef.current?.(info);
@@ -155,6 +167,13 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
 
   const handleMomentumScrollEnd = useCallback(() => {
     onMomentumScrollEndRef.current?.();
+  }, []);
+
+  // A user-initiated drag always cancels an in-flight programmatic scroll — this
+  // is the escape hatch that prevents programmaticScrollTarget from sticking when
+  // a programmatic scrollToIndex never fires momentum / never reaches the target.
+  const handleScrollBeginDrag = useCallback(() => {
+    onScrollBeginDragRef.current?.();
   }, []);
 
   const handleMeatballPress = useCallback((event: FeedEvent) => {
@@ -228,6 +247,7 @@ export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function Event
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           onMomentumScrollEnd={handleMomentumScrollEnd}
+          onScrollBeginDrag={handleScrollBeginDrag}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
       </Box>

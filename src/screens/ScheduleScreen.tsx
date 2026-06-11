@@ -138,6 +138,17 @@ export function ScheduleScreen() {
     setProgrammaticScrollTarget(null);
   }, [setProgrammaticScrollTarget]);
 
+  // A user drag cancels any in-flight programmatic scroll. This is the deadlock
+  // escape hatch: a programmatic scrollToIndex may never fire onMomentumScrollEnd
+  // (it's not a fling) and the target header may never cross the viewability bar
+  // (e.g. last few days), which would otherwise leave the flag stuck and freeze
+  // feed→calendar sync until remount.
+  const handleScrollBeginDrag = useCallback(() => {
+    if (useScheduleStore.getState().programmaticScrollTarget !== null) {
+      setProgrammaticScrollTarget(null);
+    }
+  }, [setProgrammaticScrollTarget]);
+
   // -----------------------------------------------------------------------
   // Calendar tap → scroll feed (lock-free, no setTimeout)
   // -----------------------------------------------------------------------
@@ -162,9 +173,6 @@ export function ScheduleScreen() {
   // Fires whenever programmaticScrollTarget or indexByDate changes.
   // If we have a pending target AND the index is now available, scroll.
   // -----------------------------------------------------------------------
-  const programmaticScrollTargetRef = useRef(programmaticScrollTarget);
-  programmaticScrollTargetRef.current = programmaticScrollTarget;
-
   useEffect(() => {
     if (!programmaticScrollTarget) return;
     const index = indexByDate.get(programmaticScrollTarget);
@@ -202,6 +210,7 @@ export function ScheduleScreen() {
         onEventPress={handleEventPress}
         onViewableItemsChanged={handleViewableItemsChanged}
         onMomentumScrollEnd={handleMomentumScrollEnd}
+        onScrollBeginDrag={handleScrollBeginDrag}
       />
     );
   }

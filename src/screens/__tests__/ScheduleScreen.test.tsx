@@ -21,6 +21,7 @@ let capturedOnViewableItemsChanged:
 let capturedScrollToIndex: jest.Mock;
 let capturedOnDateSelected: ((date: string) => void) | undefined;
 let capturedOnMomentumScrollEnd: (() => void) | undefined;
+let capturedOnScrollBeginDrag: (() => void) | undefined;
 
 // ---- Mocks ----
 
@@ -42,6 +43,7 @@ jest.mock('@components/schedule/EventFeed', () => {
     capturedOnViewableItemsChanged =
       props.onViewableItemsChanged as typeof capturedOnViewableItemsChanged;
     capturedOnMomentumScrollEnd = props.onMomentumScrollEnd as (() => void) | undefined;
+    capturedOnScrollBeginDrag = props.onScrollBeginDrag as (() => void) | undefined;
     useImperativeHandle(ref, () => ({ scrollToIndex }));
     return <View testID="event-feed" />;
   });
@@ -214,6 +216,22 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
 
     act(() => {
       capturedOnMomentumScrollEnd?.();
+    });
+
+    expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
+  });
+
+  it('user drag (onScrollBeginDrag) clears a stuck programmaticScrollTarget', () => {
+    render(<ScheduleScreen />);
+
+    // Simulate the deadlock: target set, but momentum/safety-clear never fired.
+    act(() => {
+      useScheduleStore.getState().setProgrammaticScrollTarget('2026-02-28');
+    });
+
+    // A user-initiated drag must always cancel the in-flight programmatic scroll.
+    act(() => {
+      capturedOnScrollBeginDrag?.();
     });
 
     expect(useScheduleStore.getState().programmaticScrollTarget).toBeNull();
