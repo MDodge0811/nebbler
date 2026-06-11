@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -49,6 +49,17 @@ export const CalendarContainer = memo(function CalendarContainer({
   const displayMonth = useScheduleStore((s) => s.displayMonth);
   const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
 
+  // Mount the 126-cell grid only once the user first heads toward month view.
+  // It stays mounted afterward so the crossfade never pops.
+  const [gridEverShown, setGridEverShown] = useState(viewMode === 'month');
+  const showGrid = useCallback(() => {
+    setGridEverShown(true);
+  }, []);
+
+  useEffect(() => {
+    if (viewMode === 'month') setGridEverShown(true);
+  }, [viewMode]);
+
   const heightSV = useSharedValue(COLLAPSED_HEIGHT);
   const startHeight = useSharedValue(COLLAPSED_HEIGHT);
   const expandedHeightSV = useSharedValue(getExpandedHeight(displayMonth));
@@ -79,6 +90,7 @@ export const CalendarContainer = memo(function CalendarContainer({
     .onStart(() => {
       'worklet';
       startHeight.value = heightSV.value;
+      runOnJS(showGrid)();
     })
     .onUpdate((e) => {
       'worklet';
@@ -159,18 +171,20 @@ export const CalendarContainer = memo(function CalendarContainer({
           >
             <WeekStrip {...(onDateSelected ? { onDateSelected } : {})} markedDates={markedDates} />
           </Animated.View>
-          {/* MonthGrid — always mounted, fades in as calendar expands */}
-          <Animated.View
-            style={gridStyle}
-            pointerEvents={isWeekMode ? 'none' : 'box-none'}
-            testID="month-grid-wrapper"
-          >
-            <MonthGrid
-              {...(onDateSelected ? { onDateSelected } : {})}
-              {...(onMonthChanged ? { onMonthChanged } : {})}
-              markedDates={markedDates}
-            />
-          </Animated.View>
+          {/* MonthGrid — mounted on first expansion, then kept for the crossfade */}
+          {gridEverShown && (
+            <Animated.View
+              style={gridStyle}
+              pointerEvents={isWeekMode ? 'none' : 'box-none'}
+              testID="month-grid-wrapper"
+            >
+              <MonthGrid
+                {...(onDateSelected ? { onDateSelected } : {})}
+                {...(onMonthChanged ? { onMonthChanged } : {})}
+                markedDates={markedDates}
+              />
+            </Animated.View>
+          )}
         </Box>
       </Animated.View>
       <GestureDetector gesture={panGesture}>
