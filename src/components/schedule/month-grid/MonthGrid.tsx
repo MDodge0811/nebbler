@@ -15,7 +15,7 @@ import { isDateInMonth } from '@utils/monthUtils';
 
 import { useMonthPages, type MonthPage } from './useMonthPages';
 
-export const ROW_HEIGHT = 40;
+export const ROW_HEIGHT = 36;
 
 interface MonthGridProps {
   onDateSelected?: (date: string) => void;

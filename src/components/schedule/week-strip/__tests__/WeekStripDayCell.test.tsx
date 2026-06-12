@@ -40,15 +40,15 @@ describe('WeekStripDayCell', () => {
     expect(getAllByTestId('event-dot').length).toBe(1);
   });
 
-  it('shows up to 3 dots and caps at 3', () => {
+  it('shows up to 4 dots and caps at 4', () => {
     const { getAllByTestId } = render(
       <WeekStripDayCell
         {...defaultProps}
-        dotColors={['#00DB74', '#FFB3B3', '#B3E5F6', '#D4B3F7']}
+        dotColors={['#00DB74', '#FFB3B3', '#B3E5F6', '#D4B3F7', '#FCD34D']}
       />
     );
-    // Must cap at 3, not 4
-    expect(getAllByTestId('event-dot').length).toBe(3);
+    // Must cap at 4, not 5
+    expect(getAllByTestId('event-dot').length).toBe(4);
   });
 
   // NEB-35 regression: selected = filled pill + white text

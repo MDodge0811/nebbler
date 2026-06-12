@@ -15,14 +15,17 @@ import type { MarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthRowCount } from '@utils/monthUtils';
 
-import { GrabHandle, GRAB_HANDLE_HEIGHT } from './GrabHandle';
+import { GrabHandle } from './GrabHandle';
 import { MonthGrid, ROW_HEIGHT as MONTH_ROW_HEIGHT } from './month-grid/MonthGrid';
 import { WeekStrip } from './week-strip/WeekStrip';
 import { WeekStripDayHeaders } from './week-strip/WeekStripDayHeaders';
 
-const DAY_HEADERS_HEIGHT = 24;
-const WEEK_ROW_HEIGHT = 40;
-const COLLAPSED_HEIGHT = DAY_HEADERS_HEIGHT + WEEK_ROW_HEIGHT + GRAB_HANDLE_HEIGHT;
+const DAY_HEADERS_HEIGHT = 18;
+const WEEK_ROW_HEIGHT = 36;
+// The grab handle is rendered as a sibling BELOW this animated container, so it
+// is NOT part of the animated height — counting it here left a gap between the
+// calendar row and the handle.
+const COLLAPSED_HEIGHT = DAY_HEADERS_HEIGHT + WEEK_ROW_HEIGHT;
 const SPRING_CONFIG = { damping: 28, stiffness: 400, mass: 0.8 };
 const SNAP_VELOCITY_THRESHOLD = 500;
 const SNAP_POSITION_THRESHOLD = 0.4;
@@ -30,7 +33,8 @@ const SNAP_POSITION_THRESHOLD = 0.4;
 const CROSSFADE_TRAVEL = 80;
 
 function getExpandedHeight(monthKey: string): number {
-  return DAY_HEADERS_HEIGHT + getMonthRowCount(monthKey) * MONTH_ROW_HEIGHT + GRAB_HANDLE_HEIGHT;
+  // Grab handle is a sibling below the animated container — not counted here.
+  return DAY_HEADERS_HEIGHT + getMonthRowCount(monthKey) * MONTH_ROW_HEIGHT;
 }
 
 interface CalendarContainerProps {

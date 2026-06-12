@@ -106,7 +106,7 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
     <Box className={containerStyle({})}>
       <FlatList
         ref={flatListRef}
-        style={{ height: 40 }}
+        style={{ height: 36 }}
         data={weeks}
         renderItem={renderWeekPage}
         keyExtractor={keyExtractor}
