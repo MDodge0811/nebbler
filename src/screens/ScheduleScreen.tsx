@@ -93,12 +93,13 @@ export function ScheduleScreen() {
   // ---------------------------------------------------------------------
   const isDraggingRef = useRef(false);
   const isMomentumRef = useRef(false);
-  // True from a programmatic scrollToIndex until it is cleared by either the next
-  // onScrollBeginDrag (user drag) or, on iOS, the onMomentumScrollEnd that the
-  // programmatic scroll itself fires. On Android a programmatic scroll may never
-  // fire momentum events, so this stays true until the next drag start — the only
-  // consequence is that feed→calendar sync is suppressed in that gap (the calendar
-  // highlight was already set by selectDate in handleDateSelected).
+  // True from a programmatic scrollToIndex until the next onScrollBeginDrag (the
+  // user taking over). It is NOT cleared by momentum-end: a single long
+  // programmatic scroll fires onMomentumScrollEnd multiple times on iOS/FlashList,
+  // and clearing on the first would let a later one overwrite the tapped selection
+  // (NEB-181). Consequence: feed→calendar sync stays suppressed between a
+  // programmatic tap-scroll and the next user drag — benign, since the calendar
+  // highlight was already set by selectDate in handleDateSelected.
   const suppressSyncRef = useRef(false);
   // The feed's actual top day-header, tracked from viewability.
   const topVisibleDateRef = useRef<string | null>(null);
@@ -167,8 +168,12 @@ export function ScheduleScreen() {
       // Final settle of a user fling.
       syncCalendarToDate(topVisibleDateRef.current);
     }
-    // A programmatic scroll's own momentum-end (iOS) consumes the suppression.
-    suppressSyncRef.current = false;
+    // Do NOT clear suppressSyncRef here. A single long programmatic scrollToIndex
+    // fires onMomentumScrollEnd MULTIPLE times on iOS/FlashList; clearing on the
+    // first lets a later one overwrite the tapped selection with the feed's
+    // intermediate top (NEB-181). Suppression is lifted only by onScrollBeginDrag
+    // — the user taking over — so a programmatic scroll stays suppressed for its
+    // whole life regardless of how many momentum events fire.
   }, [syncCalendarToDate]);
 
   // ---------------------------------------------------------------------

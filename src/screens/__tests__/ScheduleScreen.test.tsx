@@ -239,6 +239,26 @@ describe('ScheduleScreen scroll-date sync (lock-free)', () => {
     expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
   });
 
+  it('a long programmatic scroll firing TWO momentum-end events does not overwrite the tapped selection', () => {
+    // Device evidence (NEB-181): a long scrollToIndex on iOS/FlashList fires
+    // onMomentumScrollEnd more than once. The FIRST fires mid-flight; it must not
+    // clear suppression and let a LATER momentum-end write the feed's settled top
+    // over the tapped day.
+    render(<ScheduleScreen />);
+    act(() => {
+      useScheduleStore.getState().selectDate('2026-02-28'); // tap order (WeekStrip writes first)
+      capturedOnDateSelected?.('2026-02-28'); // → selectDate(28) + scrollToIndex(1) + suppress
+    });
+    expect(capturedScrollToIndex).toHaveBeenCalledWith(1, { animated: true });
+    act(() => {
+      fireViewableItemsChanged([storeToday]); // feed mid-flight (suppressed)
+      capturedOnMomentumScrollEnd?.(); // momentum-end #1 (mid-scroll)
+      fireViewableItemsChanged(['2026-03-01']); // feed continues past the target
+      capturedOnMomentumScrollEnd?.(); // momentum-end #2 (settle) — must NOT write
+    });
+    expect(useScheduleStore.getState().selectedDate).toBe('2026-02-28');
+  });
+
   it('out-of-window tap defers the scroll until the date appears in indexByDate', () => {
     // isFetching=true simulates the window loading; prevents the "settled+not found" clear.
     mockFeedState.isFetching = true;
