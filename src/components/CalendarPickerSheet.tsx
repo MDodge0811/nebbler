@@ -52,7 +52,7 @@ export function CalendarPickerSheet({
 }: CalendarPickerSheetProps) {
   const renderItem = ({ item }: { item: WritableCalendar }) => {
     const isSelected = item.id === selectedCalendarId;
-    const color = getCalendarColor(item.id);
+    const color = item.color ?? getCalendarColor(item.id);
     const badge = getTypeBadge(item.type);
 
     return (

@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 
 import { Box } from '@/components/ui/box';
+import { NO_DOTS } from '@hooks/useCalendarEvents';
+import type { MarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getWeekMonth } from '@utils/weekUtils';
 
@@ -18,7 +20,7 @@ const containerStyle = tva({ base: 'bg-background-0' });
 
 interface WeekStripProps {
   onDateSelected?: (date: string) => void;
-  markedDates: Record<string, { marked: true; dotColor: string }>;
+  markedDates: MarkedDates;
 }
 
 export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
@@ -41,7 +43,6 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
 
   const handleDayPress = useCallback(
     (date: string) => {
-      if (useScheduleStore.getState().isSyncLocked) return;
       useScheduleStore.getState().selectDate(date);
       onDateSelected?.(date);
     },
@@ -88,8 +89,8 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
               dayNumber={day}
               isSelected={dateStr === selectedDate}
               isToday={dateStr === today}
-              hasEvent={!!mark}
-              dotColor={mark?.dotColor ?? ''}
+              dotColors={mark?.colors ?? NO_DOTS}
+              dotVariant="week"
               onPress={handleDayPress}
             />
           );
@@ -105,7 +106,7 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
     <Box className={containerStyle({})}>
       <FlatList
         ref={flatListRef}
-        style={{ height: 40 }}
+        style={{ height: 36 }}
         data={weeks}
         renderItem={renderWeekPage}
         keyExtractor={keyExtractor}
@@ -114,6 +115,9 @@ export function WeekStrip({ onDateSelected, markedDates }: WeekStripProps) {
         showsHorizontalScrollIndicator={false}
         getItemLayout={getItemLayout}
         initialScrollIndex={centerIndex}
+        initialNumToRender={3}
+        windowSize={3}
+        maxToRenderPerBatch={1}
         onMomentumScrollEnd={handleMomentumScrollEnd}
       />
     </Box>

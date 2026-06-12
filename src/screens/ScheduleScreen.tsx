@@ -1,86 +1,74 @@
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { useNavigation } from '@react-navigation/native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ViewToken } from 'react-native';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { CalendarContainer } from '@components/schedule/CalendarContainer';
-import { EventFeed, type EventFeedRef } from '@components/schedule/EventFeed';
+import {
+  EventFeed,
+  type EventFeedRef,
+  type FlashListViewToken,
+} from '@components/schedule/EventFeed';
 import { ScheduleHeader } from '@components/schedule/ScheduleHeader';
-import { useCalendarEvents, useMarkedDates } from '@hooks/useCalendarEvents';
+import { useMarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleFeed } from '@hooks/useScheduleFeed';
-import type { FeedEvent } from '@hooks/useScheduleFeed';
 import { useScheduleStore } from '@stores/useScheduleStore';
 import { getMonthBufferRange, monthKeyOf } from '@utils/dateRange';
+import type { FeedEvent } from '@utils/scheduleFeed';
 
 const containerStyle = tva({ base: 'flex-1 bg-background-0' });
 const errorBannerStyle = tva({ base: 'bg-error-50 px-4 py-2' });
 const errorTextStyle = tva({ base: 'text-sm text-error-600' });
-
-// Delay (ms) before unlocking scroll↔calendar sync. Shorter for feed-driven
-// updates (the calendar strip moves instantly), longer for calendar-driven
-// updates (the animated scroll needs time to settle).
-const FEED_SYNC_UNLOCK_DELAY_MS = 100;
-const CALENDAR_SYNC_UNLOCK_DELAY_MS = 300;
+const emptyZoneStyle = tva({ base: 'flex-1 items-center justify-center px-8' });
+const emptyTitleStyle = tva({ base: 'text-lg font-semibold text-typography-900' });
+const emptyBodyStyle = tva({ base: 'mt-1 text-center text-sm text-typography-500' });
 
 export function ScheduleScreen() {
   const navigation = useNavigation();
   const selectedDate = useScheduleStore((s) => s.selectedDate);
   const today = useScheduleStore((s) => s.today);
-  const lockSync = useScheduleStore((s) => s.lockSync);
-  const unlockSync = useScheduleStore((s) => s.unlockSync);
   const selectDate = useScheduleStore((s) => s.selectDate);
   const [refreshing, setRefreshing] = useState(false);
 
   const feedRef = useRef<EventFeedRef>(null);
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const lastDateTapRef = useRef(0);
 
-  // Clear any pending timers and release sync lock on unmount
+  // Clear timers on unmount
   useEffect(() => {
     return () => {
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-      if (useScheduleStore.getState().isSyncLocked) unlockSync();
     };
-  }, [unlockSync]);
+  }, []);
 
   // In month mode, drive query range from displayMonth so far-off months load events.
   // In week mode, drive from selectedDate as before.
   const viewMode = useScheduleStore((s) => s.viewMode);
   const displayMonth = useScheduleStore((s) => s.displayMonth);
+  const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
+  const starredOnly = useScheduleStore((s) => s.starredOnly);
   const queryAnchor = viewMode === 'month' ? displayMonth : selectedDate;
   const monthKey = monthKeyOf(queryAnchor);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally memoize by month, not by day
   const { startDate, endDate } = useMemo(() => getMonthBufferRange(queryAnchor), [monthKey]);
-  const { sections, isLoading, error: feedError } = useScheduleFeed(startDate, endDate, today);
+  const {
+    events,
+    rows,
+    indexByDate,
+    starredIds,
+    isLoading,
+    isFetching,
+    error: feedError,
+  } = useScheduleFeed(startDate, endDate, today, starredOnly);
 
-  // O(1) section lookup by date string — avoids linear scans on every date tap
-  const sectionIndexMap = useMemo(() => {
-    const map = new Map<string, number>();
-    sections.forEach((section, index) => map.set(section.title, index));
-    return map;
-  }, [sections]);
-
-  // Calendar event dots — shared date range with the feed query
-  const { data: calendarEvents = [], error: calendarEventsError } = useCalendarEvents(
-    startDate,
-    endDate
-  );
-  const markedDates = useMarkedDates(calendarEvents);
+  // Calendar event dots — derived from the feed's single membership-scoped
+  // subscription so dots and feed rows always agree on which events exist.
+  const markedDates = useMarkedDates(events, startDate, endDate, starredIds);
 
   useEffect(() => {
     if (feedError) console.error('[ScheduleScreen] Schedule feed query failed:', feedError);
-    if (calendarEventsError)
-      console.error('[ScheduleScreen] Calendar events query failed:', calendarEventsError);
-  }, [feedError, calendarEventsError]);
-
-  const handleNavigateToProfile = useCallback(() => {
-    navigation.navigate('Profile');
-  }, [navigation]);
+  }, [feedError]);
 
   const handleEventPress = useCallback(
     (event: FeedEvent) => {
@@ -96,23 +84,38 @@ export function ScheduleScreen() {
     refreshTimerRef.current = setTimeout(() => setRefreshing(false), 800);
   }, []);
 
-  // Feed scroll → calendar update (works in both week and month modes)
-  const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
-  const handleViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (useScheduleStore.getState().isSyncLocked) return;
+  // ---------------------------------------------------------------------
+  // Scroll-sync state — all screen-local. Feed→calendar sync runs ONLY
+  // while the user is actively scrolling (drag → momentum settle), so
+  // programmatic scrolls and data-window rebuilds can never write
+  // selection. No global flag, no clearing heuristics, no deadlocks: these
+  // refs gate only whether a sync happens, never whether taps work.
+  // ---------------------------------------------------------------------
+  const isDraggingRef = useRef(false);
+  const isMomentumRef = useRef(false);
+  // True from a programmatic scrollToIndex until the next onScrollBeginDrag (the
+  // user taking over). It is NOT cleared by momentum-end: a single long
+  // programmatic scroll fires onMomentumScrollEnd multiple times on iOS/FlashList,
+  // and clearing on the first would let a later one overwrite the tapped selection
+  // (NEB-181). Consequence: feed→calendar sync stays suppressed between a
+  // programmatic tap-scroll and the next user drag — benign, since the calendar
+  // highlight was already set by selectDate in handleDateSelected.
+  const suppressSyncRef = useRef(false);
+  // The feed's actual top day-header, tracked from viewability.
+  const topVisibleDateRef = useRef<string | null>(null);
+  // Out-of-window tap target — scrolled to once indexByDate contains it.
+  const [pendingScrollDate, setPendingScrollDate] = useState<string | null>(null);
 
-      // Find the topmost visible section header date
-      const topItem = viewableItems.find((item) => item.section != null);
-      if (!topItem?.section) return;
+  const scrollFeedToIndex = useCallback((index: number) => {
+    suppressSyncRef.current = true;
+    feedRef.current?.scrollToIndex(index, { animated: true });
+  }, []);
 
-      const topDate = (topItem.section as { title?: string }).title;
-      if (!topDate || topDate === useScheduleStore.getState().selectedDate) return;
-
-      lockSync();
+  const syncCalendarToDate = useCallback(
+    (topDate: string) => {
+      if (topDate === useScheduleStore.getState().selectedDate) return;
       selectDate(topDate);
-
-      // In month mode, auto-advance the month grid if we scrolled into a new month
+      // In month mode, auto-advance the grid when the feed crosses a month.
       const state = useScheduleStore.getState();
       if (state.viewMode === 'month') {
         const topMonthStart = topDate.slice(0, 7) + '-01';
@@ -120,38 +123,151 @@ export function ScheduleScreen() {
           setDisplayMonth(topMonthStart);
         }
       }
-
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-      syncTimerRef.current = setTimeout(unlockSync, FEED_SYNC_UNLOCK_DELAY_MS);
     },
-    [lockSync, selectDate, unlockSync, setDisplayMonth]
+    [selectDate, setDisplayMonth]
   );
 
-  // Calendar tap → feed scroll (works in both week and month modes)
+  const handleViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: FlashListViewToken[] }) => {
+      const topHeader = viewableItems.find((vt) => vt.item.kind === 'day-header');
+      if (!topHeader) return;
+      topVisibleDateRef.current = topHeader.item.date;
+      if (!suppressSyncRef.current && (isDraggingRef.current || isMomentumRef.current)) {
+        syncCalendarToDate(topHeader.item.date);
+      }
+    },
+    [syncCalendarToDate]
+  );
+
+  const handleScrollBeginDrag = useCallback(() => {
+    isDraggingRef.current = true;
+    suppressSyncRef.current = false; // the user took over
+    setPendingScrollDate(null); // and superseded any deferred tap-scroll
+  }, []);
+
+  const handleScrollEndDrag = useCallback(() => {
+    isDraggingRef.current = false;
+    // onScrollEndDrag fires BEFORE onMomentumScrollBegin, so isMomentumRef is still
+    // false here for both a fling and a slow drag. For a fling this yields an
+    // intermediate read at lift-off; the momentum phase (viewability) and
+    // onMomentumScrollEnd then emit the authoritative settled position. For a slow
+    // drag with no fling, this is the only sync point. (The isMomentumRef guard is
+    // kept as a defensive no-op against platforms that reorder these events.)
+    if (!isMomentumRef.current && topVisibleDateRef.current) {
+      syncCalendarToDate(topVisibleDateRef.current);
+    }
+  }, [syncCalendarToDate]);
+
+  const handleMomentumScrollBegin = useCallback(() => {
+    isMomentumRef.current = true;
+  }, []);
+
+  const handleMomentumScrollEnd = useCallback(() => {
+    isMomentumRef.current = false;
+    if (!suppressSyncRef.current && topVisibleDateRef.current) {
+      // Final settle of a user fling.
+      syncCalendarToDate(topVisibleDateRef.current);
+    }
+    // Do NOT clear suppressSyncRef here. A single long programmatic scrollToIndex
+    // fires onMomentumScrollEnd MULTIPLE times on iOS/FlashList; clearing on the
+    // first lets a later one overwrite the tapped selection with the feed's
+    // intermediate top (NEB-181). Suppression is lifted only by onScrollBeginDrag
+    // — the user taking over — so a programmatic scroll stays suppressed for its
+    // whole life regardless of how many momentum events fire.
+  }, [syncCalendarToDate]);
+
+  // ---------------------------------------------------------------------
+  // Calendar tap → scroll feed
+  // ---------------------------------------------------------------------
+
+  // Mirror indexByDate into a ref so handleDateSelected stays referentially
+  // stable across feed rebuilds (its identity feeds every day cell's onPress).
+  const indexByDateRef = useRef(indexByDate);
+  indexByDateRef.current = indexByDate;
+
   const handleDateSelected = useCallback(
     (date: string) => {
-      // Throttle: allow one tap per 300ms (leading edge — first tap fires immediately)
-      const now = Date.now();
-      if (now - lastDateTapRef.current < 300) return;
-      lastDateTapRef.current = now;
-
-      const sectionIndex = sectionIndexMap.get(date);
-      if (sectionIndex === undefined || !feedRef.current) return;
-
-      lockSync();
-      feedRef.current.scrollToSection(sectionIndex);
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-      syncTimerRef.current = setTimeout(unlockSync, CALENDAR_SYNC_UNLOCK_DELAY_MS);
+      selectDate(date);
+      const index = indexByDateRef.current.get(date);
+      if (index !== undefined) {
+        setPendingScrollDate(null);
+        scrollFeedToIndex(index);
+        return;
+      }
+      // Filtered day under starredOnly never appears — don't defer.
+      if (useScheduleStore.getState().starredOnly) return;
+      // Out-of-window: scroll once the new window's rows include the date.
+      setPendingScrollDate(date);
     },
-    [sectionIndexMap, lockSync, unlockSync]
+    [selectDate, scrollFeedToIndex]
   );
 
-  const error = feedError ?? calendarEventsError;
+  // Month swipe lands deterministically: select the 1st of the new month and
+  // scroll the feed there via the exact same path as a calendar day tap.
+  const handleMonthChanged = useCallback(
+    (monthStart: string) => {
+      handleDateSelected(monthStart);
+    },
+    [handleDateSelected]
+  );
+
+  // Deferred scroll for out-of-window taps.
+  useEffect(() => {
+    if (!pendingScrollDate) return;
+    const index = indexByDate.get(pendingScrollDate);
+    if (index !== undefined) {
+      scrollFeedToIndex(index);
+      setPendingScrollDate(null);
+      return;
+    }
+    // Fetching settled and the date never appeared (out of range) — drop it.
+    if (!isFetching) {
+      setPendingScrollDate(null);
+    }
+  }, [pendingScrollDate, indexByDate, isFetching, scrollFeedToIndex]);
+
+  const error = feedError;
+
+  let feedBody: ReactNode;
+  if (isLoading && rows.length === 0) {
+    feedBody = (
+      <Box className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" />
+      </Box>
+    );
+  } else if (rows.length === 0 && starredOnly) {
+    // Star filter on with nothing starred in range — explain the empty feed.
+    feedBody = (
+      <Box className={emptyZoneStyle({})}>
+        <Text className={emptyTitleStyle({})}>No starred events</Text>
+        <Text className={emptyBodyStyle({})}>Tap the star on an event to see it here.</Text>
+      </Box>
+    );
+  } else {
+    feedBody = (
+      <EventFeed
+        ref={feedRef}
+        rows={rows}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onEventPress={handleEventPress}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        onMomentumScrollBegin={handleMomentumScrollBegin}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+        onScrollBeginDrag={handleScrollBeginDrag}
+        onScrollEndDrag={handleScrollEndDrag}
+      />
+    );
+  }
 
   return (
     <Box className={containerStyle({})}>
-      <ScheduleHeader onNavigateToProfile={handleNavigateToProfile} />
-      <CalendarContainer onDateSelected={handleDateSelected} markedDates={markedDates} />
+      <ScheduleHeader />
+      <CalendarContainer
+        onDateSelected={handleDateSelected}
+        onMonthChanged={handleMonthChanged}
+        markedDates={markedDates}
+      />
       {error && (
         <Box className={errorBannerStyle({})}>
           <Text className={errorTextStyle({})}>
@@ -159,20 +275,7 @@ export function ScheduleScreen() {
           </Text>
         </Box>
       )}
-      {isLoading && sections.length === 0 ? (
-        <Box className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" />
-        </Box>
-      ) : (
-        <EventFeed
-          ref={feedRef}
-          sections={sections}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          onEventPress={handleEventPress}
-          onViewableItemsChanged={handleViewableItemsChanged}
-        />
-      )}
+      {feedBody}
     </Box>
   );
 }

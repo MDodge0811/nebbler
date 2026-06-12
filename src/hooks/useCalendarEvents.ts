@@ -1,31 +1,9 @@
 import { useQuery, usePowerSync } from '@powersync/react';
 import { useMemo } from 'react';
 
-import { calendarColors } from '@constants/calendarColors';
 import type { Event } from '@database/schema';
-
-/**
- * Reactive query for events overlapping a date range.
- * Returns all non-deleted events whose time span intersects
- * [startDate 00:00 UTC, endDate 23:59:59 UTC].
- * Returns empty results until events are synced from the backend.
- *
- * @param startDate YYYY-MM-DD — start of the query window
- * @param endDate   YYYY-MM-DD — end of the query window
- */
-export function useCalendarEvents(startDate: string, endDate: string) {
-  const startDateTime = `${startDate}T00:00:00Z`;
-  const endDateTime = `${endDate}T23:59:59Z`;
-
-  return useQuery<Event>(
-    `SELECT * FROM events
-     WHERE deleted_at IS NULL
-       AND start_time <= ?
-       AND end_time >= ?
-     ORDER BY start_time ASC`,
-    [endDateTime, startDateTime]
-  );
-}
+import { getCalendarColor } from '@utils/calendarColor';
+import { allDaySpannedDates } from '@utils/scheduleFeed';
 
 /**
  * Reactive query for events scoped to a specific calendar within a date range.
@@ -53,26 +31,121 @@ export function useEvents(calendarId: string | undefined, startDate: string, end
 }
 
 /**
- * Compute marked-dates object from an event list.
- * Returns `{ 'YYYY-MM-DD': { marked: true, dotColor: '...' } }`.
+ * Marked-dates shape: per-date calendar colors (up to 3 distinct) and starred flag.
  */
-const EMPTY_MARKED: Record<string, { marked: true; dotColor: string }> = {};
+export type MarkedDate = { colors: string[]; starred: boolean };
+export type MarkedDates = Record<string, MarkedDate>;
 
-export function useMarkedDates(events: Event[]) {
+/** Shared empty-dots constant — referential stability keeps day-cell memo() effective. */
+export const NO_DOTS: string[] = [];
+
+/**
+ * Compute marked-dates object from an event list and a set of starred event ids.
+ *
+ * - `colors`: up to 3 distinct calendar colors for events on that date,
+ *   preferring the synced `calendars.color`, falling back to the
+ *   deterministic `getCalendarColor` hash when it is null.
+ * - `starred`: true when any event on the date is in the `starredIds` set.
+ *
+ * Returns a stable empty reference when there are no events.
+ */
+const EMPTY_MARKED: MarkedDates = {};
+
+const PAD2 = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * Returns the YYYY-MM-DD day key for a timed event start using LOCAL date.
+ * Timed events near UTC midnight can fall on a different local day than their
+ * UTC date — using local avoids the dot landing on the wrong calendar day.
+ */
+function localDayKeyOf(startTime: string | null): string | null {
+  if (!startTime) return null;
+  const d = new Date(startTime);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${PAD2(d.getMonth() + 1)}-${PAD2(d.getDate())}`;
+}
+
+/**
+ * Returns the YYYY-MM-DD day key for an all-day event using UTC date.
+ * All-day events store midnight-UTC boundaries, so UTC slicing is correct.
+ */
+function utcDayKeyOf(startTime: string | null): string | null {
+  if (!startTime) return null;
+  const key = startTime.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : null;
+}
+
+/** Pushes a color into the list, deduped and capped at 3. */
+function pushDistinctColor(colors: string[], color: string): void {
+  if (colors.length < 3 && !colors.includes(color)) colors.push(color);
+}
+
+/**
+ * Day keys this event marks on the calendar, clipped to [rangeStart, rangeEnd]:
+ *  - all-day → every UTC day it spans (matches the feed's per-day AllDayCards),
+ *  - timed   → its single local day.
+ * The clip bounds the day-by-day expansion — without it, one malformed
+ * far-future end_time would iterate millions of days on the JS thread.
+ */
+function dayKeysFor(
+  event: Event & { calendar_color?: string | null },
+  rangeStart: string,
+  rangeEnd: string
+): string[] {
+  const isAllDay = 'is_all_day' in event && event.is_all_day === 1;
+  if (isAllDay) {
+    const startKey = utcDayKeyOf(event.start_time);
+    if (!startKey || !event.start_time) return [];
+    const spanned = allDaySpannedDates(
+      event.start_time,
+      event.end_time ?? event.start_time,
+      rangeStart,
+      rangeEnd
+    );
+    return spanned.length > 0 ? spanned : [startKey];
+  }
+  const key = localDayKeyOf(event.start_time);
+  return key ? [key] : [];
+}
+
+export function useMarkedDates(
+  events: Array<Event & { calendar_color?: string | null }>,
+  rangeStart: string,
+  rangeEnd: string,
+  starredIds?: Set<string>
+): MarkedDates {
   return useMemo(() => {
     if (events.length === 0) return EMPTY_MARKED;
 
-    const marked: Record<string, { marked: true; dotColor: string }> = {};
+    const colorsByDate = new Map<string, string[]>();
+    const starredDates = new Set<string>();
 
     for (const event of events) {
-      if (!event.start_time) continue;
-      const key = event.start_time.slice(0, 10);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
-      marked[key] = { marked: true, dotColor: calendarColors.eventDot };
+      // Compute the day key(s) this event marks. All-day events are bucketed by
+      // UTC date and span EVERY day they cover (matching the feed's per-spanned-day
+      // AllDayCards). Timed events bucket by LOCAL date so a midnight-UTC event
+      // shows on the right calendar day for the user's timezone.
+      const keys = dayKeysFor(event, rangeStart, rangeEnd);
+      if (keys.length === 0) continue;
+
+      // Prefer the synced calendar color; fall back to the deterministic hash.
+      const color = event.calendar_color ?? getCalendarColor(event.calendar_id ?? '');
+      const isStarred = starredIds?.has(event.id) ?? false;
+
+      for (const key of keys) {
+        const existing = colorsByDate.get(key);
+        if (existing) pushDistinctColor(existing, color);
+        else colorsByDate.set(key, [color]);
+        if (isStarred) starredDates.add(key);
+      }
     }
 
+    const marked: MarkedDates = {};
+    for (const [date, colors] of colorsByDate) {
+      marked[date] = { colors, starred: starredDates.has(date) };
+    }
     return marked;
-  }, [events]);
+  }, [events, rangeStart, rangeEnd, starredIds]);
 }
 
 /**

@@ -8,19 +8,23 @@ import {
 
 import { Box } from '@/components/ui/box';
 import { WeekStripDayCell } from '@components/schedule/week-strip/WeekStripDayCell';
+import { NO_DOTS } from '@hooks/useCalendarEvents';
+import type { MarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
-import { isDateInMonth, getMonthStart } from '@utils/monthUtils';
+import { isDateInMonth } from '@utils/monthUtils';
 
 import { useMonthPages, type MonthPage } from './useMonthPages';
 
-export const ROW_HEIGHT = 40;
+export const ROW_HEIGHT = 36;
 
 interface MonthGridProps {
   onDateSelected?: (date: string) => void;
-  markedDates: Record<string, { marked: true; dotColor: string }>;
+  /** Fired when a horizontal swipe settles on a different month (YYYY-MM-01). */
+  onMonthChanged?: (monthStart: string) => void;
+  markedDates: MarkedDates;
 }
 
-export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
+export function MonthGrid({ onDateSelected, onMonthChanged, markedDates }: MonthGridProps) {
   const { width: screenWidth } = useWindowDimensions();
   const selectedDate = useScheduleStore((s) => s.selectedDate);
   const today = useScheduleStore((s) => s.today);
@@ -45,19 +49,18 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
 
   const handleDayPress = useCallback(
     (date: string) => {
-      if (useScheduleStore.getState().isSyncLocked) return;
-
       const currentMonth = useScheduleStore.getState().displayMonth;
-      if (!isDateInMonth(date, currentMonth)) {
-        // Adjacent month day tap — navigate to that month
-        const targetMonth = getMonthStart(date);
-        setDisplayMonth(targetMonth);
-      }
-
       useScheduleStore.getState().selectDate(date);
+      // Adjacent-month days (e.g. July 1 shown faded in June's grid) select and
+      // scroll the feed like any other day, but the grid AND header stay on the
+      // displayed month — they don't advance until the user swipes. selectDate
+      // moved visibleDate to the tapped day, so pin the header back.
+      if (!isDateInMonth(date, currentMonth)) {
+        setVisibleDate(currentMonth);
+      }
       onDateSelected?.(date);
     },
-    [onDateSelected, setDisplayMonth]
+    [onDateSelected, setVisibleDate]
   );
 
   const handleMomentumScrollEnd = useCallback(
@@ -70,9 +73,12 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
       if (!monthKey) return;
 
       setDisplayMonth(monthKey);
-      setVisibleDate(monthKey);
+      // Deterministic landing: the screen selects the 1st and scrolls the
+      // feed through the same path as a day tap. (visibleDate is set by
+      // selectDate inside that path — no separate write here.)
+      onMonthChanged?.(monthKey);
     },
-    [screenWidth, months, setDisplayMonth, setVisibleDate]
+    [screenWidth, months, setDisplayMonth, onMonthChanged]
   );
 
   const getItemLayout = useCallback(
@@ -103,10 +109,11 @@ export function MonthGrid({ onDateSelected, markedDates }: MonthGridProps) {
                   dayNumber={day}
                   isSelected={dateStr === selectedDate}
                   isToday={dateStr === today}
-                  hasEvent={!!mark}
-                  dotColor={mark?.dotColor ?? ''}
+                  dotColors={mark?.colors ?? NO_DOTS}
+                  dotVariant="month"
                   onPress={handleDayPress}
                   isAdjacentMonth={adjacent}
+                  starred={mark?.starred ?? false}
                 />
               );
             })}

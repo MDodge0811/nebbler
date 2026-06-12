@@ -13,12 +13,7 @@ export type { PasswordSignInResult, RegisterParams } from './useAuthFlows';
 export { useCurrentUser, useCurrentUserMutations } from './useCurrentUser';
 
 // Calendar hooks
-export {
-  useCalendarEvents,
-  useEvents,
-  useMarkedDates,
-  useEventMutations,
-} from './useCalendarEvents';
+export { useEvents, useMarkedDates, useEventMutations } from './useCalendarEvents';
 export { useCalendars, useCalendar, useCalendarMutations } from './useCalendars';
 export {
   useCalendarMembers,

@@ -12,9 +12,7 @@ describe('useScheduleStore', () => {
       today: storeToday,
       viewMode: 'week',
       displayMonth: storeDisplayMonth,
-      isSyncLocked: false,
-      cardDisplayMode: {},
-      defaultCardMode: 'full',
+      starredOnly: false,
     });
   });
 
@@ -66,34 +64,15 @@ describe('useScheduleStore', () => {
     expect(useScheduleStore.getState().displayMonth).toBe('2026-04-01');
   });
 
-  it('lockSync and unlockSync toggle isSyncLocked', () => {
-    expect(useScheduleStore.getState().isSyncLocked).toBe(false);
-    useScheduleStore.getState().lockSync();
-    expect(useScheduleStore.getState().isSyncLocked).toBe(true);
-    useScheduleStore.getState().unlockSync();
-    expect(useScheduleStore.getState().isSyncLocked).toBe(false);
+  // starredOnly — NOT persisted; resets to false on app launch
+  it('starredOnly defaults to false', () => {
+    expect(useScheduleStore.getState().starredOnly).toBe(false);
   });
 
-  it('setCardMode stores per-date preferences', () => {
-    useScheduleStore.getState().setCardMode('2026-03-15', 'compact');
-    useScheduleStore.getState().setCardMode('2026-03-16', 'full');
-    const state = useScheduleStore.getState();
-    expect(state.cardDisplayMode['2026-03-15']).toBe('compact');
-    expect(state.cardDisplayMode['2026-03-16']).toBe('full');
-  });
-
-  it('setCardMode overwrites a key without losing other entries', () => {
-    useScheduleStore.getState().setCardMode('2026-03-15', 'compact');
-    useScheduleStore.getState().setCardMode('2026-03-16', 'full');
-    useScheduleStore.getState().setCardMode('2026-03-15', 'full');
-    const state = useScheduleStore.getState();
-    expect(state.cardDisplayMode['2026-03-15']).toBe('full');
-    expect(state.cardDisplayMode['2026-03-16']).toBe('full');
-  });
-
-  it('setDefaultCardMode updates the default', () => {
-    expect(useScheduleStore.getState().defaultCardMode).toBe('full');
-    useScheduleStore.getState().setDefaultCardMode('compact');
-    expect(useScheduleStore.getState().defaultCardMode).toBe('compact');
+  it('toggleStarredOnly flips starredOnly', () => {
+    useScheduleStore.getState().toggleStarredOnly();
+    expect(useScheduleStore.getState().starredOnly).toBe(true);
+    useScheduleStore.getState().toggleStarredOnly();
+    expect(useScheduleStore.getState().starredOnly).toBe(false);
   });
 });

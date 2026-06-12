@@ -1,192 +1,285 @@
 import { type BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useCallback, useRef, forwardRef, useImperativeHandle, useMemo, useState } from 'react';
-import { SectionList, RefreshControl, type ViewToken } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import type { FlashListRef } from '@shopify/flash-list';
+import React, { memo, useCallback, useRef, forwardRef, useImperativeHandle, useState } from 'react';
+import { RefreshControl } from 'react-native';
 
-import { AllDayEventRow } from '@components/schedule/AllDayEventRow';
-import { DateSectionHeader } from '@components/schedule/DateSectionHeader';
-import { EmptyDayCard } from '@components/schedule/EmptyDayCard';
-import { EventCard } from '@components/schedule/EventCard';
+import { Box } from '@/components/ui/box';
+import {
+  AllDayCard,
+  BusyCard,
+  DayHeaderRow,
+  EventCardCompact,
+  EventCardFull,
+  NowLineRow,
+  QuietDayCard,
+} from '@components/schedule/cards';
+import type { EventCardProps } from '@components/schedule/cards';
 import { EventMeatballSheet } from '@components/schedule/EventMeatballSheet';
-import { isEmptySentinel } from '@hooks/useScheduleFeed';
-import type { DateSection, FeedEvent, EmptySentinel } from '@hooks/useScheduleFeed';
 import { useScheduleStore } from '@stores/useScheduleStore';
-import { isAllDayEvent } from '@utils/eventHelpers';
+import { getCalendarColor } from '@utils/calendarColor';
+import { formatTimeRange } from '@utils/formatTime';
+import type { FeedEvent, FeedRow } from '@utils/scheduleFeed';
 
-const AUTO_COMPACT_THRESHOLD = 5;
+// ViewToken from FlashList — mirrors the shape of RN's ViewToken but without .section
+export interface FlashListViewToken {
+  item: FeedRow;
+  key: string;
+  index: number | null;
+  isViewable: boolean;
+  timestamp: number;
+}
+
+// -----------------------------------------------------------------------
+// Types
+// -----------------------------------------------------------------------
 
 export interface EventFeedRef {
-  scrollToSection: (sectionIndex: number) => void;
+  scrollToIndex: (index: number, opts?: { animated?: boolean }) => void;
 }
 
 interface EventFeedProps {
-  sections: DateSection[];
+  rows: FeedRow[];
   refreshing: boolean;
   onRefresh: () => void;
   onEventPress?: (event: FeedEvent) => void;
-  onViewableItemsChanged?: (info: { viewableItems: ViewToken[] }) => void;
+  onViewableItemsChanged?: (info: { viewableItems: FlashListViewToken[] }) => void;
+  onMomentumScrollBegin?: () => void;
+  onMomentumScrollEnd?: () => void;
+  onScrollBeginDrag?: () => void;
+  onScrollEndDrag?: () => void;
 }
+
+// -----------------------------------------------------------------------
+// Viewability config — stable reference, never recreated
+// -----------------------------------------------------------------------
 
 const viewabilityConfig = {
   viewAreaCoveragePercentThreshold: 50,
   minimumViewTime: 150,
-};
+} as const;
 
-export const EventFeed = forwardRef<EventFeedRef, EventFeedProps>(function EventFeed(
-  { sections, refreshing, onRefresh, onEventPress, onViewableItemsChanged },
-  ref
-) {
-  const today = useScheduleStore((s) => s.today);
-  const cardDisplayMode = useScheduleStore((s) => s.cardDisplayMode);
-  const defaultCardMode = useScheduleStore((s) => s.defaultCardMode);
-  const setCardMode = useScheduleStore((s) => s.setCardMode);
+// -----------------------------------------------------------------------
+// FeedEvent → card props mapping
+// -----------------------------------------------------------------------
 
-  const sectionListRef = useRef<SectionList<FeedEvent | EmptySentinel, DateSection>>(null);
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const [meatballEvent, setMeatballEvent] = useState<FeedEvent | null>(null);
+function feedEventToCardProps(
+  event: FeedEvent,
+  onPress?: () => void,
+  onLongPress?: () => void
+): EventCardProps {
+  const tintColor = event.calendar_color ?? getCalendarColor(event.calendar_id ?? '');
+  const timeRange =
+    event.start_time && event.end_time ? formatTimeRange(event.start_time, event.end_time) : '';
 
-  useImperativeHandle(ref, () => ({
-    scrollToSection: (sectionIndex: number) => {
-      if (sectionIndex < 0 || sectionIndex >= sections.length) return;
-      sectionListRef.current?.scrollToLocation({
-        sectionIndex,
-        itemIndex: 0,
-        animated: true,
-      });
-    },
-  }));
+  // Note: commentCount, hasUnreadComments, photoUri are omitted (placeholders —
+  // data doesn't exist yet; cards render nothing for absent props). Omitting
+  // rather than setting undefined is required by exactOptionalPropertyTypes.
+  const props: EventCardProps = {
+    title: event.title ?? '',
+    timeRange,
+    tintColor,
+    starred: event.starred,
+    attendees: event.attendees,
+  };
+  if (event.location) props.location = event.location;
+  if (onPress) props.onPress = onPress;
+  if (onLongPress) props.onLongPress = onLongPress;
+  return props;
+}
 
-  const viewabilityConfigRef = useRef(viewabilityConfig);
-  const onViewableItemsChangedRef = useRef(onViewableItemsChanged);
-  onViewableItemsChangedRef.current = onViewableItemsChanged;
+// -----------------------------------------------------------------------
+// Explicit-props helpers — avoids spread-swallowing narrower card types
+// -----------------------------------------------------------------------
 
-  const handleViewableItemsChanged = useCallback(
-    (info: { viewableItems: ViewToken[]; changed: ViewToken[] }) => {
-      onViewableItemsChangedRef.current?.(info);
-    },
-    []
-  );
-
-  // Separate all-day events per section
-  const allDayBySection = useMemo(() => {
-    const map = new Map<string, FeedEvent[]>();
-    for (const section of sections) {
-      const allDay: FeedEvent[] = [];
-      for (const item of section.data) {
-        if (!isEmptySentinel(item) && isAllDayEvent(item.start_time, item.end_time)) {
-          allDay.push(item);
-        }
-      }
-      if (allDay.length > 0) map.set(section.title, allDay);
-    }
-    return map;
-  }, [sections]);
-
-  // Filter sections to exclude all-day events from the main list
-  const filteredSections = useMemo(() => {
-    return sections.map((section) => {
-      const allDayIds = new Set(allDayBySection.get(section.title)?.map((e) => e.id) ?? []);
-      if (allDayIds.size === 0) return section;
-
-      const filtered = section.data.filter(
-        (item) => isEmptySentinel(item) || !allDayIds.has(item.id)
-      );
-      const timedCount = filtered.filter((item) => !isEmptySentinel(item)).length;
-      return {
-        ...section,
-        data: timedCount > 0 ? filtered : [{ _empty: true as const, id: `empty-${section.title}` }],
-        eventCount: timedCount,
-      };
-    });
-  }, [sections, allDayBySection]);
-
-  const getCardMode = useCallback(
-    (sectionTitle: string, eventCount: number) => {
-      const explicit = cardDisplayMode[sectionTitle];
-      if (explicit) return explicit;
-      if (eventCount >= AUTO_COMPACT_THRESHOLD) return 'compact';
-      return defaultCardMode;
-    },
-    [cardDisplayMode, defaultCardMode]
-  );
-
-  const handleMeatballPress = useCallback((event: FeedEvent) => {
-    setMeatballEvent(event);
-    bottomSheetRef.current?.present();
-  }, []);
-
-  const handleDismissSheet = useCallback(() => {
-    bottomSheetRef.current?.dismiss();
-    setMeatballEvent(null);
-  }, []);
-
-  const renderSectionHeader = useCallback(
-    ({ section }: { section: DateSection }) => {
-      const mode = getCardMode(section.title, section.eventCount);
-      const allDayEvents = allDayBySection.get(section.title);
-
-      return (
-        <>
-          <DateSectionHeader
-            dateString={section.title}
-            today={today}
-            mode={mode}
-            onToggleMode={() => {
-              const current = getCardMode(section.title, section.eventCount);
-              setCardMode(section.title, current === 'full' ? 'compact' : 'full');
-            }}
-          />
-          {allDayEvents && allDayEvents.length > 0 && (
-            <AllDayEventRow events={allDayEvents} onEventPress={onEventPress} />
-          )}
-        </>
-      );
-    },
-    [today, getCardMode, allDayBySection, setCardMode, onEventPress]
-  );
-
-  const renderItem = useCallback(
-    ({ item, section }: { item: FeedEvent | EmptySentinel; section: DateSection }) => {
-      if (isEmptySentinel(item)) {
-        return <EmptyDayCard />;
-      }
-      const mode = getCardMode(section.title, section.eventCount);
-      return (
-        <EventCard
-          event={item}
-          mode={mode}
-          onPress={() => onEventPress?.(item)}
-          onMeatballPress={mode === 'full' ? () => handleMeatballPress(item) : undefined}
-        />
-      );
-    },
-    [onEventPress, getCardMode, handleMeatballPress]
-  );
-
-  const keyExtractor = useCallback((item: FeedEvent | EmptySentinel) => item.id, []);
-
+function renderAllDayCard(
+  event: FeedEvent,
+  onPress: () => void,
+  onLongPress: () => void
+): React.ReactElement {
+  const tintColor = event.calendar_color ?? getCalendarColor(event.calendar_id ?? '');
+  const timeRange =
+    event.start_time && event.end_time ? formatTimeRange(event.start_time, event.end_time) : '';
   return (
-    <>
-      <SectionList
-        className="flex-1"
-        ref={sectionListRef}
-        sections={filteredSections}
-        renderSectionHeader={renderSectionHeader}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        stickySectionHeadersEnabled
-        windowSize={5}
-        maxToRenderPerBatch={5}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={viewabilityConfigRef.current}
-      />
-      <EventMeatballSheet
-        ref={bottomSheetRef}
-        event={meatballEvent}
-        onEdit={handleDismissSheet}
-        onDelete={handleDismissSheet}
-        onShare={handleDismissSheet}
-      />
-    </>
+    <AllDayCard
+      title={event.title ?? ''}
+      timeRange={timeRange}
+      tintColor={tintColor}
+      starred={event.starred}
+      onPress={onPress}
+      onLongPress={onLongPress}
+    />
   );
-});
+}
+
+function renderBusyCard(event: FeedEvent): React.ReactElement {
+  const timeRange =
+    event.start_time && event.end_time ? formatTimeRange(event.start_time, event.end_time) : '';
+  return <BusyCard timeRange={timeRange} />;
+}
+
+// -----------------------------------------------------------------------
+// EventFeed
+// -----------------------------------------------------------------------
+
+export const EventFeed = memo(
+  forwardRef<EventFeedRef, EventFeedProps>(function EventFeed(
+    {
+      rows,
+      refreshing,
+      onRefresh,
+      onEventPress,
+      onViewableItemsChanged,
+      onMomentumScrollBegin,
+      onMomentumScrollEnd,
+      onScrollBeginDrag,
+      onScrollEndDrag,
+    },
+    ref
+  ) {
+    const today = useScheduleStore((s) => s.today);
+
+    const flashListRef = useRef<FlashListRef<FeedRow>>(null);
+    const bottomSheetRef = useRef<BottomSheetModal>(null);
+    const [meatballEvent, setMeatballEvent] = useState<FeedEvent | null>(null);
+
+    useImperativeHandle(ref, () => ({
+      scrollToIndex: (index: number, opts?: { animated?: boolean }) => {
+        if (index < 0 || index >= rows.length) return;
+        void flashListRef.current?.scrollToIndex({ index, animated: opts?.animated ?? true });
+      },
+    }));
+
+    // Keep callback refs stable so FlashList doesn't re-subscribe on every render
+    const onViewableItemsChangedRef = useRef(onViewableItemsChanged);
+    onViewableItemsChangedRef.current = onViewableItemsChanged;
+
+    const onMomentumScrollEndRef = useRef(onMomentumScrollEnd);
+    onMomentumScrollEndRef.current = onMomentumScrollEnd;
+
+    const onScrollBeginDragRef = useRef(onScrollBeginDrag);
+    onScrollBeginDragRef.current = onScrollBeginDrag;
+
+    const onMomentumScrollBeginRef = useRef(onMomentumScrollBegin);
+    onMomentumScrollBeginRef.current = onMomentumScrollBegin;
+
+    const onScrollEndDragRef = useRef(onScrollEndDrag);
+    onScrollEndDragRef.current = onScrollEndDrag;
+
+    const handleViewableItemsChanged = useCallback(
+      (info: { viewableItems: FlashListViewToken[]; changed: FlashListViewToken[] }) => {
+        onViewableItemsChangedRef.current?.(info);
+      },
+      []
+    );
+
+    const handleMomentumScrollEnd = useCallback(() => {
+      onMomentumScrollEndRef.current?.();
+    }, []);
+
+    // Forwarded so the screen can track user-scroll state.
+    const handleScrollBeginDrag = useCallback(() => {
+      onScrollBeginDragRef.current?.();
+    }, []);
+
+    const handleMomentumScrollBegin = useCallback(() => {
+      onMomentumScrollBeginRef.current?.();
+    }, []);
+
+    const handleScrollEndDrag = useCallback(() => {
+      onScrollEndDragRef.current?.();
+    }, []);
+
+    const handleMeatballPress = useCallback((event: FeedEvent) => {
+      setMeatballEvent(event);
+      bottomSheetRef.current?.present();
+    }, []);
+
+    const handleDismissSheet = useCallback(() => {
+      bottomSheetRef.current?.dismiss();
+      setMeatballEvent(null);
+    }, []);
+
+    // 'event' rows render two structurally different trees (full vs compact);
+    // give them separate recycling pools so FlashList doesn't swap layouts.
+    const getItemType = useCallback(
+      (row: FeedRow) => (row.kind === 'event' ? `event-${row.mode}` : row.kind),
+      []
+    );
+
+    const keyExtractor = useCallback(
+      (row: FeedRow) => `${row.kind}:${row.date}:${'event' in row ? row.event.id : ''}`,
+      []
+    );
+
+    const renderItem = useCallback(
+      ({ item: row }: { item: FeedRow }) => {
+        switch (row.kind) {
+          case 'day-header':
+            return <DayHeaderRow date={row.date} today={today} summary={row.summary} />;
+
+          case 'event': {
+            const props = feedEventToCardProps(
+              row.event,
+              () => onEventPress?.(row.event),
+              () => handleMeatballPress(row.event)
+            );
+            return row.mode === 'compact' ? (
+              <EventCardCompact {...props} />
+            ) : (
+              <EventCardFull {...props} />
+            );
+          }
+
+          case 'all-day':
+            return renderAllDayCard(
+              row.event,
+              () => onEventPress?.(row.event),
+              () => handleMeatballPress(row.event)
+            );
+
+          case 'busy':
+            return renderBusyCard(row.event);
+
+          case 'quiet-day':
+            return <QuietDayCard />;
+
+          case 'now-line':
+            return <NowLineRow label={row.label} />;
+
+          default:
+            return null;
+        }
+      },
+      [today, onEventPress, handleMeatballPress]
+    );
+
+    return (
+      <>
+        <Box className="flex-1">
+          <FlashList
+            ref={flashListRef}
+            data={rows}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            getItemType={getItemType}
+            onViewableItemsChanged={handleViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
+            onMomentumScrollBegin={handleMomentumScrollBegin}
+            onMomentumScrollEnd={handleMomentumScrollEnd}
+            onScrollBeginDrag={handleScrollBeginDrag}
+            onScrollEndDrag={handleScrollEndDrag}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          />
+        </Box>
+        <EventMeatballSheet
+          ref={bottomSheetRef}
+          event={meatballEvent}
+          onEdit={handleDismissSheet}
+          onDelete={handleDismissSheet}
+          onShare={handleDismissSheet}
+        />
+      </>
+    );
+  })
+);

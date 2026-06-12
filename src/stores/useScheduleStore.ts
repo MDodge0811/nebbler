@@ -1,6 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 
 function todayString(): string {
   const d = new Date();
@@ -13,7 +11,6 @@ function toMonthStart(dateString: string): string {
 }
 
 export type ViewMode = 'week' | 'month';
-type CardMode = 'full' | 'compact';
 
 interface ScheduleState {
   // Date state
@@ -29,13 +26,9 @@ interface ScheduleState {
   /** The month currently shown in MonthGrid (YYYY-MM-01). */
   displayMonth: string;
 
-  // Sync coordination
-  /** Prevents scroll↔date feedback loops during programmatic calendar updates. */
-  isSyncLocked: boolean;
-
-  // Display preferences (persisted)
-  cardDisplayMode: Record<string, CardMode>;
-  defaultCardMode: CardMode;
+  // Star filter — NOT persisted; resets to false on app launch.
+  /** When true, the feed shows only starred events. */
+  starredOnly: boolean;
 
   // Actions — selectDate sets both selectedDate and visibleDate so the header
   // month stays in sync. setVisibleDate moves only the viewport (month swipe).
@@ -44,44 +37,23 @@ interface ScheduleState {
   setToday: (date: string) => void;
   setViewMode: (mode: ViewMode) => void;
   setDisplayMonth: (month: string) => void;
-  setCardMode: (date: string, mode: CardMode) => void;
-  setDefaultCardMode: (mode: CardMode) => void;
-  lockSync: () => void;
-  unlockSync: () => void;
+  toggleStarredOnly: () => void;
 }
 
 const initialToday = todayString();
 
-export const useScheduleStore = create<ScheduleState>()(
-  persist(
-    (set) => ({
-      selectedDate: initialToday,
-      visibleDate: initialToday,
-      today: initialToday,
-      viewMode: 'week',
-      displayMonth: toMonthStart(initialToday),
-      isSyncLocked: false,
-      cardDisplayMode: {},
-      defaultCardMode: 'full',
+export const useScheduleStore = create<ScheduleState>()((set) => ({
+  selectedDate: initialToday,
+  visibleDate: initialToday,
+  today: initialToday,
+  viewMode: 'week',
+  displayMonth: toMonthStart(initialToday),
+  starredOnly: false,
 
-      selectDate: (date) => set({ selectedDate: date, visibleDate: date }),
-      setVisibleDate: (date) => set({ visibleDate: date }),
-      setToday: (date) => set({ today: date }),
-      setViewMode: (mode) => set({ viewMode: mode }),
-      setDisplayMonth: (month) => set({ displayMonth: month }),
-      setCardMode: (date, mode) =>
-        set((s) => ({ cardDisplayMode: { ...s.cardDisplayMode, [date]: mode } })),
-      setDefaultCardMode: (mode) => set({ defaultCardMode: mode }),
-      lockSync: () => set({ isSyncLocked: true }),
-      unlockSync: () => set({ isSyncLocked: false }),
-    }),
-    {
-      name: 'schedule-store',
-      storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({
-        cardDisplayMode: state.cardDisplayMode,
-        defaultCardMode: state.defaultCardMode,
-      }),
-    }
-  )
-);
+  selectDate: (date) => set({ selectedDate: date, visibleDate: date }),
+  setVisibleDate: (date) => set({ visibleDate: date }),
+  setToday: (date) => set({ today: date }),
+  setViewMode: (mode) => set({ viewMode: mode }),
+  setDisplayMonth: (month) => set({ displayMonth: month }),
+  toggleStarredOnly: () => set((s) => ({ starredOnly: !s.starredOnly })),
+}));

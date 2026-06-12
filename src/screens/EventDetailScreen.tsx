@@ -123,7 +123,9 @@ export function EventDetailScreen() {
     );
   }
 
-  const calendarColor = calendar ? getCalendarColor(calendar.id) : '#00DB74';
+  // Prefer the synced calendars.color; fall back to the deterministic hash only
+  // when it's null (the hash is a stub for the pre-color-column era).
+  const calendarColor = calendar?.color ?? (calendar ? getCalendarColor(calendar.id) : '#00DB74');
 
   if (permissions.isFreeBusy) {
     return <FreeBusyView event={event} calendar={calendar} calendarColor={calendarColor} />;

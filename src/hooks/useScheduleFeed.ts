@@ -1,97 +1,20 @@
 import { useQuery } from '@powersync/react';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
-import type { Event } from '@database/schema';
 import { useCalendarGroupMemberships } from '@hooks/useCalendarGroups';
 import { useCurrentUser } from '@hooks/useCurrentUser';
-import type { FeedEvent, ResponseRow, BuildFeedRowsOutput, QueryWindow } from '@utils/scheduleFeed';
-import { buildFeedRows, calcStickyWindow } from '@utils/scheduleFeed';
+import { useEventStars } from '@hooks/useEventStars';
+import { reactiveQuery } from '@utils/reactiveQuery';
+import type { BuildFeedRowsOutput, RawFeedEvent, ResponseRow } from '@utils/scheduleFeed';
+import { buildFeedRows } from '@utils/scheduleFeed';
 
-// Re-export legacy types so existing consumers don't break
+// Re-export types so consumers don't need to import from utils directly
 export type { FeedEvent } from '@utils/scheduleFeed';
-
-export interface EmptySentinel {
-  _empty: true;
-  id: string;
-}
-
-export interface DateSection {
-  title: string; // YYYY-MM-DD
-  data: (FeedEvent | EmptySentinel)[];
-  eventCount: number;
-}
-
-export function isEmptySentinel(item: FeedEvent | EmptySentinel): item is EmptySentinel {
-  return '_empty' in item;
-}
-
-/**
- * Generates an array of YYYY-MM-DD strings from startDate to endDate inclusive.
- */
-function getDateRange(startDate: string, endDate: string): string[] {
-  const dates: string[] = [];
-  const current = new Date(startDate + 'T12:00:00');
-  const end = new Date(endDate + 'T12:00:00');
-
-  while (current <= end) {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    dates.push(`${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`);
-    current.setDate(current.getDate() + 1);
-  }
-
-  return dates;
-}
-
-/**
- * Groups events into DateSection[] for SectionList consumption (legacy path).
- * Every date in the range gets a section — empty days include a sentinel item.
- */
-export function buildSections(
-  events: FeedEvent[],
-  startDate: string,
-  endDate: string,
-  displayStartDate?: string
-): DateSection[] {
-  if (displayStartDate && displayStartDate > startDate) {
-    startDate = displayStartDate;
-  }
-  const dateRange = getDateRange(startDate, endDate);
-
-  const eventsByDate = new Map<string, FeedEvent[]>();
-  for (const event of events) {
-    if (!event.start_time) continue;
-    // Convert UTC to local date for correct day bucketing
-    const localDate = new Date(event.start_time);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const dateKey = `${localDate.getFullYear()}-${pad(localDate.getMonth() + 1)}-${pad(localDate.getDate())}`;
-    const existing = eventsByDate.get(dateKey);
-    if (existing) {
-      existing.push(event);
-    } else {
-      eventsByDate.set(dateKey, [event]);
-    }
-  }
-
-  return dateRange.map((date) => {
-    const dayEvents = eventsByDate.get(date);
-    const count = dayEvents?.length ?? 0;
-    return {
-      title: date,
-      data: count > 0 && dayEvents ? dayEvents : [{ _empty: true, id: `empty-${date}` }],
-      eventCount: count,
-    };
-  });
-}
 
 // ---------------------------------------------------------------------------
 // SQL builders — extracted to keep hook functions under complexity limit
 // ---------------------------------------------------------------------------
-
-const EMPTY_CALENDAR_EVENTS_SQL = `SELECT e.*,
-         c.name AS calendar_name, c.type AS calendar_type,
-         c.color AS calendar_color,
-         c.default_view_mode AS calendar_default_view_mode
-  FROM events e JOIN calendars c ON 0 WHERE 0`;
 
 function buildEventsSql(placeholders: string): string {
   return `SELECT e.*,
@@ -115,11 +38,6 @@ function buildMemberSql(placeholders: string): string {
          AND cm.calendar_id IN (${placeholders})
          AND cm.deleted_at IS NULL`;
 }
-
-const EMPTY_MEMBER_SQL = 'SELECT calendar_id, view_mode FROM calendar_members WHERE 0';
-
-const EMPTY_RESPONSE_SQL =
-  'SELECT er.event_id, er.user_id, er.status, u.first_name, u.last_name, u.avatar_color FROM event_responses er JOIN users u ON 0 WHERE 0';
 
 function buildResponseSql(eventPlaceholders: string): string {
   return `SELECT er.event_id, er.user_id, er.status,
@@ -148,13 +66,16 @@ interface ResponseJoinRow {
 // ---------------------------------------------------------------------------
 
 interface CalendarEventsResult {
-  rawEvents: FeedEvent[];
+  rawEvents: RawFeedEvent[];
   viewModeByCalendar: Record<string, string | null>;
+  /** First (hard) load only. */
   isLoading: boolean;
+  /** Initial load AND any re-evaluation (e.g. month-window change). */
+  isFetching: boolean;
   error: Error | undefined;
 }
 
-function useCalendarEvents(
+function useCalendarEventsQuery(
   calendarIds: string[],
   userId: string | null | undefined,
   windowStart: string,
@@ -165,18 +86,23 @@ function useCalendarEvents(
   const startDateTime = `${windowStart}T00:00:00Z`;
   const endDateTime = `${windowEnd}T23:59:59Z`;
 
-  const eventSql = hasCalendars ? buildEventsSql(placeholders) : EMPTY_CALENDAR_EVENTS_SQL;
-  const eventParams = hasCalendars ? [...calendarIds, endDateTime, startDateTime] : [];
-
+  const [eventSql, eventParams] = reactiveQuery(hasCalendars, buildEventsSql(placeholders), [
+    ...calendarIds,
+    endDateTime,
+    startDateTime,
+  ]);
   const {
     data: rawEvents = [],
     isLoading,
+    isFetching,
     error: eventsError,
-  } = useQuery<FeedEvent>(eventSql, eventParams);
+  } = useQuery<RawFeedEvent>(eventSql, eventParams);
 
-  const memberSql = hasCalendars && userId ? buildMemberSql(placeholders) : EMPTY_MEMBER_SQL;
-  const memberParams = hasCalendars && userId ? [userId, ...calendarIds] : [];
-
+  const [memberSql, memberParams] = reactiveQuery(
+    hasCalendars && !!userId,
+    buildMemberSql(placeholders),
+    [userId, ...calendarIds]
+  );
   const { data: memberRows = [], error: memberError } = useQuery<{
     calendar_id: string;
     view_mode: string | null;
@@ -191,20 +117,30 @@ function useCalendarEvents(
   }, [memberRows]);
 
   const error = eventsError ?? memberError ?? undefined;
-  return { rawEvents, viewModeByCalendar, isLoading, error };
+  return { rawEvents, viewModeByCalendar, isLoading, isFetching, error };
 }
 
 // ---------------------------------------------------------------------------
 // Sub-hook: event responses
 // ---------------------------------------------------------------------------
 
-function useEventResponsesByEvent(rawEvents: FeedEvent[]): Record<string, ResponseRow[]> {
-  const eventIds = useMemo(() => rawEvents.map((e) => (e as Event).id), [rawEvents]);
+function useEventResponsesByEvent(rawEvents: RawFeedEvent[]): Record<string, ResponseRow[]> {
+  // Key on a stable sorted join of the event ids so the response query only
+  // re-subscribes when the id *set* changes — not on every PowerSync sync that
+  // hands back a fresh rawEvents array ref with identical contents.
+  const eventIdsKey = useMemo(
+    () => [...new Set(rawEvents.map((e) => e.id))].sort().join(','),
+    [rawEvents]
+  );
+  const eventIds = useMemo(() => (eventIdsKey === '' ? [] : eventIdsKey.split(',')), [eventIdsKey]);
+
   const hasEvents = eventIds.length > 0;
   const eventPlaceholders = eventIds.map(() => '?').join(', ');
-  const responseSql = hasEvents ? buildResponseSql(eventPlaceholders) : EMPTY_RESPONSE_SQL;
-  const responseParams = hasEvents ? eventIds : [];
-
+  const [responseSql, responseParams] = reactiveQuery(
+    hasEvents,
+    buildResponseSql(eventPlaceholders),
+    eventIds
+  );
   const { data: responseRows = [] } = useQuery<ResponseJoinRow>(responseSql, responseParams);
 
   return useMemo(() => {
@@ -231,77 +167,105 @@ function useEventResponsesByEvent(rawEvents: FeedEvent[]): Record<string, Respon
  * Stage 3: calendar_members for current user (view_mode resolution)
  * Stage 4: event_responses JOIN users (attendee chips)
  *
- * Sticky window: re-centers only when selectedDate comes within 7 days of
- * either window edge. Previous rows are retained while a new window loads.
+ * Previous rows are retained while a new window loads.
+ *
+ * Returns flat FeedRow[] and indexByDate Map for FlashList consumption.
  */
-export function useScheduleFeed(startDate: string, endDate: string, displayStartDate?: string) {
+export function useScheduleFeed(
+  startDate: string,
+  endDate: string,
+  today?: string,
+  starredOnly = false
+) {
   const { user, error: userError } = useCurrentUser();
   const { data: memberships = [], error: membershipsError } = useCalendarGroupMemberships(
     user?.primary_calendar_group_id ?? undefined
   );
+  const starredIds = useEventStars();
 
   const calendarIds = useMemo(
     () => memberships.map((m) => m.calendar_id).filter((id): id is string => id !== null),
     [memberships]
   );
 
-  // Sticky window — only re-center when near the edge
-  const windowRef = useRef<QueryWindow | null>(null);
-  const window = useMemo(() => {
-    const next = calcStickyWindow(startDate, windowRef.current);
-    windowRef.current = next;
-    return next;
-  }, [startDate]);
+  // Minute tick — drives the now-line label and position. Updated every 60s
+  // and also refreshed on foreground resume so the label is immediately correct.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const intervalId = setInterval(tick, 60_000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') tick();
+    });
+    return () => {
+      clearInterval(intervalId);
+      subscription.remove();
+    };
+  }, []);
 
   const {
     rawEvents,
     viewModeByCalendar,
     isLoading: eventsLoading,
+    isFetching: eventsFetching,
     error: eventsError,
-  } = useCalendarEvents(calendarIds, user?.id, window.start, window.end);
+  } = useCalendarEventsQuery(calendarIds, user?.id, startDate, endDate);
 
   const responsesByEvent = useEventResponsesByEvent(rawEvents);
 
-  // Sticky rows — keep previous rows while a new window is loading
+  // Sticky rows — keep the previous output while a new window RE-EVALUATES. Keyed
+  // on isFetching, not isLoading: PowerSync's isLoading is first-load-only, so a
+  // month-window change (which re-subscribes the query) keeps isLoading false —
+  // isFetching is what flips, so this is the flag that actually engages on reload.
   const previousRowsRef = useRef<BuildFeedRowsOutput | null>(null);
-
-  // Legacy SectionList path (kept for ScheduleScreen until S4 cutover)
-  const sections = useMemo(
-    () => buildSections(rawEvents, startDate, endDate, displayStartDate),
-    [rawEvents, startDate, endDate, displayStartDate]
-  );
-
-  // New FeedRow path (S3/S4 consumers)
   const feedOutput = useMemo<BuildFeedRowsOutput>(() => {
-    if (eventsLoading && previousRowsRef.current) {
+    if (eventsFetching && previousRowsRef.current) {
       return previousRowsRef.current;
     }
-    const output = buildFeedRows({
+    return buildFeedRows({
       events: rawEvents,
       responsesByEvent,
-      starredIds: new Set<string>(), // useEventStars called by consumer; pass empty here
+      starredIds,
       viewModeByCalendar,
       dateRange: { start: startDate, end: endDate },
-      today: startDate, // caller passes today explicitly in S4; use startDate as fallback
-      now: new Date(),
-      starredOnly: false,
+      today: today ?? startDate,
+      now,
+      starredOnly,
     });
-    previousRowsRef.current = output;
-    return output;
-  }, [rawEvents, responsesByEvent, viewModeByCalendar, startDate, endDate, eventsLoading]);
+  }, [
+    rawEvents,
+    responsesByEvent,
+    starredIds,
+    viewModeByCalendar,
+    startDate,
+    endDate,
+    today,
+    eventsFetching,
+    starredOnly,
+    now,
+  ]);
+
+  useEffect(() => {
+    if (!eventsFetching) {
+      previousRowsRef.current = feedOutput;
+    }
+  }, [feedOutput, eventsFetching]);
 
   const error = userError ?? membershipsError ?? eventsError ?? undefined;
 
   return {
-    // Legacy SectionList output (ScheduleScreen, EventFeed)
-    sections,
     events: rawEvents,
-    // New FeedRow output (S3/S4 consumers)
     rows: feedOutput.rows,
     indexByDate: feedOutput.indexByDate,
     viewModeByCalendar,
     responsesByEvent,
+    // Exposed so the screen's markedDates can reuse this subscription instead of
+    // calling useEventStars() a second time.
+    starredIds,
     isLoading: eventsLoading,
+    // True during initial load AND any re-evaluation; the screen uses this for
+    // its deferred-scroll clear so it doesn't fire mid-reload.
+    isFetching: eventsFetching,
     error,
   };
 }

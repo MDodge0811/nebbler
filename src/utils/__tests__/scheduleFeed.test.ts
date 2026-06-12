@@ -1,9 +1,9 @@
 /**
- * Tests for buildFeedRows, summarizeDay, and calcStickyWindow — all pure utilities.
+ * Tests for buildFeedRows and summarizeDay — all pure utilities.
  * No PowerSync/React needed here.
  */
 
-import { buildFeedRows, summarizeDay, calcStickyWindow } from '@utils/scheduleFeed';
+import { buildFeedRows, summarizeDay } from '@utils/scheduleFeed';
 import type { FeedEvent } from '@utils/scheduleFeed';
 
 // ---------------------------------------------------------------------------
@@ -17,6 +17,7 @@ function makeEvent(overrides: Partial<FeedEvent> = {}): FeedEvent {
     created_by_user_id: 'user-creator',
     title: 'Test Event',
     description: null,
+    location: null,
     start_time: '2026-06-10T14:00:00Z',
     end_time: '2026-06-10T15:00:00Z',
     show_as: 'busy',
@@ -278,6 +279,8 @@ describe('buildFeedRows — now-line', () => {
     const nowLines = rows.filter((r) => r.kind === 'now-line');
     expect(nowLines).toHaveLength(1);
     expect(nowLines[0]).toMatchObject({ kind: 'now-line', date: TODAY });
+    // now-line carries a label
+    expect((nowLines[0] as { label: string }).label).toMatch(/^NOW · /);
 
     // now-line must be between past and future event rows in the today group
     const todayGroup = rows.filter((r) => r.date === TODAY);
@@ -556,45 +559,5 @@ describe('summarizeDay', () => {
     const events = [makeEvent({ id: 'e1', start_time: localIso(20), end_time: localIso(21) })];
     const shape = summarizeDay(events);
     expect(shape.busyLabel).toBeUndefined();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// calcStickyWindow — sticky window helper
-// ---------------------------------------------------------------------------
-
-describe('calcStickyWindow', () => {
-  const BASE_DATE = '2026-06-10';
-
-  it('returns a window centered on the date', () => {
-    const { start, end } = calcStickyWindow(BASE_DATE, null);
-    // Should span roughly ±1 month (at least 30 days each side)
-    expect(start < BASE_DATE).toBe(true);
-    expect(end > BASE_DATE).toBe(true);
-  });
-
-  it('keeps the existing window when date is well inside it (no re-center)', () => {
-    const initial = calcStickyWindow(BASE_DATE, null);
-    // Navigate 3 days forward — should stay inside the window
-    const navigated = '2026-06-13';
-    const reused = calcStickyWindow(navigated, initial);
-    expect(reused.start).toBe(initial.start);
-    expect(reused.end).toBe(initial.end);
-  });
-
-  it('re-centers when date comes within 7 days of the window end', () => {
-    const initial = calcStickyWindow(BASE_DATE, null);
-    // Push date near the end edge
-    const nearEnd = initial.end; // exactly at edge
-    const recentered = calcStickyWindow(nearEnd, initial);
-    // Should have a new (different) window
-    expect(recentered.start !== initial.start || recentered.end !== initial.end).toBe(true);
-  });
-
-  it('re-centers when date comes within 7 days of the window start', () => {
-    const initial = calcStickyWindow(BASE_DATE, null);
-    const nearStart = initial.start;
-    const recentered = calcStickyWindow(nearStart, initial);
-    expect(recentered.start !== initial.start || recentered.end !== initial.end).toBe(true);
   });
 });

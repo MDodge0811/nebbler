@@ -91,6 +91,7 @@ const events = new Table({
   created_by_user_id: column.text,
   title: column.text,
   description: column.text,
+  location: column.text,
   start_time: column.text, // ISO 8601 datetime string (UTC)
   end_time: column.text, // ISO 8601 datetime string (UTC)
   show_as: column.text, // 'busy' | 'free' — availability contribution (defaults to 'busy' server-side)

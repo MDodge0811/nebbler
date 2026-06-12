@@ -14,7 +14,6 @@ describe('CalendarContainer', () => {
       today: storeToday,
       viewMode: 'week',
       displayMonth: storeToday.slice(0, 7) + '-01',
-      isSyncLocked: false,
     });
   });
 
@@ -50,40 +49,61 @@ describe('CalendarContainer', () => {
     expect(useScheduleStore.getState().viewMode).toBe('month');
   });
 
-  it('renders MonthGrid when expanded to month mode', () => {
-    const { getByTestId, rerender } = render(<CalendarContainer markedDates={{}} />);
+  // Lazy-mount: MonthGrid is not mounted in week mode until first expansion
+  it('mounts WeekStrip unconditionally (week mode)', () => {
+    const { getByTestId } = render(<CalendarContainer markedDates={{}} />);
+    expect(useScheduleStore.getState().viewMode).toBe('week');
+    // week-strip-wrapper is always present
+    expect(getByTestId('week-strip-wrapper')).toBeTruthy();
+  });
 
-    // Start in week mode — no month grid
-    expect((): unknown => getByTestId('month-grid-flatlist')).toThrow();
+  it('does not mount MonthGrid before the first expansion', () => {
+    useScheduleStore.setState({ viewMode: 'week' });
+    const { queryByTestId } = render(<CalendarContainer markedDates={{}} />);
+    expect(queryByTestId('month-grid-flatlist')).toBeNull();
+  });
 
-    // Switch to month mode
-    act(() => {
-      useScheduleStore.getState().setViewMode('month');
-    });
-    rerender(<CalendarContainer markedDates={{}} />);
+  it('mounts WeekStrip unconditionally (month mode)', () => {
+    useScheduleStore.setState({ viewMode: 'month' });
+    const { getByTestId } = render(<CalendarContainer markedDates={{}} />);
+    expect(getByTestId('week-strip-wrapper')).toBeTruthy();
+  });
 
+  it('mounts MonthGrid immediately when starting in month mode', () => {
+    useScheduleStore.setState({ viewMode: 'month' });
+    const { getByTestId } = render(<CalendarContainer markedDates={{}} />);
     expect(getByTestId('month-grid-flatlist')).toBeTruthy();
   });
 
-  it('collapsing back to week mode hides MonthGrid', () => {
+  it('WeekStrip always mounted; MonthGrid mounted only after first expansion, then stays', () => {
+    // Start in month mode so the grid is mounted from the beginning of this test
+    useScheduleStore.setState({ viewMode: 'month' });
     const { getByTestId, rerender } = render(<CalendarContainer markedDates={{}} />);
 
-    // Expand to month
-    act(() => {
-      useScheduleStore.getState().setViewMode('month');
-    });
-    rerender(<CalendarContainer markedDates={{}} />);
+    // Both mounted in month mode
+    expect(getByTestId('week-strip-wrapper')).toBeTruthy();
     expect(getByTestId('month-grid-flatlist')).toBeTruthy();
 
-    // Collapse back to week
+    // Collapse back to week — grid stays mounted (lazy-mount: never unmounts once shown)
     act(() => {
       useScheduleStore.getState().setViewMode('week');
     });
     rerender(<CalendarContainer markedDates={{}} />);
 
-    // MonthGrid stays mounted (hasExpandedRef) but is hidden via conditional render
-    // In our implementation, !isWeekMode is false, so MonthGrid is not rendered
-    expect((): unknown => getByTestId('month-grid-flatlist')).toThrow();
+    // WeekStrip still mounted
+    expect(getByTestId('week-strip-wrapper')).toBeTruthy();
+    // MonthGrid remains mounted (was shown once — sticky mount)
+    expect(getByTestId('month-grid-flatlist')).toBeTruthy();
+
+    // Expand again to month mode
+    act(() => {
+      useScheduleStore.getState().setViewMode('month');
+    });
+    rerender(<CalendarContainer markedDates={{}} />);
+
+    // Still both mounted
+    expect(getByTestId('week-strip-wrapper')).toBeTruthy();
+    expect(getByTestId('month-grid-flatlist')).toBeTruthy();
   });
 
   it('sets displayMonth from visibleDate on expand', () => {

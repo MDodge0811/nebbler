@@ -5,27 +5,34 @@
  *  - FeedRow / FeedEvent / AttendeeChip / DayShape types
  *  - buildFeedRows — converts raw query results into a flat FeedRow[]
  *  - summarizeDay  — produces DayShape from a day's events
- *  - calcStickyWindow — sticky ±1-month query window with 7-day edge re-center
  *
  * IMPORTANT: No React, no PowerSync, no imports from hook/component layers.
  * The hook (useScheduleFeed) is the only caller of these functions.
  */
 
 import type { Event } from '@database/schema';
-import { getInitials } from '@utils/avatarColor';
+import { getAvatarColor, getInitials } from '@utils/avatarColor';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-/** An event row enriched with calendar metadata and computed fields. */
-export interface FeedEvent extends Event {
+/**
+ * An event row joined with calendar metadata — the raw query result, before
+ * enrichment. `useQuery` returns these; `starred`/`attendees` are NOT selected
+ * by the SQL and only exist on the enriched `FeedEvent`.
+ */
+export interface RawFeedEvent extends Event {
   calendar_name: string;
   calendar_type: string;
   /** Hex color from calendars.color */
   calendar_color: string | null;
   /** Effective default view mode from calendars.default_view_mode */
   calendar_default_view_mode: string | null;
+}
+
+/** A RawFeedEvent enriched with the current user's star + attendee chips. */
+export interface FeedEvent extends RawFeedEvent {
   /** True when the current user has starred this event */
   starred: boolean;
   /** Attendee chips derived from event_responses + users */
@@ -58,7 +65,7 @@ export interface DayShape {
 export type FeedRow =
   | { kind: 'day-header'; date: string; summary: DayShape }
   | { kind: 'all-day'; date: string; event: FeedEvent }
-  | { kind: 'now-line'; date: string }
+  | { kind: 'now-line'; date: string; label: string }
   | { kind: 'event'; date: string; event: FeedEvent; mode: 'full' | 'compact' }
   | { kind: 'busy'; date: string; event: FeedEvent }
   | { kind: 'quiet-day'; date: string };
@@ -87,7 +94,7 @@ export interface DateRange {
 }
 
 export interface BuildFeedRowsInput {
-  events: FeedEvent[];
+  events: RawFeedEvent[];
   /** Keyed by event_id; value is array of response rows for that event */
   responsesByEvent: Record<string, ResponseRow[]>;
   /** Set of event_ids the current user has starred */
@@ -115,7 +122,6 @@ export interface BuildFeedRowsOutput {
 // Internal helpers — date math
 // ---------------------------------------------------------------------------
 
-const DEFAULT_AVATAR_COLOR = '#FF6B6B';
 const COMPACT_THRESHOLD = 5;
 
 const PAD2 = (n: number) => String(n).padStart(2, '0');
@@ -152,7 +158,7 @@ function localDateKey(isoUtc: string): string {
  * Returns all YYYY-MM-DD strings that an all-day event spans, clipped to [rangeStart, rangeEnd].
  * Uses UTC date math because all-day events store midnight-UTC boundaries.
  */
-function allDaySpannedDates(
+export function allDaySpannedDates(
   startUtc: string,
   endUtc: string,
   rangeStart: string,
@@ -197,7 +203,7 @@ function buildAttendeeChips(responses: ResponseRow[]): AttendeeChip[] {
     chips.push({
       userId: r.user_id,
       initials: getInitials(r.first_name, r.last_name, r.user_id),
-      color: r.avatar_color ?? DEFAULT_AVATAR_COLOR,
+      color: r.avatar_color ?? getAvatarColor(r.user_id),
       rsvp,
     });
   }
@@ -206,7 +212,7 @@ function buildAttendeeChips(responses: ResponseRow[]): AttendeeChip[] {
 
 /** Enrich an event with attendees and starred flag. */
 function enrichEvent(
-  e: FeedEvent,
+  e: RawFeedEvent,
   responsesByEvent: Record<string, ResponseRow[]>,
   starredIds: Set<string>
 ): FeedEvent {
@@ -262,7 +268,7 @@ function emitTimedRows(
   isToday: boolean,
   now: Date,
   mode: 'full' | 'compact',
-  viewModeByCalendar: Record<string, string | null>,
+  busyById: Map<string, boolean>,
   starredOnly: boolean
 ): void {
   let nowLineEmitted = false;
@@ -273,12 +279,12 @@ function emitTimedRows(
     if (isToday && !nowLineEmitted && e.start_time) {
       const eventStart = new Date(e.start_time);
       if (eventStart > now) {
-        rows.push({ kind: 'now-line', date });
+        rows.push({ kind: 'now-line', date, label: formatNowLabel(now) });
         nowLineEmitted = true;
       }
     }
 
-    if (isBusyEvent(e, viewModeByCalendar)) {
+    if (busyById.get(e.id)) {
       rows.push({ kind: 'busy', date, event: e });
     } else {
       rows.push({ kind: 'event', date, event: e, mode });
@@ -286,7 +292,7 @@ function emitTimedRows(
   }
 
   if (isToday && !nowLineEmitted) {
-    rows.push({ kind: 'now-line', date });
+    rows.push({ kind: 'now-line', date, label: formatNowLabel(now) });
   }
 }
 
@@ -330,8 +336,11 @@ export function buildFeedRows({
 
     if (starredOnly && !dayHasStarred(timedEvents, allDayEvents)) continue;
 
-    const nonBusyTimed = timedEvents.filter((e) => !isBusyEvent(e, viewModeByCalendar));
-    const mode: 'full' | 'compact' = nonBusyTimed.length >= COMPACT_THRESHOLD ? 'compact' : 'full';
+    // Compute busy once per timed event and reuse for both the compact-mode
+    // count and the row emission below.
+    const busyById = new Map(timedEvents.map((e) => [e.id, isBusyEvent(e, viewModeByCalendar)]));
+    const nonBusyCount = timedEvents.reduce((n, e) => (busyById.get(e.id) ? n : n + 1), 0);
+    const mode: 'full' | 'compact' = nonBusyCount >= COMPACT_THRESHOLD ? 'compact' : 'full';
 
     const summary = summarizeDay([...allDayEvents, ...timedEvents]);
     indexByDate.set(date, rows.length);
@@ -342,16 +351,7 @@ export function buildFeedRows({
       rows.push({ kind: 'all-day', date, event: e });
     }
 
-    emitTimedRows(
-      rows,
-      timedEvents,
-      date,
-      date === today,
-      now,
-      mode,
-      viewModeByCalendar,
-      starredOnly
-    );
+    emitTimedRows(rows, timedEvents, date, date === today, now, mode, busyById, starredOnly);
 
     if (timedEvents.length + allDayEvents.length === 0) {
       rows.push({ kind: 'quiet-day', date });
@@ -425,6 +425,11 @@ function fmtLocalTime(d: Date): string {
   return `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
 }
 
+/** Formats a Date as the now-line label: "NOW · h:mm". */
+export function formatNowLabel(date: Date): string {
+  return `NOW · ${fmtLocalTime(date)}`;
+}
+
 /** Returns the last event starting at or after 17:00 local, or undefined. */
 function findCloserEvent(timedEvents: FeedEvent[]): FeedEvent | undefined {
   const late = timedEvents.filter((e) => e.start_time && new Date(e.start_time).getHours() >= 17);
@@ -477,59 +482,4 @@ export function summarizeDay(events: FeedEvent[]): DayShape {
     ...(busyLabel !== undefined && { busyLabel }),
     ...(closerLabel !== undefined && { closerLabel }),
   };
-}
-
-// ---------------------------------------------------------------------------
-// calcStickyWindow
-// ---------------------------------------------------------------------------
-
-export interface QueryWindow {
-  start: string; // YYYY-MM-DD
-  end: string; // YYYY-MM-DD
-}
-
-const WINDOW_MONTHS = 1; // ±1 month
-const EDGE_THRESHOLD_DAYS = 7;
-
-/** Adds `months` months to a YYYY-MM-DD date, returning YYYY-MM-DD. */
-function addMonths(dateStr: string, months: number): string {
-  const d = parseDateLocal(dateStr);
-  d.setMonth(d.getMonth() + months);
-  return toDateString(d);
-}
-
-/** Returns the difference in days between two YYYY-MM-DD strings (b - a). */
-function daysDiff(a: string, b: string): number {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.round((parseDateLocal(b).getTime() - parseDateLocal(a).getTime()) / msPerDay);
-}
-
-/** Computes a fresh window centered on `date`. */
-function freshWindow(date: string): QueryWindow {
-  return { start: addMonths(date, -WINDOW_MONTHS), end: addMonths(date, WINDOW_MONTHS) };
-}
-
-/**
- * Sticky ±1-month query window.
- *
- * Rules:
- *   - If `current` is null, compute a fresh window centered on `date`.
- *   - If `date` is more than EDGE_THRESHOLD_DAYS inside both edges, reuse
- *     the existing window (no SQL refire).
- *   - If `date` is within EDGE_THRESHOLD_DAYS of either edge, re-center.
- *
- * The hook stores the returned window in a ref and passes it back on the
- * next call — this keeps SQL params stable until a re-center is needed.
- */
-export function calcStickyWindow(date: string, current: QueryWindow | null): QueryWindow {
-  if (current === null) return freshWindow(date);
-
-  const daysFromStart = daysDiff(current.start, date);
-  const daysToEnd = daysDiff(date, current.end);
-
-  if (daysFromStart < EDGE_THRESHOLD_DAYS || daysToEnd < EDGE_THRESHOLD_DAYS) {
-    return freshWindow(date);
-  }
-
-  return current;
 }

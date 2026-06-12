@@ -9,8 +9,7 @@ const defaultProps = {
   dayNumber: 24,
   isSelected: false,
   isToday: false,
-  hasEvent: false,
-  dotColor: calendarColors.eventDot,
+  dotColors: [] as string[],
   onPress: jest.fn(),
 };
 
@@ -29,17 +28,31 @@ describe('WeekStripDayCell', () => {
     expect(onPress).toHaveBeenCalledWith('2026-02-24');
   });
 
-  it('does not show an event dot when hasEvent is false', () => {
-    const { queryByTestId } = render(<WeekStripDayCell {...defaultProps} />);
+  it('does not show an event dot when dotColors is empty', () => {
+    const { queryByTestId } = render(<WeekStripDayCell {...defaultProps} dotColors={[]} />);
     expect(queryByTestId('event-dot')).toBeNull();
   });
 
-  it('shows an event dot when hasEvent is true', () => {
-    const { getByTestId } = render(<WeekStripDayCell {...defaultProps} hasEvent />);
-    expect(getByTestId('event-dot')).toBeTruthy();
+  it('shows one event dot for a single color', () => {
+    const { getAllByTestId } = render(
+      <WeekStripDayCell {...defaultProps} dotColors={['#00DB74']} />
+    );
+    expect(getAllByTestId('event-dot').length).toBe(1);
   });
 
-  it('renders with selected style (green filled circle, white text)', () => {
+  it('shows up to 4 dots and caps at 4', () => {
+    const { getAllByTestId } = render(
+      <WeekStripDayCell
+        {...defaultProps}
+        dotColors={['#00DB74', '#FFB3B3', '#B3E5F6', '#D4B3F7', '#FCD34D']}
+      />
+    );
+    // Must cap at 4, not 5
+    expect(getAllByTestId('event-dot').length).toBe(4);
+  });
+
+  // NEB-35 regression: selected = filled pill + white text
+  it('renders with selected style (green filled pill, white text) when selected', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} isSelected />);
     const text = getByText('24') as { props: { style: unknown } };
     expect(text.props.style).toEqual(
@@ -47,15 +60,17 @@ describe('WeekStripDayCell', () => {
     );
   });
 
-  it('renders with today style (green outline, dark text) when not selected', () => {
+  // NEB-35 regression: today (not selected) = green numeral only, NO ring/pill
+  it('renders green numeral (no pill/ring) for today when not selected', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} isToday />);
     const text = getByText('24') as { props: { style: unknown } };
+    // Text color must be the today green
     expect(text.props.style).toEqual(
-      expect.arrayContaining([expect.objectContaining({ color: calendarColors.dayText })])
+      expect.arrayContaining([expect.objectContaining({ color: calendarColors.today })])
     );
   });
 
-  it('renders with normal style (day text color) when not selected and not today', () => {
+  it('renders normal day text color when not selected and not today', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} />);
     const text = getByText('24') as { props: { style: unknown } };
     expect(text.props.style).toEqual(
@@ -63,13 +78,30 @@ describe('WeekStripDayCell', () => {
     );
   });
 
-  it('selected takes priority over today', () => {
+  it('selected takes priority over today (white text, filled pill)', () => {
     const { getByText } = render(<WeekStripDayCell {...defaultProps} isSelected isToday />);
-    // Selected wins: green filled circle with white text
     const text = getByText('24') as { props: { style: unknown } };
     expect(text.props.style).toEqual(
       expect.arrayContaining([expect.objectContaining({ color: '#FFFFFF' })])
     );
+  });
+
+  // Star marker tests
+  it('does not show star marker when starred is false', () => {
+    const { queryByTestId } = render(<WeekStripDayCell {...defaultProps} starred={false} />);
+    expect(queryByTestId('star-marker')).toBeNull();
+  });
+
+  it('shows star marker when starred is true', () => {
+    const { getByTestId } = render(<WeekStripDayCell {...defaultProps} starred />);
+    expect(getByTestId('star-marker')).toBeTruthy();
+  });
+
+  it('does not show star marker on adjacent month even when starred', () => {
+    const { queryByTestId } = render(
+      <WeekStripDayCell {...defaultProps} starred isAdjacentMonth />
+    );
+    expect(queryByTestId('star-marker')).toBeNull();
   });
 
   describe('isAdjacentMonth', () => {
@@ -81,14 +113,15 @@ describe('WeekStripDayCell', () => {
       );
     });
 
-    it('overrides selected styling when isAdjacentMonth is true', () => {
+    it('shows selected styling (white text) even when isAdjacentMonth is true', () => {
+      // Selection now wins over adjacent-month fading: tapping an adjacent day
+      // keeps the grid put, so the selected indicator must stay visible on it.
       const { getByText } = render(
         <WeekStripDayCell {...defaultProps} isSelected isAdjacentMonth />
       );
       const text = getByText('24') as { props: { style: unknown } };
-      // Should use disabled color, not white
       expect(text.props.style).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: calendarColors.disabled })])
+        expect.arrayContaining([expect.objectContaining({ color: '#FFFFFF' })])
       );
     });
 
