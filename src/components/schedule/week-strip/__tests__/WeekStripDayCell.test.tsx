@@ -113,14 +113,15 @@ describe('WeekStripDayCell', () => {
       );
     });
 
-    it('overrides selected styling when isAdjacentMonth is true', () => {
+    it('shows selected styling (white text) even when isAdjacentMonth is true', () => {
+      // Selection now wins over adjacent-month fading: tapping an adjacent day
+      // keeps the grid put, so the selected indicator must stay visible on it.
       const { getByText } = render(
         <WeekStripDayCell {...defaultProps} isSelected isAdjacentMonth />
       );
       const text = getByText('24') as { props: { style: unknown } };
-      // Should use disabled color, not white
       expect(text.props.style).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: calendarColors.disabled })])
+        expect.arrayContaining([expect.objectContaining({ color: '#FFFFFF' })])
       );
     });
 

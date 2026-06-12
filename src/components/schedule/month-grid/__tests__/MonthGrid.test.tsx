@@ -82,6 +82,23 @@ describe('MonthGrid', () => {
     expect(getAllByTestId('star-marker').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('tapping an adjacent-month day selects it but does NOT advance the displayed month', () => {
+    // March 2026's grid shows trailing April days (Apr 1–4) as faded adjacent cells.
+    useScheduleStore.setState({ displayMonth: '2026-03-01' });
+    const onDateSelected = jest.fn();
+    const { getAllByLabelText } = render(
+      <MonthGrid onDateSelected={onDateSelected} markedDates={{}} />
+    );
+    // Apr 1 appears as an adjacent (faded) day in March's grid.
+    fireEvent.press(getAllByLabelText('2026-04-01')[0]);
+    expect(onDateSelected).toHaveBeenCalledWith('2026-04-01');
+    expect(useScheduleStore.getState().selectedDate).toBe('2026-04-01');
+    // The grid must stay on March — tapping an adjacent day no longer auto-advances.
+    expect(useScheduleStore.getState().displayMonth).toBe('2026-03-01');
+    // The header (visibleDate) also stays on March, not the tapped April day.
+    expect(useScheduleStore.getState().visibleDate).toBe('2026-03-01');
+  });
+
   it('fires onMonthChanged with the new month key after a swipe', () => {
     const onMonthChanged = jest.fn();
     const component = render(<MonthGrid onMonthChanged={onMonthChanged} markedDates={{}} />);

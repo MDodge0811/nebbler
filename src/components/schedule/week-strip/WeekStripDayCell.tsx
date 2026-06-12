@@ -55,14 +55,16 @@ export const WeekStripDayCell = memo(function WeekStripDayCell({
 }: WeekStripDayCellProps) {
   const handlePress = useCallback(() => onPress(dateString), [onPress, dateString]);
 
-  const isSelectedCircle = isSelected && !isAdjacentMonth;
+  // Selection wins over adjacent-month fading: tapping an adjacent day no longer
+  // re-centers the grid, so the selected indicator must stay visible on it.
+  const isSelectedCircle = isSelected;
   // Today and not selected and not adjacent: green numeral only (no ring/pill)
   const isTodayOnly = isToday && !isSelected && !isAdjacentMonth;
 
-  const textColor = isAdjacentMonth
-    ? calendarColors.disabled
-    : isSelectedCircle
-      ? '#FFFFFF'
+  const textColor = isSelectedCircle
+    ? '#FFFFFF'
+    : isAdjacentMonth
+      ? calendarColors.disabled
       : isTodayOnly
         ? calendarColors.today
         : calendarColors.dayText;

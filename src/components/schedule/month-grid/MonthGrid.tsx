@@ -11,7 +11,7 @@ import { WeekStripDayCell } from '@components/schedule/week-strip/WeekStripDayCe
 import { NO_DOTS } from '@hooks/useCalendarEvents';
 import type { MarkedDates } from '@hooks/useCalendarEvents';
 import { useScheduleStore } from '@stores/useScheduleStore';
-import { isDateInMonth, getMonthStart } from '@utils/monthUtils';
+import { isDateInMonth } from '@utils/monthUtils';
 
 import { useMonthPages, type MonthPage } from './useMonthPages';
 
@@ -30,6 +30,7 @@ export function MonthGrid({ onDateSelected, onMonthChanged, markedDates }: Month
   const today = useScheduleStore((s) => s.today);
   const displayMonth = useScheduleStore((s) => s.displayMonth);
   const setDisplayMonth = useScheduleStore((s) => s.setDisplayMonth);
+  const setVisibleDate = useScheduleStore((s) => s.setVisibleDate);
 
   const { months, centerIndex, getPageIndexForMonth } = useMonthPages(displayMonth);
   const flatListRef = useRef<FlatList<MonthPage>>(null);
@@ -49,16 +50,17 @@ export function MonthGrid({ onDateSelected, onMonthChanged, markedDates }: Month
   const handleDayPress = useCallback(
     (date: string) => {
       const currentMonth = useScheduleStore.getState().displayMonth;
-      if (!isDateInMonth(date, currentMonth)) {
-        // Adjacent month day tap — navigate to that month
-        const targetMonth = getMonthStart(date);
-        setDisplayMonth(targetMonth);
-      }
-
       useScheduleStore.getState().selectDate(date);
+      // Adjacent-month days (e.g. July 1 shown faded in June's grid) select and
+      // scroll the feed like any other day, but the grid AND header stay on the
+      // displayed month — they don't advance until the user swipes. selectDate
+      // moved visibleDate to the tapped day, so pin the header back.
+      if (!isDateInMonth(date, currentMonth)) {
+        setVisibleDate(currentMonth);
+      }
       onDateSelected?.(date);
     },
-    [onDateSelected, setDisplayMonth]
+    [onDateSelected, setVisibleDate]
   );
 
   const handleMomentumScrollEnd = useCallback(
