@@ -1,7 +1,5 @@
 import { Box } from '@/components/ui/box';
 
-export const GRAB_HANDLE_HEIGHT = 8;
-
 export function GrabHandle() {
   return (
     <Box
